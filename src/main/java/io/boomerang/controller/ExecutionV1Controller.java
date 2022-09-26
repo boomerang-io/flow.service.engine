@@ -9,14 +9,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowExecutionRequest;
-import io.boomerang.service.ExecutionService;
+import io.boomerang.service.WorkflowExecutionService;
 
 @RestController
 @RequestMapping("/apis/v1/workflow/")
 public class ExecutionV1Controller {
 
   @Autowired
-  private ExecutionService executionService;
+  private WorkflowExecutionService executionService;
 
   @PostMapping(value = "/execute/{workflowId}")
   public WorkflowRun executeWorkflow(@PathVariable String workflowId,

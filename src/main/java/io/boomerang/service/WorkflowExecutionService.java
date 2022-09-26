@@ -4,7 +4,7 @@ import java.util.Optional;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowExecutionRequest;
 
-public interface ExecutionService {
+public interface WorkflowExecutionService {
   public WorkflowRun executeWorkflow(String workflowId,
       Optional<WorkflowExecutionRequest> executionRequest);
 }

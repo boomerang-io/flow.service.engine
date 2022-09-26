@@ -21,6 +21,8 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import io.boomerang.entity.model.dag.Task;
+import io.boomerang.entity.model.dag.Dependency;
 import io.boomerang.exceptions.InvalidWorkflowRuntimeException;
 import io.boomerang.exceptions.RunWorkflowException;
 import io.boomerang.model.Task;
@@ -37,8 +39,6 @@ import io.boomerang.mongo.model.Storage;
 import io.boomerang.mongo.model.TaskStatus;
 import io.boomerang.mongo.model.TaskType;
 import io.boomerang.mongo.model.internal.InternalTaskRequest;
-import io.boomerang.mongo.model.next.DAGTask;
-import io.boomerang.mongo.model.next.Dependency;
 import io.boomerang.mongo.service.FlowTaskTemplateService;
 import io.boomerang.mongo.service.FlowWorkflowActivityService;
 import io.boomerang.mongo.service.RevisionService;
@@ -54,7 +54,7 @@ import io.boomerang.util.GraphProcessor;
 public class FlowExecutionServiceImpl implements FlowExecutionService {
 
   @Autowired
-  private FlowActivityService flowActivityService;
+  private WorkflowRunService flowActivityService;
 
   @Autowired
   private RevisionService flowRevisionService;
@@ -86,12 +86,12 @@ public class FlowExecutionServiceImpl implements FlowExecutionService {
 
   private static final Logger LOGGER = LogManager.getLogger(FlowExecutionServiceImpl.class);
 
-  private List<Task> createTaskList(RevisionEntity revisionEntity) { // NOSONAR
+  private List<Task> createTaskList(WorkflowRevisionEntity revisionEntity) { // NOSONAR
 
-    final Dag dag = revisionEntity.getDag();
+    final DAG dag = revisionEntity.getDag();
 
     final List<Task> taskList = new LinkedList<>();
-    for (final DAGTask dagTask : dag.getTasks()) {
+    for (final Task dagTask : dag.getTasks()) {
 
       final Task newTask = new Task();
       newTask.setTaskId(dagTask.getTaskId());
@@ -323,7 +323,7 @@ public class FlowExecutionServiceImpl implements FlowExecutionService {
 
   @Override
   public CompletableFuture<Boolean> executeWorkflowVersion(String workFlowId, String activityId) {
-    final RevisionEntity entity = this.flowRevisionService.getWorkflowlWithId(workFlowId);
+    final WorkflowRevisionEntity entity = this.flowRevisionService.getWorkflowlWithId(workFlowId);
     final List<Task> tasks = createTaskList(entity);
     prepareExecution(tasks, activityId);
     return CompletableFuture.supplyAsync(createProcess(activityId, tasks));

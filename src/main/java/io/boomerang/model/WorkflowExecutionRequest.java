@@ -5,6 +5,8 @@ import java.util.Map;
 
 public class WorkflowExecutionRequest {
 
+  private String workflowId;
+
   private List<KeyValue> labels;
   
   boolean applyQuotas;
@@ -12,6 +14,14 @@ public class WorkflowExecutionRequest {
   private Map<String, String> inputs;
   
   private Map<String, String> resources;
+
+  public String getWorkflowId() {
+    return workflowId;
+  }
+
+  public void setWorkflowId(String workflowId) {
+    this.workflowId = workflowId;
+  }
 
   public List<KeyValue> getLabels() {
     return labels;

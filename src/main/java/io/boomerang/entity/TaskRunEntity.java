@@ -9,14 +9,17 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.entity.model.RunStatus;
 import io.boomerang.model.KeyValue;
+import io.boomerang.model.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
-@Document(collection = "#{@mongoConfiguration.fullCollectionName('workflow_runs')}")
-public class WorkflowRunEntity   {
+@Document(collection = "#{@mongoConfiguration.fullCollectionName('task_runs')}")
+public class TaskRunEntity   {
 
   @Id
   private String id;
+  
+  private TaskType taskType;
 
   private String initiatedById;
   
@@ -32,24 +35,38 @@ public class WorkflowRunEntity   {
   
 //  private ErrorResponse error;
 
-  private String workflowId;
+  private String taskTemplateId;
 
-  private String workflowRevisionId;
+  private String taskTemplateRevisionId;
 
-  private String trigger;
+  private String workflowRunId;
 
   private List<KeyValue> inputs;
 
   private List<KeyValue> results;
-  
-//private List<Resources> resources;
 
-  public List<KeyValue> getLabels() {
-    return labels;
+  public String getId() {
+    return id;
   }
 
-  public void setLabels(List<KeyValue> labels) {
-    this.labels = labels;
+  public void setId(String id) {
+    this.id = id;
+  }
+  
+  public TaskType getTaskType() {
+    return taskType;
+  }
+
+  public void setTaskType(TaskType taskType) {
+    this.taskType = taskType;
+  }
+
+  public String getInitiatedById() {
+    return initiatedById;
+  }
+
+  public void setInitiatedById(String initiatedById) {
+    this.initiatedById = initiatedById;
   }
 
   public Date getCreationDate() {
@@ -60,28 +77,20 @@ public class WorkflowRunEntity   {
     this.creationDate = creationDate;
   }
 
+  public List<KeyValue> getLabels() {
+    return labels;
+  }
+
+  public void setLabels(List<KeyValue> labels) {
+    this.labels = labels;
+  }
+
   public Long getDuration() {
     return duration;
   }
 
   public void setDuration(Long duration) {
     this.duration = duration;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getInitiatedById() {
-    return initiatedById;
-  }
-
-  public void setInitiatedById(String initiatedById) {
-    this.initiatedById = initiatedById;
   }
 
   public RunStatus getStatus() {
@@ -100,28 +109,28 @@ public class WorkflowRunEntity   {
     this.statusMessage = statusMessage;
   }
 
-  public String getWorkflowId() {
-    return workflowId;
+  public String getTaskTemplateId() {
+    return taskTemplateId;
   }
 
-  public void setWorkflowId(String workflowId) {
-    this.workflowId = workflowId;
+  public void setTaskTemplateId(String taskTemplateId) {
+    this.taskTemplateId = taskTemplateId;
   }
 
-  public String getWorkflowRevisionId() {
-    return workflowRevisionId;
+  public String getTaskTemplateRevisionId() {
+    return taskTemplateRevisionId;
   }
 
-  public void setWorkflowRevisionid(String workflowRevisionId) {
-    this.workflowRevisionId = workflowRevisionId;
+  public void setTaskTemplateRevisionId(String taskTemplateRevisionId) {
+    this.taskTemplateRevisionId = taskTemplateRevisionId;
   }
 
-  public String getTrigger() {
-    return trigger;
+  public String getWorkflowRunId() {
+    return workflowRunId;
   }
 
-  public void setTrigger(String trigger) {
-    this.trigger = trigger;
+  public void setWorkflowRunId(String workflowRunId) {
+    this.workflowRunId = workflowRunId;
   }
 
   public List<KeyValue> getInputs() {
@@ -138,6 +147,5 @@ public class WorkflowRunEntity   {
 
   public void setResults(List<KeyValue> results) {
     this.results = results;
-  }
-  
+  }  
 }
