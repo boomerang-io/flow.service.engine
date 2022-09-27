@@ -1,7 +1,8 @@
 package io.boomerang.model;
 
 import org.springframework.beans.BeanUtils;
-import io.boomerang.entity.TaskRunEntity;
+import io.boomerang.data.entity.TaskRunEntity;
+import io.boomerang.data.model.RunStatus;
 
 public class TaskRun extends TaskRunEntity {
   
@@ -10,6 +11,8 @@ public class TaskRun extends TaskRunEntity {
   private String workflowId;
   
   private String workflowName;
+  
+  private RunStatus status;
   
   public TaskRun() {
     
@@ -42,4 +45,13 @@ public class TaskRun extends TaskRunEntity {
   public void setWorkflowName(String workflowName) {
     this.workflowName = workflowName;
   }
+
+  public RunStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(RunStatus status) {
+    this.status = status;
+  }
+  
 }

@@ -7,7 +7,7 @@ public class WorkflowExecutionRequest {
 
   private String workflowId;
 
-  private List<KeyValue> labels;
+  private List<AbstractKeyValue> labels;
   
   boolean applyQuotas;
   
@@ -23,11 +23,11 @@ public class WorkflowExecutionRequest {
     this.workflowId = workflowId;
   }
 
-  public List<KeyValue> getLabels() {
+  public List<AbstractKeyValue> getLabels() {
     return labels;
   }
 
-  public void setLabels(List<KeyValue> labels) {
+  public void setLabels(List<AbstractKeyValue> labels) {
     this.labels = labels;
   }
 

@@ -2,7 +2,7 @@ package io.boomerang.model;
 
 import java.util.List;
 import org.springframework.beans.BeanUtils;
-import io.boomerang.entity.WorkflowRunEntity;
+import io.boomerang.data.entity.WorkflowRunEntity;
 
 public class WorkflowRun extends WorkflowRunEntity {
 
@@ -10,7 +10,7 @@ public class WorkflowRun extends WorkflowRunEntity {
 
   private String workflowName;
 
-  private List<TaskExecutionRequest> tasks;
+  private List<TaskExecutionResponse> tasks;
   
   private long workflowRevisionName;
   
@@ -38,12 +38,12 @@ public class WorkflowRun extends WorkflowRunEntity {
     this.workflowName = workflowName;
   }
 
-  public List<TaskExecutionRequest> getTasks() {
+  public List<TaskExecutionResponse> getTasks() {
     return tasks;
   }
 
-  public void setTasks(List<TaskExecutionRequest> tasks) {
-    this.tasks = tasks;
+  public void setTasks(List<TaskExecutionResponse> taskRuns) {
+    this.tasks = taskRuns;
   }
 
   public long getWorkflowRevisionName() {

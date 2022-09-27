@@ -3,7 +3,7 @@ package io.boomerang.service;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import io.boomerang.entity.WorkflowEntity;
+import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.repository.WorkflowRepository;
 
 /*
@@ -22,6 +22,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     //TODO: filter sensitive inputs/results
     //TODO: handle not found with Exception.
+    //TODO: Add in the handling of Workspaces
+//  if (workflow.getStorage() == null) {
+//    workflow.setStorage(new Storage());
+//  }
+//  if (workflow.getStorage().getActivity() == null) {
+//    workflow.getStorage().setActivity(new ActivityStorage());
+//  }
     return entity.orElse(null);
   }
 }

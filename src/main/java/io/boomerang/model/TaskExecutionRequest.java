@@ -6,6 +6,8 @@ public class TaskExecutionRequest {
   
   private String workflowRunId;
   
+  private String taskRunId;
+  
   private Map<String, String> inputs;
   
   private Map<String, String> resources;
@@ -52,5 +54,13 @@ public class TaskExecutionRequest {
 
   public void setPreApproved(boolean preApproved) {
     this.preApproved = preApproved;
+  }
+
+  public String getTaskRunId() {
+    return taskRunId;
+  }
+
+  public void setTaskRunId(String taskRunId) {
+    this.taskRunId = taskRunId;
   }
 }

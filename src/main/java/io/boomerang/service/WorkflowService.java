@@ -1,6 +1,6 @@
 package io.boomerang.service;
 
-import io.boomerang.entity.WorkflowEntity;
+import io.boomerang.data.entity.WorkflowEntity;
 
 public interface WorkflowService {
 

@@ -8,14 +8,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.boomerang.entity.WorkflowEntity;
-import io.boomerang.entity.WorkflowRevisionEntity;
-import io.boomerang.entity.WorkflowRunEntity;
-import io.boomerang.model.TaskExecutionRequest;
+import io.boomerang.data.entity.WorkflowEntity;
+import io.boomerang.data.entity.WorkflowRevisionEntity;
+import io.boomerang.data.entity.WorkflowRunEntity;
+import io.boomerang.model.TaskExecutionResponse;
 import io.boomerang.model.WorkflowExecutionRequest;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.repository.WorkflowRevisionRepository;
 
+/*
+ * Executes a workflow.
+ * 
+ * Notes:
+ * - Only the execution service should know about an ExecutionRequest. Do not pass through to other services.
+ * - The Engine does not do any Authorization. This is handled by the wrapping Workflow Service
+ */
 @Service
 public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   private static final Logger LOGGER = LogManager.getLogger();
@@ -24,7 +31,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   private WorkflowRunService workflowRunService;
 
   @Autowired
-  private FlowExecutionService flowExecutionService;
+  private ExecutionService executionService;
 
   @Autowired
   private WorkflowRevisionRepository workflowRevisonRepository;
@@ -41,6 +48,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     // TODO: Check if Workflow is active and triggers enabled
     // Throws Execution exception if not able to
     // workflowService.canExecuteWorkflow(workflowId);
+    
+    // TODO: Check Quotas or do as part of above canExecute
 
     WorkflowExecutionRequest request = null;
     if (executionRequest.isPresent()) {
@@ -50,25 +59,24 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       request = new WorkflowExecutionRequest();
     }
 
-    final WorkflowRevisionEntity entity =
+    //TODO: move revision into createRun and only pass parts of the executionRequest through to createRun
+    final WorkflowRevisionEntity workflowRevisionEntity =
         this.workflowRevisonRepository.findWorkflowByIdAndLatestVersion(workflowId);
-    if (entity != null) {
-      final WorkflowRunEntity activity = workflowRunService.createFlowActivity(entity.getId(),
-          trigger, request, taskWorkspaces, request.getLabels());
-      flowExecutionService.executeWorkflowVersion(entity.getId(), activity.getId());
+    if (workflowRevisionEntity != null) {
+      final WorkflowRunEntity wfRunEntity = workflowRunService.createRun(workflowRevisionEntity,
+          request, request.getLabels());
+      
+      executionService.executeWorkflowVersion(workflowRevisionEntity, wfRunEntity);
 
-      final List<TaskExecutionRequest> steps = activityService.getTaskExecutions(activity.getId());
-      final FlowActivity response = new FlowActivity(activity);
-      response.setSteps(steps);
+      final List<TaskExecutionResponse> taskRuns = workflowRunService.getTaskExecutions(wfRunEntity.getId());
+      final WorkflowRun response = new WorkflowRun(wfRunEntity);
+      response.setTasks(taskRuns);
       response.setWorkflowName(workflow.getName());
-      response.setShortDescription(workflow.getShortDescription());
       return response;
     } else {
       LOGGER.error("No revision to execute");
     }
     return null;
-  }
-
   }
 
   private void logPayload(WorkflowExecutionRequest request) {
