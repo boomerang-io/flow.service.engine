@@ -11,10 +11,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
+import io.boomerang.data.repository.WorkflowRepository;
+import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.model.TaskExecutionResponse;
 import io.boomerang.model.WorkflowExecutionRequest;
 import io.boomerang.model.WorkflowRun;
-import io.boomerang.repository.WorkflowRevisionRepository;
 
 /*
  * Executes a workflow.
@@ -37,13 +38,16 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   private WorkflowRevisionRepository workflowRevisonRepository;
 
   @Autowired
+  private WorkflowRepository workflowRepository;
+
+  @Autowired
   private WorkflowService workflowService;
 
   @Override
   public WorkflowRun executeWorkflow(String workflowId,
       Optional<WorkflowExecutionRequest> executionRequest) {
 
-    final WorkflowEntity workflow = workflowService.getWorkflow(workflowId);
+    final Optional<WorkflowEntity> workflow = workflowRepository.findById(workflowId);
 
     // TODO: Check if Workflow is active and triggers enabled
     // Throws Execution exception if not able to
@@ -60,18 +64,18 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     }
 
     //TODO: move revision into createRun and only pass parts of the executionRequest through to createRun
-    final WorkflowRevisionEntity workflowRevisionEntity =
+    final Optional<WorkflowRevisionEntity> workflowRevisionEntity =
         this.workflowRevisonRepository.findWorkflowByIdAndLatestVersion(workflowId);
-    if (workflowRevisionEntity != null) {
-      final WorkflowRunEntity wfRunEntity = workflowRunService.createRun(workflowRevisionEntity,
+    if (workflowRevisionEntity.isPresent()) {
+      final WorkflowRunEntity wfRunEntity = workflowRunService.createRun(workflowRevisionEntity.get(),
           request, request.getLabels());
       
-      executionService.executeWorkflowVersion(workflowRevisionEntity, wfRunEntity);
+      executionService.executeWorkflowVersion(workflowRevisionEntity.get(), wfRunEntity);
 
       final List<TaskExecutionResponse> taskRuns = workflowRunService.getTaskExecutions(wfRunEntity.getId());
       final WorkflowRun response = new WorkflowRun(wfRunEntity);
       response.setTasks(taskRuns);
-      response.setWorkflowName(workflow.getName());
+      response.setWorkflowName(workflow.get().getName());
       return response;
     } else {
       LOGGER.error("No revision to execute");

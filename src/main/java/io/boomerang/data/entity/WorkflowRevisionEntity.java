@@ -7,8 +7,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.data.model.DAG;
-import io.boomerang.model.AbstractConfigurationProperty;
 import io.boomerang.model.ChangeLog;
+import io.boomerang.model.WorkflowParam;
+import io.boomerang.model.WorkflowWorkspace;
 import io.boomerang.model.projectstormv5.RestConfig;
 
 /*
@@ -36,9 +37,9 @@ public class WorkflowRevisionEntity {
   //TODO: merge into the DAG
   private RestConfig config;
   
-//  private WorkflowWorkspaces workspaces;
+  private List<WorkflowWorkspace> workspaces;
 
-  private List<AbstractConfigurationProperty> params;
+  private List<WorkflowParam> params;
 
   public String getId() {
     return id;
@@ -48,7 +49,7 @@ public class WorkflowRevisionEntity {
     this.id = id;
   }
 
-  public long getVersion() {
+  public Integer getVersion() {
     return version;
   }
 
@@ -96,11 +97,19 @@ public class WorkflowRevisionEntity {
     this.config = config;
   }
 
-  public List<AbstractConfigurationProperty> getParams() {
+  public List<WorkflowParam> getParams() {
     return params;
   }
 
-  public void setParams(List<AbstractConfigurationProperty> params) {
+  public void setParams(List<WorkflowParam> params) {
     this.params = params;
+  }
+
+  public List<WorkflowWorkspace> getWorkspaces() {
+    return workspaces;
+  }
+
+  public void setWorkspaces(List<WorkflowWorkspace> workspaces) {
+    this.workspaces = workspaces;
   } 
 }

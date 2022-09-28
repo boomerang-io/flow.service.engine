@@ -26,13 +26,13 @@ import io.boomerang.data.model.DAG;
 import io.boomerang.data.model.RunStatus;
 import io.boomerang.data.model.TaskExecution;
 import io.boomerang.data.model.TaskTemplateRevision;
+import io.boomerang.data.repository.TaskRunRepository;
+import io.boomerang.data.repository.TaskTemplateRepository;
+import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.exceptions.InvalidWorkflowRuntimeException;
 import io.boomerang.model.AbstractKeyValue;
 import io.boomerang.model.TaskExecutionRequest;
 import io.boomerang.model.TaskType;
-import io.boomerang.repository.TaskRunRepository;
-import io.boomerang.repository.TaskTemplateRepository;
-import io.boomerang.repository.WorkflowRunRepository;
 import io.boomerang.util.GraphProcessor;
 
 @Service

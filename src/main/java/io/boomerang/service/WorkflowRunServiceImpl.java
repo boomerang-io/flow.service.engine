@@ -3,6 +3,7 @@ package io.boomerang.service;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.BeanUtils;
@@ -13,11 +14,12 @@ import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.model.RunStatus;
+import io.boomerang.data.repository.TaskRunRepository;
+import io.boomerang.data.repository.WorkflowRepository;
+import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.model.AbstractKeyValue;
 import io.boomerang.model.TaskExecutionResponse;
 import io.boomerang.model.WorkflowExecutionRequest;
-import io.boomerang.repository.TaskRunRepository;
-import io.boomerang.repository.WorkflowRunRepository;
 
 @Service
 public class WorkflowRunServiceImpl implements WorkflowRunService {
@@ -25,7 +27,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   private static final Logger LOGGER = LogManager.getLogger();
 
   @Autowired
-  private WorkflowService workflowService;
+  private WorkflowRepository workflowRepository;
 
   @Autowired
   private WorkflowRunRepository workflowRunRepository;
@@ -37,15 +39,18 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   public WorkflowRunEntity createRun(WorkflowRevisionEntity revision,
       WorkflowExecutionRequest request, List<AbstractKeyValue> labels) {
     
-    WorkflowEntity workflow = workflowService.getWorkflow(revision.getWorkflowId());
+    Optional<WorkflowEntity> workflow = workflowRepository.findById(revision.getWorkflowId());
 
+    if (!workflow.isPresent()) {
+//      throw new exception
+    }
     final WorkflowRunEntity workflowRun = new WorkflowRunEntity();
     workflowRun.setWorkflowRevisionid(revision.getId());
     workflowRun.setWorkflowId(revision.getWorkflowId());
     workflowRun.setCreationDate(new Date());
     workflowRun.setStatus(RunStatus.notstarted);
     List<AbstractKeyValue> allLabels = new LinkedList<>();
-    allLabels.addAll(workflow.getLabels());
+//    allLabels.addAll(workflow.get().getLabels());
     allLabels.addAll(labels);
     workflowRun.setLabels(allLabels);
     

@@ -1,12 +1,12 @@
 package io.boomerang.service;
 
-import io.boomerang.data.entity.WorkflowEntity;
+import io.boomerang.model.Workflow;
 
 public interface WorkflowService {
 
 //  void deleteWorkflow(String workFlowid);
 //
-  WorkflowEntity getWorkflow(String workflowId);
+  Workflow getWorkflow(String workflowId);
 //
 //  List<WorkflowSummary> getWorkflowsForTeam(String flowTeamId);
 //  
@@ -61,4 +61,6 @@ public interface WorkflowService {
 //
 //  ResponseEntity<WFETriggerResponse> getRevisionProperties(String workflowId, long workflowVersion, String taskId,
 //      String propertyKey);
+
+  Workflow addWorkflow(Workflow workflow);
 }

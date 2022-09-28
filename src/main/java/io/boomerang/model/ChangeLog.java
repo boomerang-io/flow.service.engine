@@ -9,6 +9,15 @@ public class ChangeLog {
   private Date date;
   private String userName;
 
+  public ChangeLog() {
+  }
+
+  public ChangeLog(String reason) {
+    super();
+    this.reason = reason;
+    this.date = new Date();
+  }
+
   public String getUserId() {
     return userId;
   }

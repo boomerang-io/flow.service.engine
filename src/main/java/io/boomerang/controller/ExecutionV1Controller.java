@@ -10,15 +10,24 @@ import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowExecutionRequest;
 import io.boomerang.service.WorkflowExecutionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/apis/v1/workflow/")
+@RequestMapping("/apis/v1/workflow/execute")
+@Tag(name = "Workflow Execution",
+description = "Execute your workflows and retrieve the Execution Run.")
 public class ExecutionV1Controller {
 
   @Autowired
   private WorkflowExecutionService executionService;
 
-  @PostMapping(value = "/execute/{workflowId}")
+  @PostMapping(value = "/{workflowId}")
+  @Operation(summary = "Execute a specific workflow")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
   public WorkflowRun executeWorkflow(@PathVariable String workflowId,
       @RequestBody Optional<WorkflowExecutionRequest> executionRequest) {
 

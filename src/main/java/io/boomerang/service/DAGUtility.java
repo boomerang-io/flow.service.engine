@@ -22,8 +22,8 @@ import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.model.RunStatus;
 import io.boomerang.data.model.TaskExecution;
+import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.model.TaskType;
-import io.boomerang.repository.TaskRunRepository;
 import io.boomerang.util.GraphProcessor;
 
 @Service

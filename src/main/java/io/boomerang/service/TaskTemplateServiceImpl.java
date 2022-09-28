@@ -3,7 +3,7 @@ package io.boomerang.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateEntity;
-import io.boomerang.repository.TaskTemplateRepository;
+import io.boomerang.data.repository.TaskTemplateRepository;
 
 @Service
 public class TaskTemplateServiceImpl implements TaskTemplateService {

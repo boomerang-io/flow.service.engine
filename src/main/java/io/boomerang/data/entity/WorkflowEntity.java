@@ -1,14 +1,13 @@
 package io.boomerang.data.entity;
 
-import java.util.List;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.data.model.WorkflowScope;
 import io.boomerang.data.model.WorkflowStatus;
-import io.boomerang.model.AbstractKeyValue;
+import io.boomerang.model.tekton.Annotations;
+import io.boomerang.model.tekton.Labels;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
@@ -25,13 +24,15 @@ public class WorkflowEntity {
 
   private String shortDescription;
 
-  private List<AbstractKeyValue> labels;
+  private Labels labels;
+  
+  private Annotations annotations;
 
   private WorkflowStatus status;
 
 //private List<WorkflowTrigger> triggers;
 
-  private WorkflowScope scope;
+//  private WorkflowScope scope;
 
   public String getId() {
     return id;
@@ -73,12 +74,20 @@ public class WorkflowEntity {
     this.shortDescription = shortDescription;
   }
 
-  public List<AbstractKeyValue> getLabels() {
+  public Labels getLabels() {
     return labels;
   }
 
-  public void setLabels(List<AbstractKeyValue> labels) {
+  public void setLabels(Labels labels) {
     this.labels = labels;
+  }
+
+  public Annotations getAnnotations() {
+    return annotations;
+  }
+
+  public void setAnnotations(Annotations annotations) {
+    this.annotations = annotations;
   }
 
   public WorkflowStatus getStatus() {
