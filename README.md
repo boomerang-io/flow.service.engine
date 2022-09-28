@@ -6,6 +6,12 @@ _based on Flow's Workflow Service and TektonCD_
 
 This project uses Gradle to compile
 
+### Local MongoDB w Docker
+
+```
+docker run --name local-mongo -d mongo:latest
+```
+
 ## Change Log
 
 The following attempts to list the changes from Workflow Service to Workflow Engine
