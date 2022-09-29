@@ -1,13 +1,13 @@
 package io.boomerang.data.entity;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.data.model.WorkflowStatus;
-import io.boomerang.model.tekton.Annotations;
-import io.boomerang.model.tekton.Labels;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
@@ -24,9 +24,13 @@ public class WorkflowEntity {
 
   private String shortDescription;
 
-  private Labels labels;
+//  private List<KeyValuePair> labels;
+//  private Labels labels;
+  private Map<String, String> labels = new HashMap<>();
   
-  private Annotations annotations;
+//  private List<KeyValuePair> annotations;
+//  private Annotations annotations;
+  private Map<String, Object> annotations = new HashMap<>();
 
   private WorkflowStatus status;
 
@@ -74,19 +78,19 @@ public class WorkflowEntity {
     this.shortDescription = shortDescription;
   }
 
-  public Labels getLabels() {
+  public Map<String, String> getLabels() {
     return labels;
   }
 
-  public void setLabels(Labels labels) {
+  public void setLabels(Map<String, String> labels) {
     this.labels = labels;
   }
 
-  public Annotations getAnnotations() {
+  public Map<String, Object> getAnnotations() {
     return annotations;
   }
 
-  public void setAnnotations(Annotations annotations) {
+  public void setAnnotations(Map<String, Object> annotations) {
     this.annotations = annotations;
   }
 

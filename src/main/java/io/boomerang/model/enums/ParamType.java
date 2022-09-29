@@ -1,4 +1,4 @@
-package io.boomerang.model;
+package io.boomerang.model.enums;
 
 public enum ParamType {
   string, array

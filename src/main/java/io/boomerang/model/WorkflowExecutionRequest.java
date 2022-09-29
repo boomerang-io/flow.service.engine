@@ -1,33 +1,35 @@
 package io.boomerang.model;
 
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 public class WorkflowExecutionRequest {
 
-  private String workflowId;
+  private String workflowRef;
 
-  private List<AbstractKeyValue> labels;
+  private Map<String, String> labels = new HashMap<>();
   
   boolean applyQuotas;
   
-  private Map<String, String> inputs;
+  private List<WorkflowRunParam> params = new LinkedList<>();
   
   private Map<String, String> resources;
 
-  public String getWorkflowId() {
-    return workflowId;
+  public String getWorkflowRef() {
+    return workflowRef;
   }
 
-  public void setWorkflowId(String workflowId) {
-    this.workflowId = workflowId;
+  public void setWorkflowRef(String workflowRef) {
+    this.workflowRef = workflowRef;
   }
 
-  public List<AbstractKeyValue> getLabels() {
+  public Map<String, String> getLabels() {
     return labels;
   }
 
-  public void setLabels(List<AbstractKeyValue> labels) {
+  public void setLabels(Map<String, String> labels) {
     this.labels = labels;
   }
 
@@ -39,12 +41,12 @@ public class WorkflowExecutionRequest {
     this.applyQuotas = applyQuotas;
   }
 
-  public Map<String, String> getInputs() {
-    return inputs;
+  public List<WorkflowRunParam> getParams() {
+    return params;
   }
 
-  public void setInputs(Map<String, String> inputs) {
-    this.inputs = inputs;
+  public void setParams(List<WorkflowRunParam> params) {
+    this.params = params;
   }
 
   public Map<String, String> getResources() {

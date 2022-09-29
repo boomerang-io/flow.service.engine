@@ -3,6 +3,7 @@ package io.boomerang.service;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,13 +14,12 @@ import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.data.model.RunStatus;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
-import io.boomerang.model.AbstractKeyValue;
 import io.boomerang.model.TaskExecutionResponse;
 import io.boomerang.model.WorkflowExecutionRequest;
+import io.boomerang.model.enums.RunStatus;
 
 @Service
 public class WorkflowRunServiceImpl implements WorkflowRunService {
@@ -37,22 +37,21 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
   @Override
   public WorkflowRunEntity createRun(WorkflowRevisionEntity revision,
-      WorkflowExecutionRequest request, List<AbstractKeyValue> labels) {
+      WorkflowExecutionRequest request, Map<String, String> labels) {
     
-    Optional<WorkflowEntity> workflow = workflowRepository.findById(revision.getWorkflowId());
+    Optional<WorkflowEntity> workflow = workflowRepository.findById(revision.getWorkflowRef());
 
     if (!workflow.isPresent()) {
 //      throw new exception
     }
     final WorkflowRunEntity workflowRun = new WorkflowRunEntity();
-    workflowRun.setWorkflowRevisionid(revision.getId());
-    workflowRun.setWorkflowId(revision.getWorkflowId());
+    workflowRun.setWorkflowRevisionRef(revision.getId());
+    workflowRun.setWorkflowRef(revision.getWorkflowRef());
     workflowRun.setCreationDate(new Date());
     workflowRun.setStatus(RunStatus.notstarted);
-    List<AbstractKeyValue> allLabels = new LinkedList<>();
-//    allLabels.addAll(workflow.get().getLabels());
-    allLabels.addAll(labels);
-    workflowRun.setLabels(allLabels);
+    workflowRun.putLabels(workflow.get().getLabels());
+    workflowRun.putLabels(request.getLabels());
+    workflowRun.setParams(request.getParams());
     
     //TODO: add trigger and set initiatedBy
 //    workflowRun.setTrigger(null);
@@ -63,13 +62,6 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     
     //TODO: add resources
 //    workflowRun.setResources(null);
-
-    //TODO: Map inputs to run
-    // - need Parameter mapper to do the conversion from Map to KeyValue
-//    if (request.getProperties() != null) {
-//      List<KeyValuePair> propertyList = ParameterMapper.mapToKeyValuePairList(request.getProperties());
-//      activity.setProperties(propertyList);
-//    }
     
     return workflowRunRepository.save(workflowRun);
   }

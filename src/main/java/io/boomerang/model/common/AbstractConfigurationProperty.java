@@ -1,4 +1,4 @@
-package io.boomerang.model;
+package io.boomerang.model.common;
 
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -27,7 +27,7 @@ public abstract class AbstractConfigurationProperty {
   private Integer maxValueLength;
 
   @JsonProperty("options")
-  private List<AbstractKeyValue> options;
+  private List<KeyValuePair> options;
 
   private Boolean required;
   private String placeholder;
@@ -112,11 +112,11 @@ public abstract class AbstractConfigurationProperty {
     this.maxValueLength = maxValueLength;
   }
 
-  public List<AbstractKeyValue> getOptions() {
+  public List<KeyValuePair> getOptions() {
     return options;
   }
 
-  public void setOptions(List<AbstractKeyValue> options) {
+  public void setOptions(List<KeyValuePair> options) {
     this.options = options;
   }
 

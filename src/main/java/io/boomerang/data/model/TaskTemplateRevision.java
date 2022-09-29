@@ -22,6 +22,7 @@ public class TaskTemplateRevision {
   private Integer version;
 
   private String workingDir;
+  
   public List<String> getArguments() {
     return arguments;
   }

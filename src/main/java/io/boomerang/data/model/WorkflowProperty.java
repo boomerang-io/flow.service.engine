@@ -1,6 +1,6 @@
 package io.boomerang.data.model;
 
-import io.boomerang.model.AbstractConfigurationProperty;
+import io.boomerang.model.common.AbstractConfigurationProperty;
 
 public class WorkflowProperty extends AbstractConfigurationProperty {
   

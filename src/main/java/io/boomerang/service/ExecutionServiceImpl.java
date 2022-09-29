@@ -1,11 +1,8 @@
 package io.boomerang.service;
 
-import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -14,25 +11,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import io.boomerang.data.dag.DAGTask;
 import io.boomerang.data.entity.TaskRunEntity;
-import io.boomerang.data.entity.TaskTemplateEntity;
+import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.data.model.DAG;
-import io.boomerang.data.model.RunStatus;
 import io.boomerang.data.model.TaskExecution;
-import io.boomerang.data.model.TaskTemplateRevision;
 import io.boomerang.data.repository.TaskRunRepository;
-import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.exceptions.InvalidWorkflowRuntimeException;
-import io.boomerang.model.AbstractKeyValue;
 import io.boomerang.model.TaskExecutionRequest;
-import io.boomerang.model.TaskType;
+import io.boomerang.model.enums.RunStatus;
+import io.boomerang.model.enums.TaskType;
 import io.boomerang.util.GraphProcessor;
 
 @Service
@@ -46,122 +37,64 @@ public class ExecutionServiceImpl implements ExecutionService {
   private TaskRunRepository taskRunRepository;
 
   @Autowired
-  private TaskTemplateRepository taskTemplateRepository;
-
-  @Autowired
   private DAGUtility dagUtility;
+  
+  @Autowired
+  private TaskService taskService;
+  
+  @Autowired
+  private TaskClient taskClient;
 
 //  @Autowired
 //  private WorkflowService workflowService;
 
   @Override
-  public CompletableFuture<Boolean> executeWorkflowVersion(WorkflowRevisionEntity revision,
+  public CompletableFuture<Boolean> executeWorkflowVersion(WorkflowEntity workflow, WorkflowRevisionEntity wfRevisionEntity,
       WorkflowRunEntity wfRunEntity) {
-    final List<TaskExecution> tasks = createTaskList(revision);
+    final List<TaskExecution> tasks = dagUtility.createTaskList(workflow.getName(), wfRevisionEntity, wfRunEntity);
     final TaskExecution start = getTaskByType(tasks, TaskType.start);
     final TaskExecution end = getTaskByType(tasks, TaskType.end);
     final Graph<String, DefaultEdge> graph = dagUtility.createGraph(tasks);
     if (dagUtility.validateWorkflow(wfRunEntity, tasks)) {
+      LOGGER.info("workflow is valid");
       createTaskPlan(tasks, wfRunEntity.getId(), start, end, graph);
       return CompletableFuture
           .supplyAsync(executeWorkflowAsync(wfRunEntity.getId(), start, end, graph, tasks));
     }
+    LOGGER.info("workflow is NOT valid");
     wfRunEntity.setStatus(RunStatus.invalid);
     wfRunEntity.setStatusMessage("Failed to run workflow: Incomplete workflow");
     workflowRunRepository.save(wfRunEntity);
     throw new InvalidWorkflowRuntimeException();
   }
 
-  private List<TaskExecution> createTaskList(WorkflowRevisionEntity revisionEntity) {
-    final DAG dag = revisionEntity.getDag();
-
-    final List<TaskExecution> taskList = new LinkedList<>();
-    for (final DAGTask dagTask : dag.getTasks()) {
-
-      final TaskExecution instanceTask = new TaskExecution();
-      // Takes care of duplicating a number of the matching attributes
-      BeanUtils.copyProperties(dagTask, instanceTask);
-      instanceTask.setId(dagTask.getTaskId());
-      instanceTask.setType(dagTask.getTaskType());
-      instanceTask.setName(dagTask.getTaskName());
-      instanceTask.setWorkflowId(revisionEntity.getWorkflowId());
-
-      if (TaskType.script.equals(dagTask.getTaskType())
-          || TaskType.template.equals(dagTask.getTaskType())
-          || TaskType.customtask.equals(dagTask.getTaskType())) {
-
-        Integer templateVersion = dagTask.getTemplateVersion();
-        String templateId = dagTask.getTemplateId();
-        Optional<TaskTemplateEntity> taskTemplate = taskTemplateRepository.findById(templateId);
-        if (taskTemplate.isPresent() && taskTemplate.get().getRevisions() != null) {
-          List<TaskTemplateRevision> revisions = taskTemplate.get().getRevisions();
-          Optional<TaskTemplateRevision> result = revisions.stream().parallel()
-              .filter(revision -> revision.getVersion().equals(templateVersion)).findAny();
-          if (result.isPresent()) {
-            TaskTemplateRevision revision = result.get();
-            instanceTask.setRevision(revision);
-            instanceTask.setResults(revision.getResults());
-          } else {
-            Optional<TaskTemplateRevision> latestRevision = revisions.stream()
-                .sorted(Comparator.comparingInt(TaskTemplateRevision::getVersion).reversed())
-                .findFirst();
-            if (latestRevision.isPresent()) {
-              instanceTask.setRevision(latestRevision.get());
-              instanceTask.setResults(instanceTask.getRevision().getResults());
-            }
-          }
-        } else {
-          // TODO: throw more accurate exception
-          throw new IllegalArgumentException("Invalid task template selected: " + templateId);
-        }
-
-        Map<String, String> inputs = new HashMap<>();
-        if (dagTask.getParams() != null) {
-          for (AbstractKeyValue param : dagTask.getParams()) {
-            inputs.put(param.getKey(), param.getValue());
-          }
-        }
-        instanceTask.setInputs(inputs);
-
-        if (instanceTask.getResults() == null) {
-          instanceTask.setResults(dagTask.getResults());
-        }
-      } else if (TaskType.decision.equals(dagTask.getTaskType())) {
-        instanceTask.setDecisionValue(dagTask.getDecisionValue());
-      }
-
-      taskList.add(instanceTask);
-    }
-    return taskList;
-  }
-
   private void createTaskPlan(List<TaskExecution> tasks, String wfRunId, final TaskExecution start,
       final TaskExecution end, final Graph<String, DefaultEdge> graph) {
     final List<String> nodes =
         GraphProcessor.createOrderedTaskList(graph, start.getId(), end.getId());
-    final List<TaskExecution> tasksToRun = new LinkedList<>();
+    final List<TaskExecution> tasksToExecute = new LinkedList<>();
     for (final String node : nodes) {
       final TaskExecution taskToAdd =
           tasks.stream().filter(tsk -> node.equals(tsk.getId())).findAny().orElse(null);
-      tasksToRun.add(taskToAdd);
+      tasksToExecute.add(taskToAdd);
     }
 
     long order = 1;
-    for (final TaskExecution task : tasksToRun) {
+    for (final TaskExecution executionTask : tasksToExecute) {
       TaskRunEntity taskRunEntity = new TaskRunEntity();
       taskRunEntity.setWorkflowRunId(wfRunId);
-      taskRunEntity.setTaskId(task.getId());
+      taskRunEntity.setTaskId(executionTask.getId());
       taskRunEntity.setStatus(RunStatus.notstarted);
       taskRunEntity.setOrder(order);
-      taskRunEntity.setTaskName(task.getName());
-      taskRunEntity.setTaskType(task.getType());
-      if (task.getTemplateId() != null) {
-        taskRunEntity.setTaskTemplateId(task.getTemplateId());
-        taskRunEntity.setTaskTemplateVersion(task.getTemplateVersion());
+      taskRunEntity.setTaskName(executionTask.getName());
+      taskRunEntity.setTaskType(executionTask.getType());
+      if (executionTask.getTemplateRef() != null) {
+        taskRunEntity.setTaskTemplateId(executionTask.getTemplateRef());
+        taskRunEntity.setTaskTemplateVersion(executionTask.getTemplateVersion());
       }
 
       taskRunEntity = this.taskRunRepository.save(taskRunEntity);
-      task.setRunId(taskRunEntity.getId());
+      executionTask.setRunRef(taskRunEntity.getId());
       order++;
     }
   }
@@ -194,7 +127,7 @@ public class ExecutionServiceImpl implements ExecutionService {
           // TODO: Initial Workflow Creation Steps in Controller or Other
           // controllerClient.createFlow(workflowId, workflowName, activityId, enablePVC, labels,
           // executionProperties);
-        LOGGER.debug("executeWorkflowAsync() - Creating Workflow...");
+        LOGGER.debug("executeWorkflowAsync() - Creating Workflow (" + wfRunEntity.getWorkflowRef() + ")...");
 
           try {
             List<TaskExecution> nextNodes = this.getTasksDependants(tasksToRun, start);
@@ -204,11 +137,10 @@ public class ExecutionServiceImpl implements ExecutionService {
 
               if (nodes.contains(next.getId())) {
                 TaskExecutionRequest taskRequest = new TaskExecutionRequest();
-                taskRequest.setTaskRunId(next.getRunId());
+                taskRequest.setTaskRunId(next.getRunRef());
                 taskRequest.setWorkflowRunId(wfRunId);
-//                TODO: why can't we call taskService.createTask() directly? is it some Async magic
-//                taskClient.startTask(taskService, taskRequest);
-                LOGGER.debug("executeWorkflowAsync() - Creating Task...");
+                taskClient.startTask(taskService, next);
+                LOGGER.debug("executeWorkflowAsync() - Creating TaskRun (" + next.getRunRef() + ")...");
               }
             }
           } catch (Exception e) {
@@ -224,7 +156,7 @@ public class ExecutionServiceImpl implements ExecutionService {
   private List<TaskExecution> getTasksDependants(List<TaskExecution> tasks,
       TaskExecution currentTask) {
     return tasks.stream().filter(t -> t.getDependencies().stream()
-        .anyMatch(d -> d.getTaskId().equals(currentTask.getId())))
+        .anyMatch(d -> d.getTaskRef().equals(currentTask.getId())))
         .collect(Collectors.toList());
   }
 

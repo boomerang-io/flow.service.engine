@@ -1,9 +1,11 @@
 package io.boomerang.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 
-@Component
+@Configuration
 public class MongoConfiguration {
 
   @Value("${mongo.collection.prefix}")
@@ -22,4 +24,9 @@ public class MongoConfiguration {
   public String collectionPrefix() {
     return this.mongoCollectionPrefix;
   }
+  
+  @Autowired
+  public void setMapKeyDotReplacement(MappingMongoConverter mongoConverter) {
+    mongoConverter.setMapKeyDotReplacement("#");
+}
 }

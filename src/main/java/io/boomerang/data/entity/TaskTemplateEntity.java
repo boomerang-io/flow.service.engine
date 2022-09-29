@@ -9,8 +9,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.data.model.TaskTemplateRevision;
 import io.boomerang.data.model.TaskTemplateStatus;
-import io.boomerang.model.TaskTemplateScope;
-import io.boomerang.model.TaskType;
+import io.boomerang.model.enums.TaskTemplateScope;
+import io.boomerang.model.enums.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)

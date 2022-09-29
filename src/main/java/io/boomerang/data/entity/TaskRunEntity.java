@@ -7,9 +7,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.data.model.RunStatus;
-import io.boomerang.model.AbstractKeyValue;
-import io.boomerang.model.TaskType;
+import io.boomerang.model.common.KeyValuePair;
+import io.boomerang.model.enums.RunStatus;
+import io.boomerang.model.enums.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
@@ -29,22 +29,24 @@ public class TaskRunEntity   {
   
   private Date creationDate;
 
-  private List<AbstractKeyValue> labels;
+  private List<KeyValuePair> labels;
 
-  private Long duration;
+  private long duration;
 
   private RunStatus status;
 
   private String statusMessage;
   
   private boolean preApproved;
-  private String switchValue;
+  private String decisionValue;
   
 //  private ErrorResponse error;
 
   private String nodeId;
 
   private long order;
+  
+  private Date startTime;
 
   private String taskTemplateId;
 
@@ -52,9 +54,9 @@ public class TaskRunEntity   {
 
   private String workflowRunId;
 
-  private List<AbstractKeyValue> inputs;
+  private List<KeyValuePair> inputs;
 
-  private List<AbstractKeyValue> results;
+  private List<KeyValuePair> results;
 
   public String getId() {
     return id;
@@ -88,19 +90,19 @@ public class TaskRunEntity   {
     this.creationDate = creationDate;
   }
 
-  public List<AbstractKeyValue> getLabels() {
+  public List<KeyValuePair> getLabels() {
     return labels;
   }
 
-  public void setLabels(List<AbstractKeyValue> labels) {
+  public void setLabels(List<KeyValuePair> labels) {
     this.labels = labels;
   }
 
-  public Long getDuration() {
+  public long getDuration() {
     return duration;
   }
 
-  public void setDuration(Long duration) {
+  public void setDuration(long duration) {
     this.duration = duration;
   }
 
@@ -136,28 +138,28 @@ public class TaskRunEntity   {
     this.workflowRunId = workflowRunId;
   }
 
-  public List<AbstractKeyValue> getInputs() {
+  public List<KeyValuePair> getInputs() {
     return inputs;
   }
 
-  public void setInputs(List<AbstractKeyValue> inputs) {
+  public void setInputs(List<KeyValuePair> inputs) {
     this.inputs = inputs;
   }
 
-  public List<AbstractKeyValue> getResults() {
+  public List<KeyValuePair> getResults() {
     return results;
   }
 
-  public void setResults(List<AbstractKeyValue> results) {
+  public void setResults(List<KeyValuePair> results) {
     this.results = results;
   }
 
-  public String getSwitchValue() {
-    return switchValue;
+  public String getDecisionValue() {
+    return decisionValue;
   }
 
-  public void setSwitchValue(String switchValue) {
-    this.switchValue = switchValue;
+  public void setDecisionValue(String decisionValue) {
+    this.decisionValue = decisionValue;
   }
 
   public boolean isPreApproved() {
@@ -182,6 +184,14 @@ public class TaskRunEntity   {
 
   public void setOrder(long order) {
     this.order = order;
+  }
+
+  public Date getStartTime() {
+    return startTime;
+  }
+
+  public void setStartTime(Date startTime) {
+    this.startTime = startTime;
   }
 
   public String getNodeId() {

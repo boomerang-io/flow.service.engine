@@ -2,8 +2,9 @@ package io.boomerang.data.model;
 
 import java.util.List;
 import java.util.Map;
-import io.boomerang.data.dag.Dependency;
-import io.boomerang.model.TaskType;
+import io.boomerang.model.TaskDependency;
+import io.boomerang.model.enums.RunStatus;
+import io.boomerang.model.enums.TaskType;
 
 public class TaskExecution {
   
@@ -11,18 +12,29 @@ public class TaskExecution {
   private TaskType type;
   private String name;
   private RunStatus status;
-  private String templateId;
+  private String templateRef;
   private String templateVersion;
-  private String runId;
-  private List<Dependency> dependencies;
-  private Map<String, String> inputs;
-  private String workflowId;
+  private String runRef;
+  private List<TaskDependency> dependencies;
+  private Map<String, Object> params;
+  private String workflowRef;
   private String workflowName;
+  private String workflowRunRef;
   private boolean enableLifecycle;
   private String decisionValue;
   private TaskTemplateRevision revision;
   private List<TaskTemplateResult> results;
   
+  @Override
+  public String toString() {
+    return "TaskExecution [id=" + id + ", type=" + type + ", name=" + name + ", status=" + status
+        + ", templateRef=" + templateRef + ", templateVersion=" + templateVersion + ", runRef="
+        + runRef + ", dependencies=" + dependencies + ", params=" + params + ", workflowRef="
+        + workflowRef + ", workflowName=" + workflowName + ", workflowRunRef="
+            + workflowRunRef + ", enableLifecycle=" + enableLifecycle
+        + ", decisionValue=" + decisionValue + ", revision=" + revision + ", results=" + results
+        + "]";
+  }
   public String getId() {
     return id;
   }
@@ -41,11 +53,17 @@ public class TaskExecution {
   public void setName(String name) {
     this.name = name;
   }
-  public String getTemplateId() {
-    return templateId;
+  public RunStatus getStatus() {
+    return status;
   }
-  public void setTemplateId(String templateId) {
-    this.templateId = templateId;
+  public void setStatus(RunStatus status) {
+    this.status = status;
+  }
+  public String getTemplateRef() {
+    return templateRef;
+  }
+  public void setTemplateRef(String templateRef) {
+    this.templateRef = templateRef;
   }
   public String getTemplateVersion() {
     return templateVersion;
@@ -53,23 +71,29 @@ public class TaskExecution {
   public void setTemplateVersion(String templateVersion) {
     this.templateVersion = templateVersion;
   }
-  public List<Dependency> getDependencies() {
+  public String getRunRef() {
+    return runRef;
+  }
+  public void setRunRef(String runRef) {
+    this.runRef = runRef;
+  }
+  public List<TaskDependency> getDependencies() {
     return dependencies;
   }
-  public void setDependencies(List<Dependency> dependencies) {
+  public void setDependencies(List<TaskDependency> dependencies) {
     this.dependencies = dependencies;
   }
-  public Map<String, String> getInputs() {
-    return inputs;
+  public Map<String, Object> getParams() {
+    return params;
   }
-  public void setInputs(Map<String, String> inputs) {
-    this.inputs = inputs;
+  public void setParams(Map<String, Object> params) {
+    this.params = params;
   }
-  public String getWorkflowId() {
-    return workflowId;
+  public String getWorkflowRef() {
+    return workflowRef;
   }
-  public void setWorkflowId(String workflowId) {
-    this.workflowId = workflowId;
+  public void setWorkflowRef(String workflowRef) {
+    this.workflowRef = workflowRef;
   }
   public String getWorkflowName() {
     return workflowName;
@@ -101,16 +125,10 @@ public class TaskExecution {
   public void setResults(List<TaskTemplateResult> results) {
     this.results = results;
   }
-  public String getRunId() {
-    return runId;
+  public String getWorkflowRunRef() {
+    return workflowRunRef;
   }
-  public void setRunId(String runId) {
-    this.runId = runId;
-  }
-  public RunStatus getStatus() {
-    return status;
-  }
-  public void setStatus(RunStatus status) {
-    this.status = status;
+  public void setWorkflowRunRef(String workflowRunRef) {
+    this.workflowRunRef = workflowRunRef;
   }
 }

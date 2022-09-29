@@ -11,6 +11,7 @@ import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.exceptions.InvalidWorkflowRuntimeException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.Workflow;
+import io.boomerang.util.TaskMapper;
 
 /*
  * Service implements the CRUD ops on a Workflow
@@ -29,7 +30,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     Workflow workflow = new Workflow();
     final Optional<WorkflowEntity> OptWfEntity = workflowRepository.findById(workflowId);
-    final Optional<WorkflowRevisionEntity> OptWfRevisionEntity = workflowRevisionRepository.findWorkflowByIdAndLatestVersion(workflowId);
+    final Optional<WorkflowRevisionEntity> OptWfRevisionEntity = workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflowId);
 
     if (!OptWfEntity.isPresent() || !OptWfRevisionEntity.isPresent()) {
       // TODO: throw a specific exception
@@ -49,7 +50,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     workflow.setMarkdown(wfRevisionEntity.getMarkdown());
     workflow.setParams(wfRevisionEntity.getParams());
     workflow.setWorkspaces(wfRevisionEntity.getWorkspaces());
-    // TODO: save tasks
+    workflow.setTasks(TaskMapper.revisionTasksToListOfTasks(wfRevisionEntity.getTasks()));
 
     // TODO: filter sensitive inputs/results
     // TODO: handle not found with Exception.
@@ -74,22 +75,22 @@ public class WorkflowServiceImpl implements WorkflowService {
     wfEntity.setIcon(workflow.getIcon());
     wfEntity.setShortDescription(workflow.getShortDescription());
     wfEntity.setDescription(workflow.getDescription());
+//    wfEntity.setLabels(ParameterMapper.labelsToKeyValuePairList(workflow.getLabels()));
     wfEntity.setLabels(workflow.getLabels());
+//    wfEntity.setAnnotations(ParameterMapper.annotationsToKeyValuePairList(workflow.getAnnotations()));
     wfEntity.setAnnotations(workflow.getAnnotations());
     wfEntity.setStatus(WorkflowStatus.active);
-
     wfEntity = workflowRepository.save(wfEntity);
     workflow.setId(wfEntity.getId());
 
     WorkflowRevisionEntity wfRevisionEntity = new WorkflowRevisionEntity();
-    wfRevisionEntity.setWorkflowId(wfEntity.getId());
+    wfRevisionEntity.setWorkflowRef(wfEntity.getId());
     wfRevisionEntity.setVersion(1);
     wfRevisionEntity.setChangelog(new ChangeLog("Initial workflow"));
     wfRevisionEntity.setMarkdown(workflow.getMarkdown());
     wfRevisionEntity.setParams(workflow.getParams());
     wfRevisionEntity.setWorkspaces(workflow.getWorkspaces());
-    // TODO: save tasks
-
+    wfRevisionEntity.setTasks(TaskMapper.tasksToListOfRevisionTasks(workflow.getTasks()));
     workflowRevisionRepository.save(wfRevisionEntity);
 
     return workflow;

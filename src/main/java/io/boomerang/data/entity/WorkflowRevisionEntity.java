@@ -1,12 +1,13 @@
 package io.boomerang.data.entity;
 
+import java.util.LinkedList;
 import java.util.List;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.data.model.DAG;
+import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.WorkflowParam;
 import io.boomerang.model.WorkflowWorkspace;
@@ -26,9 +27,9 @@ public class WorkflowRevisionEntity {
 
   private Integer version;
 
-  private String workflowId;
+  private String workflowRef;
 
-  private DAG dag;
+  private List<WorkflowRevisionTask> tasks = new LinkedList<>();
 
   private ChangeLog changelog;
 
@@ -57,20 +58,20 @@ public class WorkflowRevisionEntity {
     this.version = version;
   }
 
-  public String getWorkflowId() {
-    return workflowId;
+  public String getWorkflowRef() {
+    return workflowRef;
   }
 
-  public void setWorkflowId(String workflowId) {
-    this.workflowId = workflowId;
+  public void setWorkflowRef(String workflowId) {
+    this.workflowRef = workflowId;
   }
 
-  public DAG getDag() {
-    return dag;
+  public List<WorkflowRevisionTask> getTasks() {
+    return tasks;
   }
 
-  public void setDag(DAG dag) {
-    this.dag = dag;
+  public void setTasks(List<WorkflowRevisionTask> tasks) {
+    this.tasks = tasks;
   }
 
   public ChangeLog getChangelog() {

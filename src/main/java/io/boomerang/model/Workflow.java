@@ -1,10 +1,10 @@
 package io.boomerang.model;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.boomerang.model.tekton.Annotations;
-import io.boomerang.model.tekton.Labels;
 
 /*
  * Workflow Model joining Workflow Entity and Workflow Revision Entity
@@ -26,9 +26,11 @@ public class Workflow {
   
   private String markdown;
 
-  private Labels labels;
+//  private Labels labels;
+  private Map<String, String> labels = new HashMap<>();
   
-  private Annotations annotations;
+//  private Annotations annotations;
+  private Map<String, Object> annotations = new HashMap<>();
   
   private List<Task> tasks = new LinkedList<>();
 
@@ -84,19 +86,19 @@ public class Workflow {
     this.markdown = markdown;
   }
 
-  public Labels getLabels() {
+  public Map<String, String> getLabels() {
     return labels;
   }
 
-  public void setLabels(Labels labels) {
+  public void setLabels(Map<String, String> labels) {
     this.labels = labels;
   }
 
-  public Annotations getAnnotations() {
+  public Map<String, Object> getAnnotations() {
     return annotations;
   }
 
-  public void setAnnotations(Annotations annotations) {
+  public void setAnnotations(Map<String, Object> annotations) {
     this.annotations = annotations;
   }
 

@@ -7,15 +7,15 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 
 public class Labels {
 
-  private Map<String, String> unknownFields = new HashMap<>();
+  private Map<String, String> otherFields = new HashMap<>();
 
   @JsonAnyGetter
   public Map<String, String> otherFields() {
-    return unknownFields;
+    return otherFields;
   }
 
   @JsonAnySetter
   public void setOtherField(String name, String value) {
-    unknownFields.put(name, value);
+    otherFields.put(name, value);
   }
 }

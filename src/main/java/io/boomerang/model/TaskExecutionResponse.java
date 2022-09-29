@@ -2,7 +2,8 @@ package io.boomerang.model;
 
 import java.util.Date;
 import org.springframework.data.annotation.Id;
-import io.boomerang.data.model.RunStatus;
+import io.boomerang.model.enums.RunStatus;
+import io.boomerang.model.enums.TaskType;
 
 public class TaskExecutionResponse {
 

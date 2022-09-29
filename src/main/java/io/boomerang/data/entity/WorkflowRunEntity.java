@@ -1,14 +1,18 @@
 package io.boomerang.data.entity;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.data.model.RunStatus;
-import io.boomerang.model.AbstractKeyValue;
+import io.boomerang.model.WorkflowRunParam;
+import io.boomerang.model.common.KeyValuePair;
+import io.boomerang.model.enums.RunStatus;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
@@ -18,38 +22,44 @@ public class WorkflowRunEntity   {
   @Id
   private String id;
 
-  private String initiatedById;
+  private String initiatedByRef;
   
   private Date creationDate;
 
-  private List<AbstractKeyValue> labels;
+  private Map<String, String> labels = new HashMap<>();
 
-  private Long duration;
+  private long duration;
 
   private RunStatus status;
+
+  private RunStatus statusOverride;
 
   private String statusMessage;
   
 //  private ErrorResponse error;
 
-  private String workflowId;
+  private String workflowRef;
 
-  private String workflowRevisionId;
+  private String workflowRevisionRef;
 
   private String trigger;
+  
+  private List<WorkflowRunParam> params = new LinkedList<>();
 
-  private List<AbstractKeyValue> inputs;
-
-  private List<AbstractKeyValue> results;
+  private List<KeyValuePair> results;
   
 //private List<Resources> resources;
 
-  public List<AbstractKeyValue> getLabels() {
+  public Map<String, String> getLabels() {
     return labels;
   }
 
-  public void setLabels(List<AbstractKeyValue> labels) {
+  public void setLabels(Map<String, String> labels) {
     this.labels = labels;
+  }
+
+  public void putLabels(Map<String, String> labels) {
+    this.labels.putAll(labels);
   }
 
   public Date getCreationDate() {
@@ -60,11 +70,11 @@ public class WorkflowRunEntity   {
     this.creationDate = creationDate;
   }
 
-  public Long getDuration() {
+  public long getDuration() {
     return duration;
   }
 
-  public void setDuration(Long duration) {
+  public void setDuration(long duration) {
     this.duration = duration;
   }
 
@@ -76,12 +86,12 @@ public class WorkflowRunEntity   {
     this.id = id;
   }
 
-  public String getInitiatedById() {
-    return initiatedById;
+  public String getInitiatedByRef() {
+    return initiatedByRef;
   }
 
-  public void setInitiatedById(String initiatedById) {
-    this.initiatedById = initiatedById;
+  public void setInitiatedByRef(String initiatedByRef) {
+    this.initiatedByRef = initiatedByRef;
   }
 
   public RunStatus getStatus() {
@@ -92,6 +102,14 @@ public class WorkflowRunEntity   {
     this.status = status;
   }
 
+  public RunStatus getStatusOverride() {
+    return statusOverride;
+  }
+
+  public void setStatusOverride(RunStatus statusOverride) {
+    this.statusOverride = statusOverride;
+  }
+
   public String getStatusMessage() {
     return statusMessage;
   }
@@ -100,20 +118,20 @@ public class WorkflowRunEntity   {
     this.statusMessage = statusMessage;
   }
 
-  public String getWorkflowId() {
-    return workflowId;
+  public String getWorkflowRef() {
+    return workflowRef;
   }
 
-  public void setWorkflowId(String workflowId) {
-    this.workflowId = workflowId;
+  public void setWorkflowRef(String workflowRef) {
+    this.workflowRef = workflowRef;
   }
 
-  public String getWorkflowRevisionId() {
-    return workflowRevisionId;
+  public String getWorkflowRevisionRef() {
+    return workflowRevisionRef;
   }
 
-  public void setWorkflowRevisionid(String workflowRevisionId) {
-    this.workflowRevisionId = workflowRevisionId;
+  public void setWorkflowRevisionRef(String workflowRevisionRef) {
+    this.workflowRevisionRef = workflowRevisionRef;
   }
 
   public String getTrigger() {
@@ -124,19 +142,19 @@ public class WorkflowRunEntity   {
     this.trigger = trigger;
   }
 
-  public List<AbstractKeyValue> getInputs() {
-    return inputs;
+  public List<WorkflowRunParam> getParams() {
+    return params;
   }
 
-  public void setInputs(List<AbstractKeyValue> inputs) {
-    this.inputs = inputs;
+  public void setParams(List<WorkflowRunParam> params) {
+    this.params = params;
   }
 
-  public List<AbstractKeyValue> getResults() {
+  public List<KeyValuePair> getResults() {
     return results;
   }
 
-  public void setResults(List<AbstractKeyValue> results) {
+  public void setResults(List<KeyValuePair> results) {
     this.results = results;
   }
   

@@ -65,12 +65,12 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
     //TODO: move revision into createRun and only pass parts of the executionRequest through to createRun
     final Optional<WorkflowRevisionEntity> workflowRevisionEntity =
-        this.workflowRevisonRepository.findWorkflowByIdAndLatestVersion(workflowId);
+        this.workflowRevisonRepository.findByWorkflowRefAndLatestVersion(workflowId);
     if (workflowRevisionEntity.isPresent()) {
       final WorkflowRunEntity wfRunEntity = workflowRunService.createRun(workflowRevisionEntity.get(),
           request, request.getLabels());
       
-      executionService.executeWorkflowVersion(workflowRevisionEntity.get(), wfRunEntity);
+      executionService.executeWorkflowVersion(workflow.get(), workflowRevisionEntity.get(), wfRunEntity);
 
       final List<TaskExecutionResponse> taskRuns = workflowRunService.getTaskExecutions(wfRunEntity.getId());
       final WorkflowRun response = new WorkflowRun(wfRunEntity);

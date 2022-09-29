@@ -5,7 +5,7 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.boomerang.model.ParamType;
+import io.boomerang.model.enums.ParamType;
 
 public class Param {
   

@@ -9,8 +9,4 @@ public interface TaskRunRepository
     extends MongoRepository<TaskRunEntity, String> {
 
   List<TaskRunEntity> findByWorkflowRunId(String workflowRunId);
-
-  TaskRunEntity findByWorkflowRunIdAndTaskId(String workflowRunId, String taskId);
-
-  TaskRunEntity findByWorkflowRunIdAndTaskName(String workflowRunId, String taskName);
 }

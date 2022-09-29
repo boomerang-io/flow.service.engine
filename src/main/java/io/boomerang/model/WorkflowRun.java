@@ -2,8 +2,10 @@ package io.boomerang.model;
 
 import java.util.List;
 import org.springframework.beans.BeanUtils;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.boomerang.data.entity.WorkflowRunEntity;
 
+@JsonPropertyOrder({"id", "creationDate", "status", "duration", "workflowName", "workflowRef", "workflowRevisionRef", "labels", "params", "tasks" })
 public class WorkflowRun extends WorkflowRunEntity {
 
   private String description;
@@ -12,14 +14,13 @@ public class WorkflowRun extends WorkflowRunEntity {
 
   private List<TaskExecutionResponse> tasks;
   
-  private long workflowRevisionName;
-  
   public WorkflowRun() {
     
   }
 
   public WorkflowRun(WorkflowRunEntity entity) {
-    BeanUtils.copyProperties(entity, this);
+    BeanUtils.copyProperties(entity, this, "labels");
+    this.putLabels(entity.getLabels());
   }
 
   public String getDescription() {
@@ -44,13 +45,5 @@ public class WorkflowRun extends WorkflowRunEntity {
 
   public void setTasks(List<TaskExecutionResponse> taskRuns) {
     this.tasks = taskRuns;
-  }
-
-  public long getWorkflowRevisionName() {
-    return workflowRevisionName;
-  }
-
-  public void setWorkflowRevisionName(long workflowRevisionName) {
-    this.workflowRevisionName = workflowRevisionName;
   }
 }

@@ -1,6 +1,7 @@
 package io.boomerang.model;
 
 import java.util.Map;
+import io.boomerang.model.enums.TaskType;
 
 public class TaskExecutionRequest {
   

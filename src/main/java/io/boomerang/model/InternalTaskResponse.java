@@ -2,7 +2,7 @@ package io.boomerang.model;
 
 import java.util.HashMap;
 import java.util.Map;
-import io.boomerang.data.model.RunStatus;
+import io.boomerang.model.enums.RunStatus;
 
 public class InternalTaskResponse {
 

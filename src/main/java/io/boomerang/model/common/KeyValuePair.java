@@ -1,6 +1,6 @@
-package io.boomerang.model;
+package io.boomerang.model.common;
 
-public class AbstractKeyValue {
+public class KeyValuePair {
 
   private String key;
   private String value;
