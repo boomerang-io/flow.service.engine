@@ -28,7 +28,7 @@ import io.boomerang.util.GraphProcessor;
 
 @Service
 public class ExecutionServiceImpl implements ExecutionService {
-  private static final Logger LOGGER = LogManager.getLogger();
+  private static final Logger LOGGER = LogManager.getLogger("ExecutionService");
 
   @Autowired
   private WorkflowRunRepository workflowRunRepository;
@@ -52,6 +52,7 @@ public class ExecutionServiceImpl implements ExecutionService {
   public CompletableFuture<Boolean> executeWorkflowVersion(WorkflowEntity workflow, WorkflowRevisionEntity wfRevisionEntity,
       WorkflowRunEntity wfRunEntity) {
     final List<TaskExecution> tasks = dagUtility.createTaskList(workflow.getName(), wfRevisionEntity, wfRunEntity);
+    LOGGER.info(tasks.toString());
     final TaskExecution start = getTaskByType(tasks, TaskType.start);
     final TaskExecution end = getTaskByType(tasks, TaskType.end);
     final Graph<String, DefaultEdge> graph = dagUtility.createGraph(tasks);

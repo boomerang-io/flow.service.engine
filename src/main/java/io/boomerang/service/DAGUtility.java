@@ -65,7 +65,8 @@ public class DAGUtility {
     final List<Pair<String, String>> edgeList = new LinkedList<>();
     for (final TaskExecution task : tasks) {
       for (final TaskDependency dep : task.getDependencies()) {
-        final Pair<String, String> pair = Pair.of(dep.getTaskRef(), task.getId());
+        String depTaskRefAsId = tasks.stream().filter(t -> t.getName().equals(dep.getTaskRef())).findFirst().get().getId();
+        final Pair<String, String> pair = Pair.of(depTaskRefAsId, task.getId());
         edgeList.add(pair);
       }
     }
