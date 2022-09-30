@@ -3,8 +3,10 @@ package io.boomerang.util;
 import java.util.LinkedList;
 import java.util.List;
 import org.springframework.beans.BeanUtils;
+import io.boomerang.data.model.TaskExecution;
 import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.model.Task;
+import io.boomerang.model.TaskExecutionRequest;
 
 public class TaskMapper {
 
@@ -27,7 +29,6 @@ public class TaskMapper {
     return wfRevisionTasks;
   }
   
-
   public static List<Task> revisionTasksToListOfTasks(List<WorkflowRevisionTask> wfRevisionTasks) {
     List<Task> tasks = new LinkedList<>();
     if (wfRevisionTasks != null) {
@@ -38,5 +39,15 @@ public class TaskMapper {
       }
     }
     return tasks;
+  }
+  
+  public static TaskExecution taskExecutionRequestToExecutionTask(TaskExecutionRequest executionTaskRequest) {
+    TaskExecution taskExecution = new TaskExecution();
+    if (executionTaskRequest != null) {
+      taskExecution.setRunRef(executionTaskRequest.getTaskRunId());
+      taskExecution.setWorkflowRunRef(executionTaskRequest.getWorkflowRunId());
+      taskExecution.setParams(executionTaskRequest.getParams());
+    }
+    return taskExecution;
   }
 }

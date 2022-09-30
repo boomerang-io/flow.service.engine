@@ -3,6 +3,7 @@ package io.boomerang.controller;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,7 +43,7 @@ public class TaskRunV1Controller {
   @Operation(summary = "Start a Task Run. The Task Run has to already be queued.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public TaskRun startTaskRun(@RequestBody Optional<TaskExecutionRequest> taskExecutionRequest) {
+  public ResponseEntity<?> startTaskRun(@RequestBody Optional<TaskExecutionRequest> taskExecutionRequest) {
     return taskRunService.start(taskExecutionRequest);
   }
 
@@ -50,7 +51,7 @@ public class TaskRunV1Controller {
   @Operation(summary = "Complete the Task Run.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public TaskRun endTaskRun(@RequestBody Optional<TaskExecutionRequest> taskExecutionRequest) {
+  public ResponseEntity<?> endTaskRun(@RequestBody Optional<TaskExecutionRequest> taskExecutionRequest) {
     return taskRunService.end(taskExecutionRequest);
   }
 }

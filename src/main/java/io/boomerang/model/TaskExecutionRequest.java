@@ -1,7 +1,6 @@
 package io.boomerang.model;
 
 import java.util.Map;
-import io.boomerang.model.enums.TaskType;
 
 public class TaskExecutionRequest {
   
@@ -9,11 +8,11 @@ public class TaskExecutionRequest {
   
   private String taskRunId;
   
-  private Map<String, String> inputs;
+  private Map<String, Object> params;
   
   private Map<String, String> resources;
   
-  private TaskType taskType;
+//  private TaskType taskType;
   
   private boolean preApproved;
 
@@ -25,12 +24,12 @@ public class TaskExecutionRequest {
     this.workflowRunId = workflowRunId;
   }
 
-  public Map<String, String> getInputs() {
-    return inputs;
+  public Map<String, Object> getParams() {
+    return params;
   }
 
-  public void setInputs(Map<String, String> inputs) {
-    this.inputs = inputs;
+  public void setParams(Map<String, Object> inputs) {
+    this.params = inputs;
   }
 
   public Map<String, String> getResources() {
@@ -41,13 +40,13 @@ public class TaskExecutionRequest {
     this.resources = resources;
   }
 
-  public TaskType getTaskType() {
-    return taskType;
-  }
-
-  public void setTaskType(TaskType taskType) {
-    this.taskType = taskType;
-  }
+//  public TaskType getTaskType() {
+//    return taskType;
+//  }
+//
+//  public void setTaskType(TaskType taskType) {
+//    this.taskType = taskType;
+//  }
 
   public boolean isPreApproved() {
     return preApproved;
