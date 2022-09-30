@@ -15,27 +15,35 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/v1")
-@Tag(name = "Workflow Management",
-description = "Create, List, and Manage your workflows.")
-public class WorkflowV1Controller {
+@RequestMapping("/api/v1/taskrun")
+@Tag(name = "Task Run",
+description = "View, Start, Stop, and Update Status of your Task Runs.")
+public class TaskRunV1Controller {
 
   @Autowired
   private WorkflowService workflowService;
 
-  @PostMapping(value = "/workflow")
-  @Operation(summary = "Create a new workflow")
+  @GetMapping(value = "/query")
+  @Operation(summary = "Complete the Task Run.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public Workflow addWorkflow(@RequestBody Workflow workflow) {
+  public List<TaskRun> getTaskRuns(@PathVariable String workflowId) {
+    return workflowService.getWorkflow(workflowId);
+  }
+
+  @PostMapping(value = "/start")
+  @Operation(summary = "Start a Task Run. The Task Run has to already be queued.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public Workflow startTaskRun(@RequestBody Workflow workflow) {
     return workflowService.addWorkflow(workflow);
   }
 
-  @GetMapping(value = "/workflow/{workflowId}")
-  @Operation(summary = "Retrieve latest version of the workflow")
+  @PostMapping(value = "/end")
+  @Operation(summary = "Complete the Task Run.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public Workflow getWorkflow(@PathVariable String workflowId) {
+  public Workflow endTaskRun(@PathVariable String workflowId) {
     return workflowService.getWorkflow(workflowId);
   }
 }

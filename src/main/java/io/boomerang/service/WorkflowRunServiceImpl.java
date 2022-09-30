@@ -68,7 +68,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
   @Override
   public List<TaskExecutionResponse> getTaskExecutions(String workflowRunId) {
-    List<TaskRunEntity> runs = taskRunRepository.findByWorkflowRunId(workflowRunId);
+    List<TaskRunEntity> runs = taskRunRepository.findByWorkflowRunRef(workflowRunId);
     List<TaskExecutionResponse> taskExecutionResponses = new LinkedList<>();
 
     for (TaskRunEntity run : runs) {

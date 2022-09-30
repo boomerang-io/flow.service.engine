@@ -72,6 +72,9 @@ public class DAGUtility {
     return GraphProcessor.createGraph(vertices, edgeList);
   }
 
+  /*
+   * TODO: refactor to set the wfRevisionTasks on the TaskExecution rather than having to constantly fetch the WorkflowRevisionEntity
+   */
   public List<TaskExecution> createTaskList(String workflowName, WorkflowRevisionEntity wfRevisionEntity, WorkflowRunEntity wfRunEntity) {
     final List<TaskExecution> taskList = new LinkedList<>();
     for (final WorkflowRevisionTask wfRevisionTask : wfRevisionEntity.getTasks()) {
@@ -79,7 +82,8 @@ public class DAGUtility {
       final TaskExecution executionTask = new TaskExecution();
       // Takes care of duplicating a number of the matching attributes
       BeanUtils.copyProperties(wfRevisionTask, executionTask);
-      executionTask.setId(wfRevisionTask.getId());
+      //TODO: determine if this is to be come a NodeID in the annotations
+//      executionTask.setId(wfRevisionTask.getId());
       executionTask.setType(wfRevisionTask.getType());
       executionTask.setName(wfRevisionTask.getName());
       executionTask.setWorkflowRef(wfRevisionEntity.getWorkflowRef());
@@ -100,14 +104,14 @@ public class DAGUtility {
           if (result.isPresent()) {
             TaskTemplateRevision revision = result.get();
             executionTask.setRevision(revision);
-            executionTask.setResults(revision.getResults());
+            executionTask.setTemplateResults(revision.getResults());
           } else {
             Optional<TaskTemplateRevision> latestRevision = revisions.stream()
                 .sorted(Comparator.comparingInt(TaskTemplateRevision::getVersion).reversed())
                 .findFirst();
             if (latestRevision.isPresent()) {
               executionTask.setRevision(latestRevision.get());
-              executionTask.setResults(executionTask.getRevision().getResults());
+              executionTask.setTemplateResults(executionTask.getRevision().getResults());
             }
           }
           executionTask.setParams(wfRevisionTask.getParams());
@@ -281,5 +285,12 @@ public class DAGUtility {
 
   private TaskExecution getTaskById(List<TaskExecution> tasks, String id) {
     return tasks.stream().filter(tsk -> id.equals(tsk.getId())).findAny().orElse(null);
+  }
+
+  public List<TaskExecution> getTasksDependants(List<TaskExecution> tasks,
+      TaskExecution currentTask) {
+    return tasks.stream().filter(t -> t.getDependencies().stream()
+        .anyMatch(d -> d.getTaskRef().equals(currentTask.getId())))
+        .collect(Collectors.toList());
   }
 }

@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.boomerang.model.TaskRunResult;
+import io.boomerang.model.RunResult;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({"inputs", "nodeId", "taskId"})
@@ -38,13 +38,13 @@ public class ConfigNodes {
   private Integer taskVersion;
 
   @JsonProperty("outputs")
-  private List<TaskRunResult> outputs = new LinkedList<>();
+  private List<RunResult> outputs = new LinkedList<>();
 
-  public List<TaskRunResult> getOutputs() {
+  public List<RunResult> getOutputs() {
     return outputs;
   }
 
-  public void setOutputs(List<TaskRunResult> outputs) {
+  public void setOutputs(List<RunResult> outputs) {
     this.outputs = outputs;
   }
 

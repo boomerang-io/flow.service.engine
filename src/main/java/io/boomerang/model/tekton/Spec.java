@@ -1,7 +1,7 @@
 package io.boomerang.model.tekton;
 
 import java.util.List;
-import io.boomerang.model.TaskRunResult;
+import io.boomerang.model.RunResult;
 
 public class Spec {
 
@@ -9,7 +9,7 @@ public class Spec {
   private List<Param> params;
   private List<Step> steps;
 
-  private List<TaskRunResult> results;
+  private List<RunResult> results;
   
   public List<Step> getSteps() {
     return steps;
@@ -35,11 +35,11 @@ public class Spec {
     this.description = description;
   }
 
-  public List<TaskRunResult> getResults() {
+  public List<RunResult> getResults() {
     return results;
   }
 
-  public void setResults(List<TaskRunResult> results) {
+  public void setResults(List<RunResult> results) {
     this.results = results;
   }
 }

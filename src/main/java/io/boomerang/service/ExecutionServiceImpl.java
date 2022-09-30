@@ -40,10 +40,10 @@ public class ExecutionServiceImpl implements ExecutionService {
   private DAGUtility dagUtility;
   
   @Autowired
-  private TaskService taskService;
+  private TaskExecutionService taskService;
   
   @Autowired
-  private TaskClient taskClient;
+  private TaskExecutionClient taskClient;
 
 //  @Autowired
 //  private WorkflowService workflowService;
@@ -130,7 +130,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         LOGGER.debug("executeWorkflowAsync() - Creating Workflow (" + wfRunEntity.getWorkflowRef() + ")...");
 
           try {
-            List<TaskExecution> nextNodes = this.getTasksDependants(tasksToRun, start);
+            List<TaskExecution> nextNodes = dagUtility.getTasksDependants(tasksToRun, start);
             for (TaskExecution next : nextNodes) {
               final List<String> nodes =
                   GraphProcessor.createOrderedTaskList(graph, start.getId(), end.getId());
@@ -139,7 +139,7 @@ public class ExecutionServiceImpl implements ExecutionService {
                 TaskExecutionRequest taskRequest = new TaskExecutionRequest();
                 taskRequest.setTaskRunId(next.getRunRef());
                 taskRequest.setWorkflowRunId(wfRunId);
-                taskClient.startTask(taskService, next);
+                taskClient.createTask(taskService, next);
                 LOGGER.debug("executeWorkflowAsync() - Creating TaskRun (" + next.getRunRef() + ")...");
               }
             }
@@ -151,13 +151,6 @@ public class ExecutionServiceImpl implements ExecutionService {
 
       return true;
     };
-  }
-
-  private List<TaskExecution> getTasksDependants(List<TaskExecution> tasks,
-      TaskExecution currentTask) {
-    return tasks.stream().filter(t -> t.getDependencies().stream()
-        .anyMatch(d -> d.getTaskRef().equals(currentTask.getId())))
-        .collect(Collectors.toList());
   }
 
   private TaskExecution getTaskByType(List<TaskExecution> tasks, TaskType type) {

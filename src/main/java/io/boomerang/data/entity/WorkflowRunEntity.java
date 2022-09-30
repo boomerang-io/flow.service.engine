@@ -10,8 +10,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import io.boomerang.model.RunResult;
 import io.boomerang.model.WorkflowRunParam;
-import io.boomerang.model.common.KeyValuePair;
 import io.boomerang.model.enums.RunStatus;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -46,7 +46,7 @@ public class WorkflowRunEntity   {
   
   private List<WorkflowRunParam> params = new LinkedList<>();
 
-  private List<KeyValuePair> results;
+  private List<RunResult> results = new LinkedList<>();
   
 //private List<Resources> resources;
 
@@ -150,11 +150,11 @@ public class WorkflowRunEntity   {
     this.params = params;
   }
 
-  public List<KeyValuePair> getResults() {
+  public List<RunResult> getResults() {
     return results;
   }
 
-  public void setResults(List<KeyValuePair> results) {
+  public void setResults(List<RunResult> results) {
     this.results = results;
   }
   

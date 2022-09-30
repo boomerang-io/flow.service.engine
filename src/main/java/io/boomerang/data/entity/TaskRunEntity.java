@@ -1,20 +1,22 @@
 package io.boomerang.data.entity;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.model.common.KeyValuePair;
+import io.boomerang.model.RunResult;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
 @Document(collection = "#{@mongoConfiguration.fullCollectionName('task_runs')}")
-public class TaskRunEntity   {
+public class TaskRunEntity {
 
   @Id
   private String id;
@@ -29,7 +31,7 @@ public class TaskRunEntity   {
   
   private Date creationDate;
 
-  private List<KeyValuePair> labels;
+  private Map<String, String> labels = new HashMap<>();
 
   private long duration;
 
@@ -37,10 +39,11 @@ public class TaskRunEntity   {
 
   private String statusMessage;
   
-  private boolean preApproved;
-  private String decisionValue;
+//private ErrorResponse error;
   
-//  private ErrorResponse error;
+  private boolean preApproved;
+  
+  private String decisionValue;
 
   private String nodeId;
 
@@ -53,10 +56,12 @@ public class TaskRunEntity   {
   private String taskTemplateVersion;
 
   private String workflowRunId;
+  
+  private Map<String, Object> params = new HashMap<>();
 
-  private List<KeyValuePair> inputs;
+  private List<RunResult> results;
 
-  private List<KeyValuePair> results;
+  private List<RunResult> workflowResults;
 
   public String getId() {
     return id;
@@ -90,11 +95,11 @@ public class TaskRunEntity   {
     this.creationDate = creationDate;
   }
 
-  public List<KeyValuePair> getLabels() {
+  public Map<String, String> getLabels() {
     return labels;
   }
 
-  public void setLabels(List<KeyValuePair> labels) {
+  public void setLabels(Map<String, String> labels) {
     this.labels = labels;
   }
 
@@ -138,19 +143,19 @@ public class TaskRunEntity   {
     this.workflowRunId = workflowRunId;
   }
 
-  public List<KeyValuePair> getInputs() {
-    return inputs;
+  public Map<String, Object> getParams() {
+    return params;
   }
 
-  public void setInputs(List<KeyValuePair> inputs) {
-    this.inputs = inputs;
+  public void setParams(Map<String, Object> params) {
+    this.params = params;
   }
 
-  public List<KeyValuePair> getResults() {
+  public List<RunResult> getResults() {
     return results;
   }
 
-  public void setResults(List<KeyValuePair> results) {
+  public void setResults(List<RunResult> results) {
     this.results = results;
   }
 
@@ -216,5 +221,13 @@ public class TaskRunEntity   {
 
   public void setTaskTemplateVersion(String taskTemplateVersion) {
     this.taskTemplateVersion = taskTemplateVersion;
+  }
+
+  public List<RunResult> getWorkflowResults() {
+    return workflowResults;
+  }
+
+  public void setWorkflowResults(List<RunResult> workflowResults) {
+    this.workflowResults = workflowResults;
   }
 }

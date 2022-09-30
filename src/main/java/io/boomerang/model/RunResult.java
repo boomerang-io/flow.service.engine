@@ -1,6 +1,6 @@
 package io.boomerang.model;
 
-public class TaskRunResult {
+public class RunResult {
   
   private String name;
   private String description;

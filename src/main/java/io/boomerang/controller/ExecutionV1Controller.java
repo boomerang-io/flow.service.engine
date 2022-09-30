@@ -16,7 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/apis/v1/workflow/execute")
+@RequestMapping("/api/v1/workflow/execute")
 @Tag(name = "Workflow Execution",
 description = "Execute your workflows and retrieve the Execution Run.")
 public class ExecutionV1Controller {

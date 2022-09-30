@@ -2,13 +2,15 @@ package io.boomerang.data.model;
 
 import java.util.List;
 import java.util.Map;
+import org.bson.types.ObjectId;
+import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 
 public class TaskExecution {
   
-  private String id;
+  private String id = new ObjectId().toString();
   private TaskType type;
   private String name;
   private RunStatus status;
@@ -23,16 +25,17 @@ public class TaskExecution {
   private boolean enableLifecycle;
   private String decisionValue;
   private TaskTemplateRevision revision;
-  private List<TaskTemplateResult> results;
+  private List<RunResult> runResults;
+  private List<TaskTemplateResult> templateResults;
   
   @Override
   public String toString() {
-    return "TaskExecution [id=" + id + ", type=" + type + ", name=" + name + ", status=" + status
+    return "TaskExecution [id=" + id + "type=" + type + ", name=" + name + ", status=" + status
         + ", templateRef=" + templateRef + ", templateVersion=" + templateVersion + ", runRef="
         + runRef + ", dependencies=" + dependencies + ", params=" + params + ", workflowRef="
         + workflowRef + ", workflowName=" + workflowName + ", workflowRunRef="
             + workflowRunRef + ", enableLifecycle=" + enableLifecycle
-        + ", decisionValue=" + decisionValue + ", revision=" + revision + ", results=" + results
+        + ", decisionValue=" + decisionValue + ", revision=" + revision + ", results=" + runResults + "templateResults=" + templateResults
         + "]";
   }
   public String getId() {
@@ -119,11 +122,17 @@ public class TaskExecution {
   public void setRevision(TaskTemplateRevision revision) {
     this.revision = revision;
   }
-  public List<TaskTemplateResult> getResults() {
-    return results;
+  public List<RunResult> getRunResults() {
+    return runResults;
   }
-  public void setResults(List<TaskTemplateResult> results) {
-    this.results = results;
+  public void setRunResults(List<RunResult> runResults) {
+    this.runResults = runResults;
+  }
+  public List<TaskTemplateResult> getTemplateResults() {
+    return templateResults;
+  }
+  public void setTemplateResults(List<TaskTemplateResult> results) {
+    this.templateResults = results;
   }
   public String getWorkflowRunRef() {
     return workflowRunRef;

@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import io.boomerang.model.common.KeyValuePair;
+import io.boomerang.model.KeyValuePair;
 import io.boomerang.model.tekton.Annotations;
 import io.boomerang.model.tekton.Labels;
 
@@ -88,6 +88,16 @@ public class ParameterMapper {
   }
   
   public static Annotations keyValuePairListToAnnotations(List<KeyValuePair> annotationPairs) {
+    Annotations annotations = new Annotations();
+    if (annotationPairs != null) {
+      for (KeyValuePair a : annotationPairs) {
+        annotations.setOtherField(a.getKey(), (Object) a.getValue());
+      }
+    }
+    return annotations;
+  }
+  
+  public static List<RunResult> keyValuePairListToAnnotations(List<KeyValuePair> annotationPairs) {
     Annotations annotations = new Annotations();
     if (annotationPairs != null) {
       for (KeyValuePair a : annotationPairs) {

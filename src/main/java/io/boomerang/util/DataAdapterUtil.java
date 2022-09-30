@@ -2,7 +2,7 @@ package io.boomerang.util;
 
 import java.util.List;
 import java.util.Optional;
-import io.boomerang.model.common.AbstractConfigurationProperty;
+import io.boomerang.model.AbstractConfigurationProperty;
 
 public class DataAdapterUtil {
 	public enum FieldType {

@@ -3,7 +3,6 @@ package io.boomerang.model;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.bson.types.ObjectId;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.boomerang.data.model.TaskTemplateResult;
 import io.boomerang.model.enums.TaskType;
@@ -11,7 +10,8 @@ import io.boomerang.model.enums.TaskType;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Task {
   
-  private String id = new ObjectId().toString();
+  //TODO: add back in if needed post decision - i think we can use a metadata NodeID for the Front End
+//  private String id = new ObjectId().toString();
   
   private TaskType type;
   
@@ -23,18 +23,20 @@ public class Task {
   
   private Map<String, Object> params = new HashMap<>();
   
+  private Map<String, Object> annotations = new HashMap<>();
+  
   private List<TaskDependency> dependencies;
   
   //This is needed as some of our Tasks allow you to define Result Definitions on the fly
   private List<TaskTemplateResult> results;
 
-  public String getId() {
-    return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
+//  public String getId() {
+//    return id;
+//  }
+//
+//  public void setId(String id) {
+//    this.id = id;
+//  }
 
   public TaskType getType() {
     return type;
@@ -74,6 +76,14 @@ public class Task {
 
   public void setParams(Map<String, Object> params) {
     this.params = params;
+  }
+
+  public Map<String, Object> getAnnotations() {
+    return annotations;
+  }
+
+  public void setAnnotations(Map<String, Object> annotations) {
+    this.annotations = annotations;
   }
 
   public List<TaskDependency> getDependencies() {

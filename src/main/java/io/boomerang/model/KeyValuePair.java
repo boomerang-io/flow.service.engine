@@ -1,4 +1,4 @@
-package io.boomerang.model.common;
+package io.boomerang.model;
 
 public class KeyValuePair {
 
