@@ -27,7 +27,7 @@ public class TaskRunEntity {
   
   private String taskName;
 
-  private String initiatedById;
+  private String initiatedByRef;
   
   private Date creationDate;
 
@@ -51,11 +51,11 @@ public class TaskRunEntity {
   
   private Date startTime;
 
-  private String taskTemplateId;
+  private String taskTemplateRef;
 
   private String taskTemplateVersion;
 
-  private String workflowRunId;
+  private String workflowRunRef;
   
   private Map<String, Object> params = new HashMap<>();
 
@@ -79,12 +79,12 @@ public class TaskRunEntity {
     this.taskType = taskType;
   }
 
-  public String getInitiatedById() {
-    return initiatedById;
+  public String getInitiatedByRef() {
+    return initiatedByRef;
   }
 
-  public void setInitiatedById(String initiatedById) {
-    this.initiatedById = initiatedById;
+  public void setInitiatedByRef(String initiatedByRef) {
+    this.initiatedByRef = initiatedByRef;
   }
 
   public Date getCreationDate() {
@@ -127,20 +127,20 @@ public class TaskRunEntity {
     this.statusMessage = statusMessage;
   }
 
-  public String getTaskTemplateId() {
-    return taskTemplateId;
+  public String getTaskTemplateRef() {
+    return taskTemplateRef;
   }
 
-  public void setTaskTemplateId(String taskTemplateId) {
-    this.taskTemplateId = taskTemplateId;
+  public void setTaskTemplateRef(String taskTemplateRef) {
+    this.taskTemplateRef = taskTemplateRef;
   }
 
-  public String getWorkflowRunId() {
-    return workflowRunId;
+  public String getWorkflowRunRef() {
+    return workflowRunRef;
   }
 
-  public void setWorkflowRunId(String workflowRunId) {
-    this.workflowRunId = workflowRunId;
+  public void setWorkflowRunRef(String workflowRunRef) {
+    this.workflowRunRef = workflowRunRef;
   }
 
   public Map<String, Object> getParams() {

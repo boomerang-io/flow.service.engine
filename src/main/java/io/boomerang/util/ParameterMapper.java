@@ -96,14 +96,4 @@ public class ParameterMapper {
     }
     return annotations;
   }
-  
-  public static List<RunResult> keyValuePairListToAnnotations(List<KeyValuePair> annotationPairs) {
-    Annotations annotations = new Annotations();
-    if (annotationPairs != null) {
-      for (KeyValuePair a : annotationPairs) {
-        annotations.setOtherField(a.getKey(), (Object) a.getValue());
-      }
-    }
-    return annotations;
-  }
 }

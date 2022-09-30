@@ -23,10 +23,10 @@ import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
+import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
-import io.boomerang.model.RunResult;
 
 @Service
 public class TaskExecutionServiceImpl implements TaskExecutionService {
@@ -183,6 +183,11 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   }
 
   @Override
+  public void startTask(TaskExecution taskRequest) {
+    // TODO Auto-generated method stub
+  }
+
+  @Override
   @Async("flowAsyncExecutor")
   public void endTask(TaskExecution taskExecution) {
     // Setup
@@ -192,7 +197,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     TaskRunEntity taskRunEntity = optTaskRunEntity.get();
 
     Optional<WorkflowRunEntity> optWfRunEntity =
-        this.workflowRunRepository.findById(taskRunEntity.getWorkflowRunId());
+        this.workflowRunRepository.findById(taskRunEntity.getWorkflowRunRef());
     WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
 
     // Check if workflow has been cancelled
@@ -236,12 +241,12 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       this.finishWorkflow(wfRunEntity, tasks);
     }
 
-    LOGGER.debug("[{}] Attempting to get lock", taskRunId);
-    String tokenId = getLock(taskRunId, keys, 105000);
-    LOGGER.debug("[{}] Obtained lock", taskRunId);
+//    LOGGER.debug("[{}] Attempting to get lock", taskRunId);
+//    String tokenId = getLock(taskRunId, keys, 105000);
+//    LOGGER.debug("[{}] Obtained lock", taskRunId);
 
     // Refresh wfRunEntity
-    optWfRunEntity = this.workflowRunRepository.findById(taskRunEntity.getWorkflowRunId());
+    optWfRunEntity = this.workflowRunRepository.findById(taskRunEntity.getWorkflowRunRef());
     wfRunEntity = optWfRunEntity.get();
     String wfRunId = wfRunEntity.getId();
 
@@ -257,7 +262,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     // } else {
     executeNextStep(wfRunEntity, tasks, taskExecution, finishedAll);
     // }
-    lock.release(keys, "locks", tokenId);
+//    lock.release(keys, "locks", tokenId);
     LOGGER.debug("[{}] Released lock", taskRunId);
   }
 
@@ -283,7 +288,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
             // topic = propertyManager.replaceValueWithProperty(paramTopic, taskRunId, properties);
             // String taskId = task.getId();
             TaskRunEntity taskRunEntity = this.taskRunRepository
-                .findFirstByNameAndWorkflowRunRef(task.getName(), workflowRunId);
+                .findFirstByTaskNameAndWorkflowRunRef(task.getName(), workflowRunId);
             if (taskRunEntity != null) {
               LOGGER.info("[{}] Found task run id: {} ", workflowRunId, taskRunEntity.getId());
               taskRunEntity.setPreApproved(true);
@@ -577,17 +582,17 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   // this.activityService.saveWorkflowActivity(workflowActivity);
   // }
   //
-  private String getLock(String storeId, List<String> keys, long timeout) {
-    RetryTemplate retryTemplate = getRetryTemplate();
-    return retryTemplate.execute(ctx -> {
-      final String token = lock.acquire(keys, "locks", timeout);
-      if (StringUtils.isEmpty(token)) {
-        throw new LockNotAvailableException(
-            String.format("Lock not available for keys: %s in store %s", keys, storeId));
-      }
-      return token;
-    });
-  }
+//  private String getLock(String storeId, List<String> keys, long timeout) {
+//    RetryTemplate retryTemplate = getRetryTemplate();
+//    return retryTemplate.execute(ctx -> {
+//      final String token = lock.acquire(keys, "locks", timeout);
+//      if (StringUtils.isEmpty(token)) {
+//        throw new LockNotAvailableException(
+//            String.format("Lock not available for keys: %s in store %s", keys, storeId));
+//      }
+//      return token;
+//    });
+//  }
 
   private RetryTemplate getRetryTemplate() {
     RetryTemplate retryTemplate = new RetryTemplate();

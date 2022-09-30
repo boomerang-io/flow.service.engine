@@ -9,5 +9,5 @@ public interface TaskRunRepository
 
   List<TaskRunEntity> findByWorkflowRunRef(String workflowRunRef);
 
-  TaskRunEntity findFirstByNameAndWorkflowRunRef(String name, String workflowRunRef);
+  TaskRunEntity findFirstByTaskNameAndWorkflowRunRef(String taskName, String workflowRunRef);
 }

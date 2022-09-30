@@ -82,14 +82,14 @@ public class ExecutionServiceImpl implements ExecutionService {
     long order = 1;
     for (final TaskExecution executionTask : tasksToExecute) {
       TaskRunEntity taskRunEntity = new TaskRunEntity();
-      taskRunEntity.setWorkflowRunId(wfRunId);
+      taskRunEntity.setWorkflowRunRef(wfRunId);
       taskRunEntity.setTaskId(executionTask.getId());
       taskRunEntity.setStatus(RunStatus.notstarted);
       taskRunEntity.setOrder(order);
       taskRunEntity.setTaskName(executionTask.getName());
       taskRunEntity.setTaskType(executionTask.getType());
       if (executionTask.getTemplateRef() != null) {
-        taskRunEntity.setTaskTemplateId(executionTask.getTemplateRef());
+        taskRunEntity.setTaskTemplateRef(executionTask.getTemplateRef());
         taskRunEntity.setTaskTemplateVersion(executionTask.getTemplateVersion());
       }
 

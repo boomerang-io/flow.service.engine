@@ -16,10 +16,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/v1/workflow/execute")
+@RequestMapping("/api/v1/workflow/run")
 @Tag(name = "Workflow Execution",
 description = "Execute your workflows and retrieve the Execution Run.")
-public class ExecutionV1Controller {
+public class WorkflowRunV1Controller {
 
   @Autowired
   private WorkflowExecutionService executionService;
