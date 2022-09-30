@@ -340,18 +340,18 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
   }
 
-  // private void processDecision(TaskRunEntity taskRunEntity, String activityId) {
-  // String decisionValue = taskRunEntity.getDecisionValue();
-  //// ControllerRequestProperties properties =
-  //// propertyManager.buildRequestPropertyLayering(task, activityId, task.getWorkflowId());
-  // String value = decisionValue;
-  //// value = propertyManager.replaceValueWithProperty(value, activityId, properties);
-  // taskExecution.setDecisionValue(value);
-  // taskRunEntity
-  // TaskExecutionEntity taskExecution = taskActivityService.findById(task.getTaskActivityId());
-  // taskExecution.setDecisionValue(value);
-  // taskRunEntity = taskRunRepository.save(taskRunEntity);
-  // }
+//   private void processDecision(TaskRunEntity taskRunEntity, String activityId) {
+//   String decisionValue = taskRunEntity.getDecisionValue();
+//  // ControllerRequestProperties properties =
+//  // propertyManager.buildRequestPropertyLayering(task, activityId, task.getWorkflowId());
+//   String value = decisionValue;
+//  // value = propertyManager.replaceValueWithProperty(value, activityId, properties);
+//   taskExecution.setDecisionValue(value);
+//   taskRunEntity
+//   TaskExecutionEntity taskExecution = taskActivityService.findById(task.getTaskActivityId());
+//   taskExecution.setDecisionValue(value);
+//   taskRunEntity = taskRunRepository.save(taskRunEntity);
+//   }
 
   // private void releaseLock(Task task, ActivityEntity activity) {
   //
