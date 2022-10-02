@@ -47,7 +47,7 @@ public class TaskRunEntity {
 
   private String nodeId;
 
-  private long order;
+//  private long order;
   
   private Date startTime;
 
@@ -181,14 +181,6 @@ public class TaskRunEntity {
 
   public void setTaskId(String taskId) {
     this.taskId = taskId;
-  }
-
-  public long getOrder() {
-    return order;
-  }
-
-  public void setOrder(long order) {
-    this.order = order;
   }
 
   public Date getStartTime() {

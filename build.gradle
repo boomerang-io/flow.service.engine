@@ -33,6 +33,7 @@ dependencies {
 	implementation 'org.jgrapht:jgrapht-ext:1.5.1'
 	implementation 'org.springdoc:springdoc-openapi-webmvc-core:1.6.11'
 	implementation 'org.springdoc:springdoc-openapi-ui:1.6.11'
+	implementation 'com.github.alturkovic.distributed-lock:distributed-lock-mongo:1.4.3'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'

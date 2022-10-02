@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jgrapht.Graph;
@@ -28,7 +27,7 @@ import io.boomerang.util.GraphProcessor;
 
 @Service
 public class ExecutionServiceImpl implements ExecutionService {
-  private static final Logger LOGGER = LogManager.getLogger("ExecutionService");
+  private static final Logger LOGGER = LogManager.getLogger("WorkflowExecutionService");
 
   @Autowired
   private WorkflowRunRepository workflowRunRepository;
@@ -80,13 +79,13 @@ public class ExecutionServiceImpl implements ExecutionService {
       tasksToExecute.add(taskToAdd);
     }
 
-    long order = 1;
+//    long order = 1;
     for (final TaskExecution executionTask : tasksToExecute) {
       TaskRunEntity taskRunEntity = new TaskRunEntity();
       taskRunEntity.setWorkflowRunRef(wfRunId);
       taskRunEntity.setTaskId(executionTask.getId());
       taskRunEntity.setStatus(RunStatus.notstarted);
-      taskRunEntity.setOrder(order);
+//      taskRunEntity.setOrder(order);
       taskRunEntity.setTaskName(executionTask.getName());
       taskRunEntity.setTaskType(executionTask.getType());
       if (executionTask.getTemplateRef() != null) {
@@ -96,7 +95,7 @@ public class ExecutionServiceImpl implements ExecutionService {
 
       taskRunEntity = this.taskRunRepository.save(taskRunEntity);
       executionTask.setRunRef(taskRunEntity.getId());
-      order++;
+//      order++;
     }
   }
 

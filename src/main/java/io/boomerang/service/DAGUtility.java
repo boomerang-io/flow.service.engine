@@ -73,9 +73,6 @@ public class DAGUtility {
     return GraphProcessor.createGraph(vertices, edgeList);
   }
 
-  /*
-   * TODO: refactor to set the wfRevisionTasks on the TaskExecution rather than having to constantly fetch the WorkflowRevisionEntity
-   */
   public List<TaskExecution> createTaskList(String workflowName, WorkflowRevisionEntity wfRevisionEntity, WorkflowRunEntity wfRunEntity) {
     final List<TaskExecution> taskList = new LinkedList<>();
     for (final WorkflowRevisionTask wfRevisionTask : wfRevisionEntity.getTasks()) {

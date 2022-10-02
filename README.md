@@ -12,6 +12,10 @@ This project uses Gradle to compile
 docker run --name local-mongo -d mongo:latest
 ```
 
+## Locks
+
+For distributed locking, we use this [distributed lock](https://github.com/alturkovic/distributed-lock) project with the Mongo implementation.
+
 ## Change Log
 
 The following attempts to list the changes from Workflow Service to Workflow Engine

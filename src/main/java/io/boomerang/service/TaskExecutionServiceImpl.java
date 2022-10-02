@@ -13,6 +13,9 @@ import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.apache.commons.lang3.StringUtils;
+import com.github.alturkovic.lock.Lock;
+import com.github.alturkovic.lock.exception.LockNotAvailableException;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
@@ -55,8 +58,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   @Autowired
   private DAGUtility dagUtility;
 
-  // @Autowired
-  // private Lock lock;
+  @Autowired
+  private Lock lock;
   //
   // @Autowired
   // private ApprovalService approvalService;
@@ -64,8 +67,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   // @Autowired
   // private PropertyManager propertyManager;
 
-  // @Autowired
-  // private LockManager lockManager;
+   @Autowired
+   private LockManager lockManager;
 
   @Autowired
   private TaskExecutionClient flowClient;
@@ -114,7 +117,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     taskRunEntity.setStatus(RunStatus.inProgress);
     taskRunEntity = taskRunRepository.save(taskRunEntity);
 
-
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
     List<TaskExecution> tasks =
@@ -127,7 +129,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     LOGGER.debug("[{}] Examining task type: {}", taskExecution.getRunRef(), taskType);
 
     if (canRunTask) {
-      LOGGER.debug("[{}] Can run task? {}", taskExecution.getRunRef(), taskId);
+      LOGGER.debug("[{}] Can run task? {}", wfRunId, taskId);
       if (TaskType.decision.equals(taskType)) {
         taskExecution.setStatus(RunStatus.completed);
         // processDecision(taskRunEntity, wfRunId);
@@ -144,11 +146,15 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         // controllerClient.submitCustomTask(this, flowClient, task, wfRunId, workflowName, labels);
         LOGGER.info("TODO - Execute Custom Task");
       } else if (TaskType.acquirelock.equals(taskType)) {
-        LOGGER.info("TODO - Create Lock");
-        // createLock(task, activity);
+        LOGGER.info("[{}] Acquire Lock", wfRunId);
+        lockManager.acquireLock(taskExecution, wfRunEntity.get().getId());
+         taskExecution.setStatus(RunStatus.completed);
+         this.endTask(taskExecution);
       } else if (TaskType.releaselock.equals(taskType)) {
-        LOGGER.info("TODO - Release Lock");
-        // releaseLock(task, activity);
+        LOGGER.info("[{}] Release Lock", wfRunId);
+        lockManager.releaseLock(taskExecution, wfRunEntity.get().getId());
+        taskExecution.setStatus(RunStatus.completed);
+        this.endTask(taskExecution);
       } else if (TaskType.runworkflow.equals(taskType)) {
         LOGGER.info("TODO - Run Workflow");
         // this.runWorkflow(taskExecution, wfRunEntity.get());
@@ -156,7 +162,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         LOGGER.info("TODO - Run Scheduled Workflow");
         // this.runScheduledWorkflow(taskExecution, wfRunEntity.get(), workflowName);
       } else if (TaskType.setwfstatus.equals(taskType)) {
-        LOGGER.info("Save Workflow Status");
+        LOGGER.info("[{}] Save Workflow Status", wfRunId);
         saveWorkflowStatus(taskExecution, wfRunEntity.get());
         taskExecution.setStatus(RunStatus.completed);
         this.endTask(taskExecution);
@@ -241,9 +247,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       this.finishWorkflow(wfRunEntity, tasks);
     }
 
-//    LOGGER.debug("[{}] Attempting to get lock", taskRunId);
-//    String tokenId = getLock(taskRunId, keys, 105000);
-//    LOGGER.debug("[{}] Obtained lock", taskRunId);
+    LOGGER.debug("[{}] Attempting to get lock", taskRunId);
+    String tokenId = getLock(taskRunId, keys, 105000);
+    LOGGER.debug("[{}] Obtained lock", taskRunId);
 
     // Refresh wfRunEntity
     optWfRunEntity = this.workflowRunRepository.findById(taskRunEntity.getWorkflowRunRef());
@@ -262,7 +268,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     // } else {
     executeNextStep(wfRunEntity, tasks, taskExecution, finishedAll);
     // }
-//    lock.release(keys, "locks", tokenId);
+    // lock.release(keys, "locks", tokenId);
     LOGGER.debug("[{}] Released lock", taskRunId);
   }
 
@@ -306,8 +312,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
   @Override
   @Async("flowAsyncExecutor")
-  public void submitActivity(String taskRunId, String taskStatus,
-      List<RunResult> results) {
+  public void submitActivity(String taskRunId, String taskStatus, List<RunResult> results) {
 
     LOGGER.info("[{}] SubmitActivity: {}", taskRunId, taskStatus);
 
@@ -319,7 +324,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
 
     Optional<TaskRunEntity> taskRunEntity = this.taskRunRepository.findById(taskRunId);
-    if (taskRunEntity.isPresent() && !taskRunEntity.get().getStatus().equals(RunStatus.notstarted)) {
+    if (taskRunEntity.isPresent()
+        && !taskRunEntity.get().getStatus().equals(RunStatus.notstarted)) {
       TaskExecution taskExecution = new TaskExecution();
       taskExecution.setRunRef(taskRunEntity.get().getId());
       taskExecution.setStatus(status);
@@ -340,28 +346,17 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
   }
 
-//   private void processDecision(TaskRunEntity taskRunEntity, String activityId) {
-//   String decisionValue = taskRunEntity.getDecisionValue();
-//  // ControllerRequestProperties properties =
-//  // propertyManager.buildRequestPropertyLayering(task, activityId, task.getWorkflowId());
-//   String value = decisionValue;
-//  // value = propertyManager.replaceValueWithProperty(value, activityId, properties);
-//   taskExecution.setDecisionValue(value);
-//   taskRunEntity
-//   TaskExecutionEntity taskExecution = taskActivityService.findById(task.getTaskActivityId());
-//   taskExecution.setDecisionValue(value);
-//   taskRunEntity = taskRunRepository.save(taskRunEntity);
-//   }
-
-  // private void releaseLock(Task task, ActivityEntity activity) {
-  //
-  // LOGGER.debug("[{}] Releasing lock: ", task.getTaskActivityId());
-  //
-  // lockManager.releaseLock(task, activity.getId());
-  // InternalTaskResponse response = new InternalTaskResponse();
-  // response.setActivityId(task.getTaskActivityId());
-  // response.setStatus(TaskStatus.completed);
-  // this.endTask(response);
+  // private void processDecision(TaskRunEntity taskRunEntity, String activityId) {
+  // String decisionValue = taskRunEntity.getDecisionValue();
+  // // ControllerRequestProperties properties =
+  // // propertyManager.buildRequestPropertyLayering(task, activityId, task.getWorkflowId());
+  // String value = decisionValue;
+  // // value = propertyManager.replaceValueWithProperty(value, activityId, properties);
+  // taskExecution.setDecisionValue(value);
+  // taskRunEntity
+  // TaskExecutionEntity taskExecution = taskActivityService.findById(task.getTaskActivityId());
+  // taskExecution.setDecisionValue(value);
+  // taskRunEntity = taskRunRepository.save(taskRunEntity);
   // }
 
   // private void runWorkflow(Task task, ActivityEntity activity) {
@@ -486,19 +481,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   // this.endTask(response);
   // }
   //
-  // private void createLock(Task task, ActivityEntity activity) {
-  //
-  // LOGGER.debug("[{}] Creating lock: ", task.getTaskActivityId());
-  //
-  // lockManager.acquireLock(task, activity.getId());
-  //
-  // LOGGER.debug("[{}] Finishing lock: ", task.getTaskActivityId());
-  //
-  // InternalTaskResponse response = new InternalTaskResponse();
-  // response.setActivityId(task.getTaskActivityId());
-  // response.setStatus(TaskStatus.completed);
-  // this.endTask(response);
-  // }
 
   // private void createWaitForEventTask(TaskExecutionEntity taskExecution) {
   //
@@ -581,18 +563,19 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   // workflowActivity.setAwaitingApproval(existingApprovals);
   // this.activityService.saveWorkflowActivity(workflowActivity);
   // }
+
   //
-//  private String getLock(String storeId, List<String> keys, long timeout) {
-//    RetryTemplate retryTemplate = getRetryTemplate();
-//    return retryTemplate.execute(ctx -> {
-//      final String token = lock.acquire(keys, "locks", timeout);
-//      if (StringUtils.isEmpty(token)) {
-//        throw new LockNotAvailableException(
-//            String.format("Lock not available for keys: %s in store %s", keys, storeId));
-//      }
-//      return token;
-//    });
-//  }
+  private String getLock(String storeId, List<String> keys, long timeout) {
+    RetryTemplate retryTemplate = getRetryTemplate();
+    return retryTemplate.execute(ctx -> {
+      final String token = lock.acquire(keys, "locks", timeout);
+      if (!StringUtils.isEmpty(token)) {
+        throw new LockNotAvailableException(
+            String.format("Lock not available for keys: %s in store %s", keys, storeId));
+      }
+      return token;
+    });
+  }
 
   private RetryTemplate getRetryTemplate() {
     RetryTemplate retryTemplate = new RetryTemplate();
