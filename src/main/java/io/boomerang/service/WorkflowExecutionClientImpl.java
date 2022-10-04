@@ -32,7 +32,7 @@ public class WorkflowExecutionClientImpl implements WorkflowExecutionClient {
   private WorkflowRunService workflowRunService;
 
   @Autowired
-  private WorkflowExecutionService executionService;
+  private WorkflowExecutionService workflowExecutionService;
 
   @Autowired
   private WorkflowRevisionRepository workflowRevisonRepository;
@@ -40,8 +40,8 @@ public class WorkflowExecutionClientImpl implements WorkflowExecutionClient {
   @Autowired
   private WorkflowRepository workflowRepository;
 
-  @Autowired
-  private WorkflowService workflowService;
+//  @Autowired
+//  private WorkflowService workflowService;
 
   @Override
   public WorkflowRun executeWorkflow(String workflowId,
@@ -70,7 +70,7 @@ public class WorkflowExecutionClientImpl implements WorkflowExecutionClient {
       final WorkflowRunEntity wfRunEntity = workflowRunService.createRun(workflowRevisionEntity.get(),
           request, request.getLabels());
       
-      executionService.executeWorkflowVersion(workflow.get(), workflowRevisionEntity.get(), wfRunEntity);
+      workflowExecutionService.executeWorkflowVersion(workflow.get(), workflowRevisionEntity.get(), wfRunEntity);
 
       final List<TaskExecutionResponse> taskRuns = workflowRunService.getTaskExecutions(wfRunEntity.getId());
       final WorkflowRun response = new WorkflowRun(wfRunEntity);

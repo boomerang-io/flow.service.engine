@@ -103,17 +103,22 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       return;
     }
 
-    Optional<TaskRunEntity> optTaskRunEntity =
-        taskRunRepository.findById(taskExecution.getRunRef());
-    if (!optTaskRunEntity.isPresent()
-        || !RunStatus.notstarted.equals(optTaskRunEntity.get().getStatus())) {
+    TaskRunEntity taskRunEntity = null;
+    if (taskExecution.getRunRef() != null) {
+      Optional<TaskRunEntity> optTaskRunEntity =
+          taskRunRepository.findById(taskExecution.getRunRef());
+      if (!optTaskRunEntity.isPresent()
+          || !RunStatus.notstarted.equals(optTaskRunEntity.get().getStatus())) {
+        LOGGER.debug("Task is null or hasn't started yet");
+        return;
+      }
+      taskRunEntity = optTaskRunEntity.get();
+    } else {
       LOGGER.debug("Task is null or hasn't started yet");
       return;
     }
 
     String workflowName = taskExecution.getWorkflowName();
-
-    TaskRunEntity taskRunEntity = optTaskRunEntity.get();
     TaskType taskType = taskExecution.getType();
     taskRunEntity.setStartTime(new Date());
     taskRunEntity.setStatus(RunStatus.inProgress);
@@ -126,12 +131,12 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
 
     String wfRunId = wfRunEntity.get().getId();
-    String taskId = taskExecution.getId();
+    String taskExecutionId = taskExecution.getId();
 
     LOGGER.debug("[{}] Examining task type: {}", taskExecution.getRunRef(), taskType);
 
     if (canRunTask) {
-      LOGGER.debug("[{}] Can run task? {}", wfRunId, taskId);
+      LOGGER.debug("[{}] Can run task? {}", wfRunId, taskExecutionId);
       if (TaskType.decision.equals(taskType)) {
         taskExecution.setStatus(RunStatus.completed);
         // processDecision(taskRunEntity, wfRunId);
@@ -189,7 +194,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         // createWaitForEventTask(taskExecution);
       }
     } else {
-      LOGGER.debug("[{}] Skipping task", taskId);
+      LOGGER.debug("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
       taskExecution.setStatus(RunStatus.skipped);
       endTask(taskExecution);
     }
@@ -575,7 +580,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   private String getLock(String storeId, List<String> keys, long timeout) {
     RetryTemplate retryTemplate = getRetryTemplate();
     return retryTemplate.execute(ctx -> {
-      final String token = lock.acquire(keys, storeId, timeout);
+      final String token = lock.acquire(keys, "flow_task_locks", timeout);
       if (!StringUtils.isEmpty(token)) {
         throw new LockNotAvailableException(
             String.format("Lock not available for keys: %s in store %s", keys, storeId));
@@ -631,9 +636,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
   private void executeNextStep(WorkflowRunEntity wfRunEntity, List<TaskExecution> tasks,
       TaskExecution currentTask, boolean finishedAll) {
-    LOGGER.debug("[{}] Looking at next tasks", wfRunEntity.getId());
     List<TaskExecution> nextNodes = dagUtility.getTasksDependants(tasks, currentTask);
-    LOGGER.debug("Testing at next tasks: {}", nextNodes.size());
+    LOGGER.debug("[{}] Looking at next tasks. Found {} tasks. Tasks: {}", wfRunEntity.getId(), nextNodes.size(), nextNodes.toString());
 
     for (TaskExecution next : nextNodes) {
       if (TaskType.end.equals(next.getType())) {

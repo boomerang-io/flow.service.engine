@@ -56,14 +56,15 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     final TaskExecution end = getTaskByType(tasks, TaskType.end);
     final Graph<String, DefaultEdge> graph = dagUtility.createGraph(tasks);
     if (dagUtility.validateWorkflow(wfRunEntity, tasks)) {
-      LOGGER.debug("[{}] Workflow is valid", wfRunEntity.getId());
       createTaskPlan(tasks, wfRunEntity.getId(), start, end, graph);
+
+      LOGGER.debug("!!! Task plan created: {}", tasks.toString());
       return CompletableFuture
           .supplyAsync(executeWorkflowAsync(wfRunEntity.getId(), start, end, graph, tasks));
     }
-    LOGGER.debug("[{}] Workflow is NOT valid", wfRunEntity.getId());
+    LOGGER.error("[{}] Failed to run workflow: incomplete, or invalid, workflow", wfRunEntity.getId());
     wfRunEntity.setStatus(RunStatus.invalid);
-    wfRunEntity.setStatusMessage("Failed to run workflow: Incomplete workflow");
+    wfRunEntity.setStatusMessage("Failed to run workflow: incomplete, or invalid, workflow");
     workflowRunRepository.save(wfRunEntity);
     throw new InvalidWorkflowRuntimeException();
   }
@@ -72,6 +73,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       final TaskExecution end, final Graph<String, DefaultEdge> graph) {
     final List<String> nodes =
         GraphProcessor.createOrderedTaskList(graph, start.getId(), end.getId());
+    LOGGER.debug("!!! Tasks to plan: " + nodes.size());
     final List<TaskExecution> tasksToExecute = new LinkedList<>();
     for (final String node : nodes) {
       final TaskExecution taskToAdd =
@@ -83,7 +85,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     for (final TaskExecution executionTask : tasksToExecute) {
       TaskRunEntity taskRunEntity = new TaskRunEntity();
       taskRunEntity.setWorkflowRunRef(wfRunId);
-      taskRunEntity.setTaskId(executionTask.getId());
+      taskRunEntity.setTaskExecutionRef(executionTask.getId());
       taskRunEntity.setStatus(RunStatus.notstarted);
 //      taskRunEntity.setOrder(order);
       taskRunEntity.setTaskName(executionTask.getName());
@@ -94,7 +96,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       }
 
       taskRunEntity = this.taskRunRepository.save(taskRunEntity);
-      executionTask.setRunRef(taskRunEntity.getId());
+      LOGGER.debug("!!! TaskRunEntity ({}) created for: {}", taskRunEntity.getId(), executionTask.getName());
+      tasks.get(tasks.indexOf(executionTask)).setRunRef(taskRunEntity.getId());
 //      order++;
     }
   }
@@ -127,20 +130,21 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
           // TODO: Initial Workflow Creation Steps in Controller or Other
           // controllerClient.createFlow(workflowId, workflowName, activityId, enablePVC, labels,
           // executionProperties);
-        LOGGER.debug("executeWorkflowAsync() - Creating Workflow (" + wfRunEntity.getWorkflowRef() + ")...");
+        LOGGER.info("[{}] Executing Workflow Async...", wfRunEntity.getId());
 
           try {
             List<TaskExecution> nextNodes = dagUtility.getTasksDependants(tasksToRun, start);
+            LOGGER.debug("[{}] Next Nodes Size: {}", wfRunEntity.getId(), nextNodes.size());
             for (TaskExecution next : nextNodes) {
               final List<String> nodes =
                   GraphProcessor.createOrderedTaskList(graph, start.getId(), end.getId());
 
               if (nodes.contains(next.getId())) {
+                LOGGER.info("[{}] Creating TaskRun ({})...", wfRunEntity.getId(), next.getRunRef());
                 TaskExecutionRequest taskRequest = new TaskExecutionRequest();
                 taskRequest.setTaskRunId(next.getRunRef());
                 taskRequest.setWorkflowRunId(wfRunId);
                 taskClient.createTask(taskService, next);
-                LOGGER.debug("executeWorkflowAsync() - Creating TaskRun (" + next.getRunRef() + ")...");
               }
             }
           } catch (Exception e) {

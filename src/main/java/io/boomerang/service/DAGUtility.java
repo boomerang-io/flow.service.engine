@@ -289,7 +289,7 @@ public class DAGUtility {
   public List<TaskExecution> getTasksDependants(List<TaskExecution> tasks,
       TaskExecution currentTask) {
     return tasks.stream().filter(t -> t.getDependencies().stream()
-        .anyMatch(d -> d.getTaskRef().equals(currentTask.getId())))
+        .anyMatch(d -> d.getTaskRef().equals(currentTask.getName())))
         .collect(Collectors.toList());
   }
 }

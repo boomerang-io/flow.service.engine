@@ -21,7 +21,7 @@ public class TaskRunEntity {
   @Id
   private String id;
   
-  private String taskId;
+  private String taskExecutionRef;
   
   private TaskType taskType;
   
@@ -175,12 +175,12 @@ public class TaskRunEntity {
     this.preApproved = preApproved;
   }
 
-  public String getTaskId() {
-    return taskId;
+  public String getTaskExecutionRef() {
+    return taskExecutionRef;
   }
 
-  public void setTaskId(String taskId) {
-    this.taskId = taskId;
+  public void setTaskExecutionRef(String taskExecutionRef) {
+    this.taskExecutionRef = taskExecutionRef;
   }
 
   public Date getStartTime() {
