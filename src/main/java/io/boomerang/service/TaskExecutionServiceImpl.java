@@ -35,7 +35,7 @@ import io.boomerang.model.enums.TaskType;
 @Service
 public class TaskExecutionServiceImpl implements TaskExecutionService {
 
-  private static final Logger LOGGER = LogManager.getLogger("TaskExecution");
+  private static final Logger LOGGER = LogManager.getLogger(TaskExecutionServiceImpl.class);
 
   // @Autowired
   // @Lazy
@@ -91,7 +91,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   // private WorkflowScheduleService scheduleService;
 
   @Override
-  @Async("flowAsyncExecutor")
+  @Async("asyncTaskExecutor")
   public void createTask(TaskExecution taskExecution) {
     LOGGER.debug("[{}] Recieved creating task request", taskExecution.getRunRef());
     Optional<WorkflowRunEntity> wfRunEntity =
@@ -201,7 +201,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   }
 
   @Override
-  @Async("flowAsyncExecutor")
+  @Async("asyncTaskExecutor")
   public void endTask(TaskExecution taskExecution) {
     // Setup
     String taskRunId = taskExecution.getRunRef();
@@ -318,7 +318,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   }
 
   @Override
-  @Async("flowAsyncExecutor")
+  @Async("asyncTaskExecutor")
   public void submitActivity(String taskRunId, String taskStatus, List<RunResult> results) {
 
     LOGGER.info("[{}] SubmitActivity: {}", taskRunId, taskStatus);

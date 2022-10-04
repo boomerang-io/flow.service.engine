@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowExecutionRequest;
-import io.boomerang.service.WorkflowExecutionService;
+import io.boomerang.service.WorkflowExecutionClient;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -22,7 +22,7 @@ description = "Execute your workflows and retrieve the Execution Run.")
 public class WorkflowRunV1Controller {
 
   @Autowired
-  private WorkflowExecutionService executionService;
+  private WorkflowExecutionClient executionService;
 
   @PostMapping(value = "/{workflowId}")
   @Operation(summary = "Execute a specific workflow")

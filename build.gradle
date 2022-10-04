@@ -34,6 +34,7 @@ dependencies {
 	implementation 'org.springdoc:springdoc-openapi-webmvc-core:1.6.11'
 	implementation 'org.springdoc:springdoc-openapi-ui:1.6.11'
 	implementation 'com.github.alturkovic.distributed-lock:distributed-lock-mongo:1.4.3'
+	implementation 'org.apache.logging.log4j:log4j-web:2.17.1'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'

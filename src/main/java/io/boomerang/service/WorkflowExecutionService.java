@@ -1,10 +1,11 @@
 package io.boomerang.service;
 
-import java.util.Optional;
-import io.boomerang.model.WorkflowRun;
-import io.boomerang.model.WorkflowExecutionRequest;
+import java.util.concurrent.CompletableFuture;
+import io.boomerang.data.entity.WorkflowEntity;
+import io.boomerang.data.entity.WorkflowRevisionEntity;
+import io.boomerang.data.entity.WorkflowRunEntity;
 
 public interface WorkflowExecutionService {
-  public WorkflowRun executeWorkflow(String workflowId,
-      Optional<WorkflowExecutionRequest> executionRequest);
+  CompletableFuture<Boolean> executeWorkflowVersion(WorkflowEntity workflow,
+      WorkflowRevisionEntity revision, WorkflowRunEntity wfRunEntity);
 }
