@@ -10,7 +10,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 
 @SpringBootApplication
 @EnableMongoDistributedLock
-@OpenAPIDefinition(info = @Info(title = "Boomerang Flow - Worfklow Engine", version = "0.1", description = ""))
+@OpenAPIDefinition(info = @Info(title = "Boomerang Flow - Workflow Engine", version = "0.1", description = ""))
 public class Application {
 
 	public static void main(String[] args) {

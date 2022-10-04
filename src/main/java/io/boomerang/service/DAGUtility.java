@@ -81,6 +81,7 @@ public class DAGUtility {
       // Takes care of duplicating a number of the matching attributes
       BeanUtils.copyProperties(wfRevisionTask, executionTask);
       //TODO: determine if this is to be come a NodeID in the annotations
+      //The ID is automatically generated as part of new TaskExecution();
 //      executionTask.setId(wfRevisionTask.getId());
       executionTask.setType(wfRevisionTask.getType());
       executionTask.setName(wfRevisionTask.getName());

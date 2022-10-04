@@ -7,26 +7,26 @@ import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 
 @Configuration
 public class MongoConfiguration {
-
+  
   @Value("${mongo.collection.prefix}")
-  private String mongoCollectionPrefix;
-
+  private String collectionPrefix;
+  
   public String fullCollectionName(String collectionName) {
-
-    if (mongoCollectionPrefix == null || mongoCollectionPrefix.isBlank()) {
+    
+    if (collectionPrefix == null || collectionPrefix.isBlank()) {
       return "" + collectionName;
     }
-    String newCollectionName = mongoCollectionPrefix + "_" + collectionName;
-
+    String newCollectionName = collectionPrefix + "_" + collectionName;
+    
     return newCollectionName;
   }
-
+  
   public String collectionPrefix() {
-    return this.mongoCollectionPrefix;
+    return this.collectionPrefix;
   }
   
   @Autowired
   public void setMapKeyDotReplacement(MappingMongoConverter mongoConverter) {
     mongoConverter.setMapKeyDotReplacement("#");
-}
+  }
 }

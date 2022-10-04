@@ -15,9 +15,10 @@ import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import com.github.alturkovic.lock.exception.LockNotAvailableException;
+import com.github.alturkovic.lock.mongo.impl.SimpleMongoLock;
+import com.github.alturkovic.lock.retry.RetriableLock;
 import io.boomerang.config.MongoConfiguration;
 import io.boomerang.data.model.TaskExecution;
-import io.boomerang.util.FlowMongoLock;
 
 @Service
 public class LockManagerImpl implements LockManager {
@@ -32,8 +33,6 @@ public class LockManagerImpl implements LockManager {
 //  private PropertyManager propertyManager;
 
   private static final Logger LOGGER = LogManager.getLogger(LockManagerImpl.class);
-  
-  private final String storeId = mongoConfiguration.fullCollectionName("tasks_locks");
 
   @Override
   public void acquireLock(TaskExecution taskExecution, String wfRunId) {
@@ -41,7 +40,7 @@ public class LockManagerImpl implements LockManager {
     String key = null;
 
     if (taskExecution != null) {
-      String workflowId = taskExecution.getWorkflowRef();
+//      String workflowId = taskExecution.getWorkflowRef();
 
       Map<String, Object> params = taskExecution.getParams();
       if (params.containsKey("timeout")) {
@@ -59,15 +58,25 @@ public class LockManagerImpl implements LockManager {
 //        key = propertyManager.replaceValueWithProperty(key, activityId, propertiesList);
       }
       
+      /*
+       * Utilize the Distributed Lock library to acquire (and retry endlessly)
+       * 
+       * - The RetriableLock requires a TTL index on the expiresAt field in the MongoCollection.
+       *   This is created by the Loader, if you do not use the loader, you will need to create manually.
+       */
       if (key != null) {
-        //TODO: Why do we use a supplier?
+        //SimpleMongoLock requires a supplier, however we don't want the value to change at a future assign time.
         final String finalKey = key;
         Supplier<String> supplier = () -> finalKey;
-        FlowMongoLock mongoLock = new FlowMongoLock(supplier, this.mongoTemplate);
+        SimpleMongoLock mongoLock = new SimpleMongoLock(supplier, this.mongoTemplate);
+        RetryTemplate retryTemplate = getRetryTemplate();
+        RetriableLock retryLock = new RetriableLock(mongoLock, retryTemplate);
+        String storeId = mongoConfiguration.fullCollectionName("task_locks");
         final List<String> keys = new LinkedList<>();
         keys.add(key);
 
-        final String token = mongoLock.acquire(keys, storeId, timeout);
+//        final String token = mongoLock.acquire(keys, storeId, timeout);
+        final String token = retryLock.acquire(keys, storeId, timeout);
 
         if (StringUtils.isEmpty(token)) {
           /** TODO: What to do here. */
@@ -75,15 +84,15 @@ public class LockManagerImpl implements LockManager {
               String.format("Lock not available for keys: %s in store %s", keys, storeId));
         }
 
-        RetryTemplate retryTemplate = getRetryTemplate();
-        retryTemplate.execute(ctx -> {
-          final boolean lockExists = mongoLock.exists(storeId, token);
-          if (lockExists) {
-            throw new LockNotAvailableException(
-                String.format("Lock hasn't been released yet for: %s in store %s", keys, storeId));
-          }
-          return lockExists;
-        });
+//        RetryTemplate retryTemplate = getRetryTemplate();
+//        retryTemplate.execute(ctx -> {
+//          final boolean lockExists = mongoLock.exists(storeId, token);
+//          if (lockExists) {
+//            throw new LockNotAvailableException(
+//                String.format("Lock hasn't been released yet for: %s in store %s", keys, storeId));
+//          }
+//          return lockExists;
+//        });
 
       } else {
         LOGGER.info("No Acquire Lock Key Found!");
@@ -119,7 +128,9 @@ public class LockManagerImpl implements LockManager {
       if (key != null) {
         final String finalKey = key;
         Supplier<String> supplier = () -> finalKey;
-        FlowMongoLock mongoLock = new FlowMongoLock(supplier, this.mongoTemplate);
+//        FlowMongoLock mongoLock = new FlowMongoLock(supplier, this.mongoTemplate);
+        SimpleMongoLock mongoLock = new SimpleMongoLock(supplier, this.mongoTemplate);
+        String storeId = mongoConfiguration.fullCollectionName("tasks_locks");
         final List<String> keys = new LinkedList<>();
         keys.add(key);
         mongoLock.release(keys, storeId, key);

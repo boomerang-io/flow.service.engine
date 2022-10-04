@@ -5,15 +5,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.apache.commons.lang3.StringUtils;
 import com.github.alturkovic.lock.Lock;
 import com.github.alturkovic.lock.exception.LockNotAvailableException;
 import io.boomerang.data.entity.TaskRunEntity;
@@ -34,7 +35,7 @@ import io.boomerang.model.enums.TaskType;
 @Service
 public class TaskExecutionServiceImpl implements TaskExecutionService {
 
-  private static final Logger LOGGER = LogManager.getLogger();
+  private static final Logger LOGGER = LogManager.getLogger("TaskExecution");
 
   // @Autowired
   // @Lazy
@@ -68,6 +69,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   // private PropertyManager propertyManager;
 
    @Autowired
+   @Lazy
    private LockManager lockManager;
 
   @Autowired
@@ -135,16 +137,21 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         // processDecision(taskRunEntity, wfRunId);
         this.endTask(taskExecution);
       } else if (TaskType.template.equals(taskType) || TaskType.script.equals(taskType)) {
-        Map<String, String> labels = wfRunEntity.get().getLabels();
+//        Map<String, String> labels = wfRunEntity.get().getLabels();
         // TODO: how do we submit the tasks
+        LOGGER.info("[{}] Execute Template Task", wfRunId);
         // controllerClient.submitTemplateTask(this, flowClient, task, wfRunId, workflowName,
         // labels);
+        taskExecution.setStatus(RunStatus.completed);
+        this.endTask(taskExecution);
         LOGGER.info("TODO - Execute Template Task");
       } else if (TaskType.customtask.equals(taskType)) {
-        Map<String, String> labels = wfRunEntity.get().getLabels();
         // TODO: how do we submit the tasks
+        LOGGER.info("[{}] Execute Custom Task", wfRunId);
+//        Map<String, String> labels = wfRunEntity.get().getLabels();
         // controllerClient.submitCustomTask(this, flowClient, task, wfRunId, workflowName, labels);
-        LOGGER.info("TODO - Execute Custom Task");
+        taskExecution.setStatus(RunStatus.completed);
+        this.endTask(taskExecution);
       } else if (TaskType.acquirelock.equals(taskType)) {
         LOGGER.info("[{}] Acquire Lock", wfRunId);
         lockManager.acquireLock(taskExecution, wfRunEntity.get().getId());
@@ -564,11 +571,11 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   // this.activityService.saveWorkflowActivity(workflowActivity);
   // }
 
-  //
+  
   private String getLock(String storeId, List<String> keys, long timeout) {
     RetryTemplate retryTemplate = getRetryTemplate();
     return retryTemplate.execute(ctx -> {
-      final String token = lock.acquire(keys, "locks", timeout);
+      final String token = lock.acquire(keys, storeId, timeout);
       if (!StringUtils.isEmpty(token)) {
         throw new LockNotAvailableException(
             String.format("Lock not available for keys: %s in store %s", keys, storeId));
