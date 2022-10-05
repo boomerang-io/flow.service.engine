@@ -240,7 +240,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.getWorkflowRevisionRef());
-    List<TaskExecution> tasks = dagUtility.createTaskListFromRevision(taskExecution.getWorkflowName(),
+    List<TaskExecution> tasks = dagUtility.createTaskListFromRevisionAndRuns(taskExecution.getWorkflowName(),
         wfRevisionEntity.get(), wfRunEntity);
 
     List<String> keys = new LinkedList<>();
