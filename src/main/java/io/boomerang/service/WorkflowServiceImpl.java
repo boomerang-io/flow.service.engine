@@ -2,15 +2,22 @@ package io.boomerang.service;
 
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import io.boomerang.data.entity.TaskTemplateEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
+import io.boomerang.data.model.TaskTemplateRevision;
+import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.data.model.WorkflowStatus;
+import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.exceptions.InvalidWorkflowRuntimeException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.Workflow;
+import io.boomerang.model.enums.TaskType;
 import io.boomerang.util.TaskMapper;
 
 /*
@@ -25,12 +32,16 @@ public class WorkflowServiceImpl implements WorkflowService {
   @Autowired
   private WorkflowRevisionRepository workflowRevisionRepository;
 
+  @Autowired
+  private TaskTemplateRepository taskTemplateRepository;
+
   @Override
   public Workflow getWorkflow(String workflowId) {
 
     Workflow workflow = new Workflow();
     final Optional<WorkflowEntity> OptWfEntity = workflowRepository.findById(workflowId);
-    final Optional<WorkflowRevisionEntity> OptWfRevisionEntity = workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflowId);
+    final Optional<WorkflowRevisionEntity> OptWfRevisionEntity =
+        workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflowId);
 
     if (!OptWfEntity.isPresent() || !OptWfRevisionEntity.isPresent()) {
       // TODO: throw a specific exception
@@ -68,31 +79,55 @@ public class WorkflowServiceImpl implements WorkflowService {
    * Adds a new Workflow as WorkflowEntity and WorkflowRevisionEntity
    */
   @Override
-  public Workflow addWorkflow(Workflow workflow) {
+  public ResponseEntity<?> addWorkflow(Workflow workflow) {
     WorkflowEntity wfEntity = new WorkflowEntity();
     // TODO: should I be using a bean copy here?
     wfEntity.setName(workflow.getName());
     wfEntity.setIcon(workflow.getIcon());
     wfEntity.setShortDescription(workflow.getShortDescription());
     wfEntity.setDescription(workflow.getDescription());
-//    wfEntity.setLabels(ParameterMapper.labelsToKeyValuePairList(workflow.getLabels()));
     wfEntity.setLabels(workflow.getLabels());
-//    wfEntity.setAnnotations(ParameterMapper.annotationsToKeyValuePairList(workflow.getAnnotations()));
     wfEntity.setAnnotations(workflow.getAnnotations());
     wfEntity.setStatus(WorkflowStatus.active);
-    wfEntity = workflowRepository.save(wfEntity);
-    workflow.setId(wfEntity.getId());
 
     WorkflowRevisionEntity wfRevisionEntity = new WorkflowRevisionEntity();
-    wfRevisionEntity.setWorkflowRef(wfEntity.getId());
     wfRevisionEntity.setVersion(1);
     wfRevisionEntity.setChangelog(new ChangeLog("Initial workflow"));
     wfRevisionEntity.setMarkdown(workflow.getMarkdown());
     wfRevisionEntity.setParams(workflow.getParams());
     wfRevisionEntity.setWorkspaces(workflow.getWorkspaces());
     wfRevisionEntity.setTasks(TaskMapper.tasksToListOfRevisionTasks(workflow.getTasks()));
+
+    for (final WorkflowRevisionTask wfRevisionTask : wfRevisionEntity.getTasks()) {
+      if (!TaskType.start.equals(wfRevisionTask.getType())
+          && !TaskType.end.equals(wfRevisionTask.getType())) {
+
+        String templateId = wfRevisionTask.getTemplateRef();
+        Optional<TaskTemplateEntity> taskTemplate = taskTemplateRepository.findById(templateId);
+
+        if (taskTemplate.isPresent() && taskTemplate.get().getRevisions() != null) {
+          // Set template version to specified or default to currentVersion
+          Integer templateVersion =
+              wfRevisionTask.getTemplateVersion() != null ? wfRevisionTask.getTemplateVersion()
+                  : taskTemplate.get().getCurrentVersion();
+          Optional<TaskTemplateRevision> revision = taskTemplate.get().getRevisions().stream()
+              .parallel().filter(r -> r.getVersion().equals(templateVersion)).findFirst();
+          if (!revision.isPresent()) {
+            //TODO: implement standard error response body
+            return ResponseEntity.badRequest().body(
+                "Invalid task template version selected: " + templateId + "@" + templateVersion);
+          }
+        } else {
+          //TODO: implement standard error response body
+          return ResponseEntity.badRequest().body("Invalid task template selected: " + templateId);
+        }
+      }
+    }
+    wfEntity = workflowRepository.save(wfEntity);
+    workflow.setId(wfEntity.getId());
+    wfRevisionEntity.setWorkflowRef(wfEntity.getId());
     workflowRevisionRepository.save(wfRevisionEntity);
 
-    return workflow;
+    return ResponseEntity.ok(workflow);
   }
 }

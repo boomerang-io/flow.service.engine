@@ -9,7 +9,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import io.boomerang.data.model.TaskTemplateResult;
 import io.boomerang.model.RunResult;
+import io.boomerang.model.TaskDependency;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 
@@ -21,19 +23,23 @@ public class TaskRunEntity {
   @Id
   private String id;
   
-  private String taskExecutionRef;
+  private TaskType type;
   
-  private TaskType taskType;
-  
-  private String taskName;
-
-  private String initiatedByRef;
-  
-  private Date creationDate;
+  private String name;
 
   private Map<String, String> labels = new HashMap<>();
 
+  private Map<String, Object> annotations = new HashMap<>();
+  
+  private Date creationDate;
+  
+  private Date startTime;
+
   private long duration;
+  
+  private Map<String, Object> params = new HashMap<>();
+
+  private List<RunResult> results;
 
   private RunStatus status;
 
@@ -44,22 +50,20 @@ public class TaskRunEntity {
   private boolean preApproved;
   
   private String decisionValue;
-
-  private String nodeId;
-
-//  private long order;
   
-  private Date startTime;
+  private List<TaskDependency> dependencies;
 
-  private String taskTemplateRef;
+  private String templateRef;
 
-  private String taskTemplateVersion;
+  private Integer templateVersion;
+
+  private List<TaskTemplateResult> templateResults;
+
+  private String workflowRef;
+
+  private String workflowRevisionRef;
 
   private String workflowRunRef;
-  
-  private Map<String, Object> params = new HashMap<>();
-
-  private List<RunResult> results;
 
   private List<RunResult> workflowResults;
 
@@ -70,29 +74,21 @@ public class TaskRunEntity {
   public void setId(String id) {
     this.id = id;
   }
-  
-  public TaskType getTaskType() {
-    return taskType;
+
+  public TaskType getType() {
+    return type;
   }
 
-  public void setTaskType(TaskType taskType) {
-    this.taskType = taskType;
+  public void setType(TaskType type) {
+    this.type = type;
   }
 
-  public String getInitiatedByRef() {
-    return initiatedByRef;
+  public String getName() {
+    return name;
   }
 
-  public void setInitiatedByRef(String initiatedByRef) {
-    this.initiatedByRef = initiatedByRef;
-  }
-
-  public Date getCreationDate() {
-    return creationDate;
-  }
-
-  public void setCreationDate(Date creationDate) {
-    this.creationDate = creationDate;
+  public void setName(String name) {
+    this.name = name;
   }
 
   public Map<String, String> getLabels() {
@@ -103,44 +99,36 @@ public class TaskRunEntity {
     this.labels = labels;
   }
 
+  public Map<String, Object> getAnnotations() {
+    return annotations;
+  }
+
+  public void setAnnotations(Map<String, Object> annotations) {
+    this.annotations = annotations;
+  }
+
+  public Date getCreationDate() {
+    return creationDate;
+  }
+
+  public void setCreationDate(Date creationDate) {
+    this.creationDate = creationDate;
+  }
+
+  public Date getStartTime() {
+    return startTime;
+  }
+
+  public void setStartTime(Date startTime) {
+    this.startTime = startTime;
+  }
+
   public long getDuration() {
     return duration;
   }
 
   public void setDuration(long duration) {
     this.duration = duration;
-  }
-
-  public RunStatus getStatus() {
-    return status;
-  }
-
-  public void setStatus(RunStatus status) {
-    this.status = status;
-  }
-
-  public String getStatusMessage() {
-    return statusMessage;
-  }
-
-  public void setStatusMessage(String statusMessage) {
-    this.statusMessage = statusMessage;
-  }
-
-  public String getTaskTemplateRef() {
-    return taskTemplateRef;
-  }
-
-  public void setTaskTemplateRef(String taskTemplateRef) {
-    this.taskTemplateRef = taskTemplateRef;
-  }
-
-  public String getWorkflowRunRef() {
-    return workflowRunRef;
-  }
-
-  public void setWorkflowRunRef(String workflowRunRef) {
-    this.workflowRunRef = workflowRunRef;
   }
 
   public Map<String, Object> getParams() {
@@ -159,12 +147,20 @@ public class TaskRunEntity {
     this.results = results;
   }
 
-  public String getDecisionValue() {
-    return decisionValue;
+  public RunStatus getStatus() {
+    return status;
   }
 
-  public void setDecisionValue(String decisionValue) {
-    this.decisionValue = decisionValue;
+  public void setStatus(RunStatus status) {
+    this.status = status;
+  }
+
+  public String getStatusMessage() {
+    return statusMessage;
+  }
+
+  public void setStatusMessage(String statusMessage) {
+    this.statusMessage = statusMessage;
   }
 
   public boolean isPreApproved() {
@@ -175,44 +171,68 @@ public class TaskRunEntity {
     this.preApproved = preApproved;
   }
 
-  public String getTaskExecutionRef() {
-    return taskExecutionRef;
+  public String getDecisionValue() {
+    return decisionValue;
   }
 
-  public void setTaskExecutionRef(String taskExecutionRef) {
-    this.taskExecutionRef = taskExecutionRef;
+  public void setDecisionValue(String decisionValue) {
+    this.decisionValue = decisionValue;
   }
 
-  public Date getStartTime() {
-    return startTime;
+  public List<TaskDependency> getDependencies() {
+    return dependencies;
   }
 
-  public void setStartTime(Date startTime) {
-    this.startTime = startTime;
+  public void setDependencies(List<TaskDependency> dependencies) {
+    this.dependencies = dependencies;
   }
 
-  public String getNodeId() {
-    return nodeId;
+  public String getTemplateRef() {
+    return templateRef;
   }
 
-  public void setNodeId(String nodeId) {
-    this.nodeId = nodeId;
+  public void setTemplateRef(String templateRef) {
+    this.templateRef = templateRef;
   }
 
-  public String getTaskName() {
-    return taskName;
+  public Integer getTemplateVersion() {
+    return templateVersion;
   }
 
-  public void setTaskName(String taskName) {
-    this.taskName = taskName;
+  public void setTemplateVersion(Integer templateVersion) {
+    this.templateVersion = templateVersion;
   }
 
-  public String getTaskTemplateVersion() {
-    return taskTemplateVersion;
+  public List<TaskTemplateResult> getTemplateResults() {
+    return templateResults;
   }
 
-  public void setTaskTemplateVersion(String taskTemplateVersion) {
-    this.taskTemplateVersion = taskTemplateVersion;
+  public void setTemplateResults(List<TaskTemplateResult> templateResults) {
+    this.templateResults = templateResults;
+  }
+
+  public String getWorkflowRunRef() {
+    return workflowRunRef;
+  }
+
+  public void setWorkflowRunRef(String workflowRunRef) {
+    this.workflowRunRef = workflowRunRef;
+  }
+
+  public String getWorkflowRef() {
+    return workflowRef;
+  }
+
+  public void setWorkflowRef(String workflowRef) {
+    this.workflowRef = workflowRef;
+  }
+
+  public String getWorkflowRevisionRef() {
+    return workflowRevisionRef;
+  }
+
+  public void setWorkflowRevisionRef(String workflowRevisionRef) {
+    this.workflowRevisionRef = workflowRevisionRef;
   }
 
   public List<RunResult> getWorkflowResults() {

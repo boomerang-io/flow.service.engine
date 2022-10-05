@@ -1,10 +1,10 @@
 package io.boomerang.service;
 
-import io.boomerang.data.model.TaskExecution;
+import io.boomerang.data.entity.TaskRunEntity;
 
 public interface TaskExecutionClient {
   
-  public void createTask(TaskExecutionService taskService, TaskExecution taskExecution);  
-  public void startTask(TaskExecutionService taskService, TaskExecution taskRequest);
-  public void endTask(TaskExecutionService taskService, TaskExecution taskResponse);
+  public void queueTask(TaskExecutionService taskService, TaskRunEntity taskExecution);  
+  public void startTask(TaskExecutionService taskService, TaskRunEntity taskRequest);
+  public void endTask(TaskExecutionService taskService, TaskRunEntity taskResponse);
 }

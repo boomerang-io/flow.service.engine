@@ -1,5 +1,6 @@
 package io.boomerang.service;
 
+import org.springframework.http.ResponseEntity;
 import io.boomerang.model.Workflow;
 
 public interface WorkflowService {
@@ -62,5 +63,5 @@ public interface WorkflowService {
 //  ResponseEntity<WFETriggerResponse> getRevisionProperties(String workflowId, long workflowVersion, String taskId,
 //      String propertyKey);
 
-  Workflow addWorkflow(Workflow workflow);
+  ResponseEntity<?> addWorkflow(Workflow workflow);
 }

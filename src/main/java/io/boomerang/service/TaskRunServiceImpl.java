@@ -12,11 +12,9 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskRunEntity;
-import io.boomerang.data.model.TaskExecution;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.model.TaskExecutionRequest;
 import io.boomerang.model.TaskRun;
-import io.boomerang.util.TaskMapper;
 
 /*
  * Handles CRUD of TaskRuns
@@ -97,9 +95,8 @@ public class TaskRunServiceImpl implements TaskRunService {
     Optional<TaskRunEntity> taskRunEntity =
         taskRunRepository.findById(taskExecutionRequest.get().getTaskRunId());
     if (taskRunEntity.isPresent()) {
-      TaskExecution taskExecution =
-          TaskMapper.taskExecutionRequestToExecutionTask(taskExecutionRequest.get());
-      taskExecutionClient.startTask(taskExecutionService, taskExecution);
+      //TODO handle updating the TaskRun with values from the request
+      taskExecutionClient.startTask(taskExecutionService, taskRunEntity.get());
       return ResponseEntity.ok().build();
     } else {
       return ResponseEntity.notFound().build();
@@ -111,9 +108,8 @@ public class TaskRunServiceImpl implements TaskRunService {
     Optional<TaskRunEntity> taskRunEntity =
         taskRunRepository.findById(taskExecutionRequest.get().getTaskRunId());
     if (taskRunEntity.isPresent()) {
-      TaskExecution taskExecution =
-          TaskMapper.taskExecutionRequestToExecutionTask(taskExecutionRequest.get());
-      taskExecutionClient.endTask(taskExecutionService, taskExecution);
+      //TODO: check if status is already completed or cancelled
+      taskExecutionClient.endTask(taskExecutionService, taskRunEntity.get());
       return ResponseEntity.ok().build();
     } else {
       return ResponseEntity.notFound().build();
