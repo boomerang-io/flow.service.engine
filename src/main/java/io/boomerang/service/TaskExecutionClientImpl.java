@@ -2,7 +2,7 @@ package io.boomerang.service;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import io.boomerang.data.model.TaskExecution;
+import io.boomerang.data.entity.TaskRunEntity;
 
 /*
  * This service performs Async magic
@@ -11,19 +11,19 @@ import io.boomerang.data.model.TaskExecution;
 public class TaskExecutionClientImpl implements TaskExecutionClient {
   @Override
   @Async
-  public void createTask(TaskExecutionService taskService, TaskExecution taskRequest) {
-    taskService.createTask(taskRequest);
+  public void queueTask(TaskExecutionService taskService, TaskRunEntity taskRequest) {
+    taskService.queueTask(taskRequest);
   }
   
   @Override
   @Async
-  public void startTask(TaskExecutionService taskService, TaskExecution taskRequest) {
+  public void startTask(TaskExecutionService taskService, TaskRunEntity taskRequest) {
     taskService.startTask(taskRequest);
   }
 
   @Override
   @Async
-  public void endTask(TaskExecutionService taskService, TaskExecution taskResponse) {
+  public void endTask(TaskExecutionService taskService, TaskRunEntity taskResponse) {
     taskService.endTask(taskResponse);
   }
 }

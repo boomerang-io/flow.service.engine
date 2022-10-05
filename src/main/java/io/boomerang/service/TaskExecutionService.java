@@ -1,16 +1,16 @@
 package io.boomerang.service;
 
 import java.util.List;
-import io.boomerang.data.model.TaskExecution;
+import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.model.RunResult;
 
 public interface TaskExecutionService {
 
-  void createTask(TaskExecution taskExecution);
+  void queueTask(TaskRunEntity taskExecution);
 
-  void startTask(TaskExecution taskRequest);
+  void startTask(TaskRunEntity taskRequest);
 
-  void endTask(TaskExecution request);
+  void endTask(TaskRunEntity request);
 
   List<String> updateTaskRunForTopic(String activityId, String topic);
 

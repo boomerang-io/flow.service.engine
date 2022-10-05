@@ -1,8 +1,8 @@
 package io.boomerang.service;
 
-import io.boomerang.data.model.TaskExecution;
+import io.boomerang.data.entity.TaskRunEntity;
 
 public interface LockManager {
-  public void acquireLock(TaskExecution taskExecution, String activityId);
-  public void releaseLock(TaskExecution taskExecution, String activityId);
+  public void acquireLock(TaskRunEntity taskExecution, String activityId);
+  public void releaseLock(TaskRunEntity taskExecution, String activityId);
 }

@@ -19,6 +19,7 @@ public class TaskTemplateEntity {
 
   @Id
   private String id;
+  private Integer currentVersion;
   private String description;
   private Date lastModified;
   private String name;
@@ -42,6 +43,14 @@ public class TaskTemplateEntity {
 
   public void setId(String id) {
     this.id = id;
+  }
+
+  public Integer getCurrentVersion() {
+    return currentVersion;
+  }
+
+  public void setCurrentVersion(Integer currentVersion) {
+    this.currentVersion = currentVersion;
   }
 
   public String getDescription() {

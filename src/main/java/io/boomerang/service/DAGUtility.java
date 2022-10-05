@@ -1,6 +1,5 @@
 package io.boomerang.service;
 
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,14 +16,12 @@ import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.TaskTemplateEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.data.model.TaskExecution;
 import io.boomerang.data.model.TaskTemplateRevision;
 import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.data.repository.TaskRunRepository;
@@ -45,10 +42,10 @@ public class DAGUtility {
   @Autowired
   private TaskTemplateRepository taskTemplateRepository;
 
-  public boolean validateWorkflow(WorkflowRunEntity wfRunEntity, List<TaskExecution> tasks) {
-    final TaskExecution start =
+  public boolean validateWorkflow(WorkflowRunEntity wfRunEntity, List<TaskRunEntity> tasks) {
+    final TaskRunEntity start =
         tasks.stream().filter(tsk -> TaskType.start.equals(tsk.getType())).findAny().orElse(null);
-    final TaskExecution end =
+    final TaskRunEntity end =
         tasks.stream().filter(tsk -> TaskType.end.equals(tsk.getType())).findAny().orElse(null);
     Graph<String, DefaultEdge> graph = this.createGraph(tasks);
     updateTaskExecutionStatus(graph, tasks, wfRunEntity);
@@ -58,14 +55,13 @@ public class DAGUtility {
     return (pathFromStart.getPath(end.getId()) != null);
   }
 
-  public Graph<String, DefaultEdge> createGraph(List<TaskExecution> tasks) {
+  public Graph<String, DefaultEdge> createGraph(List<TaskRunEntity> tasks) {
     final List<String> vertices =
-        tasks.stream().map(TaskExecution::getId).collect(Collectors.toList());
+        tasks.stream().map(TaskRunEntity::getId).collect(Collectors.toList());
 
     final List<Pair<String, String>> edgeList = new LinkedList<>();
-    for (final TaskExecution task : tasks) {
+    for (final TaskRunEntity task : tasks) {
       for (final TaskDependency dep : task.getDependencies()) {
-        LOGGER.info("!!! Dep: " + dep.toString());
         String depTaskRefAsId = tasks.stream().filter(t -> t.getName().equals(dep.getTaskRef())).findFirst().get().getId();
         final Pair<String, String> pair = Pair.of(depTaskRefAsId, task.getId());
         edgeList.add(pair);
@@ -74,89 +70,68 @@ public class DAGUtility {
     return GraphProcessor.createGraph(vertices, edgeList);
   }
 
-  public List<TaskExecution> createTaskListFromRevision(String workflowName, WorkflowRevisionEntity wfRevisionEntity, WorkflowRunEntity wfRunEntity) {
-    final List<TaskExecution> taskList = new LinkedList<>();
+  public List<TaskRunEntity> createTaskList(WorkflowRevisionEntity wfRevisionEntity,
+      String wfRunId) {
+    final List<TaskRunEntity> taskList = new LinkedList<>();
     for (final WorkflowRevisionTask wfRevisionTask : wfRevisionEntity.getTasks()) {
+      Optional<TaskRunEntity> existingTaskRunEntity =
+          taskRunRepository.findFirstByNameAndWorkflowRunRef(wfRevisionTask.getName(), wfRunId);
+      if (existingTaskRunEntity.isPresent() && existingTaskRunEntity.get() != null) {
+        taskList.add(existingTaskRunEntity.get());
+      } else {
+        TaskRunEntity executionTask = new TaskRunEntity();
+        executionTask.setName(wfRevisionTask.getName());
+        executionTask.setStatus(RunStatus.notstarted);
+        executionTask.setType(wfRevisionTask.getType());
+        executionTask.setTemplateVersion(wfRevisionTask.getTemplateVersion());
+        executionTask.setParams(wfRevisionTask.getParams());
+        executionTask.setLabels(wfRevisionTask.getLabels());
+        executionTask.setAnnotations(wfRevisionTask.getAnnotations());
+        executionTask.setDependencies(wfRevisionTask.getDependencies());
+        executionTask.setWorkflowRef(wfRevisionEntity.getWorkflowRef());
+        executionTask.setWorkflowRevisionRef(wfRevisionEntity.getId());
+        executionTask.setWorkflowRunRef(wfRunId);
 
-      final TaskExecution executionTask = new TaskExecution();
-      // Takes care of duplicating a number of the matching attributes
-      BeanUtils.copyProperties(wfRevisionTask, executionTask);
-      //TODO: determine if this is to be come a NodeID in the annotations
-      //The ID is automatically generated as part of new TaskExecution();
-//      executionTask.setId(wfRevisionTask.getId());
-      executionTask.setType(wfRevisionTask.getType());
-      executionTask.setName(wfRevisionTask.getName());
-      executionTask.setWorkflowRef(wfRevisionEntity.getWorkflowRef());
-      executionTask.setWorkflowName(workflowName);
-      executionTask.setWorkflowRunRef(wfRunEntity.getId());
+        if (TaskType.script.equals(wfRevisionTask.getType())
+            || TaskType.template.equals(wfRevisionTask.getType())
+            || TaskType.customtask.equals(wfRevisionTask.getType())) {
 
-      if (TaskType.script.equals(wfRevisionTask.getType())
-          || TaskType.template.equals(wfRevisionTask.getType())
-          || TaskType.customtask.equals(wfRevisionTask.getType())) {
+          String templateId = wfRevisionTask.getTemplateRef();
+          executionTask.setTemplateRef(templateId);
+          Optional<TaskTemplateEntity> taskTemplate = taskTemplateRepository.findById(templateId);
 
-        Integer templateVersion = wfRevisionTask.getTemplateVersion();
-        String templateId = wfRevisionTask.getTemplateRef();
-        Optional<TaskTemplateEntity> taskTemplate = taskTemplateRepository.findById(templateId);
-        if (taskTemplate.isPresent() && taskTemplate.get().getRevisions() != null) {
-          List<TaskTemplateRevision> revisions = taskTemplate.get().getRevisions();
-          Optional<TaskTemplateRevision> result = revisions.stream().parallel()
-              .filter(revision -> revision.getVersion().equals(templateVersion)).findAny();
-          if (result.isPresent()) {
-            TaskTemplateRevision revision = result.get();
-            executionTask.setTemplateRevision(revision);
-          } else {
-            Optional<TaskTemplateRevision> latestRevision = revisions.stream()
-                .sorted(Comparator.comparingInt(TaskTemplateRevision::getVersion).reversed())
-                .findFirst();
-            if (latestRevision.isPresent()) {
-              executionTask.setTemplateRevision(latestRevision.get());
+          if (taskTemplate.isPresent() && taskTemplate.get().getRevisions() != null) {
+            // Set template version to specified or default to currentVersion
+            Integer templateVersion =
+                wfRevisionTask.getTemplateVersion() != null ? wfRevisionTask.getTemplateVersion()
+                    : taskTemplate.get().getCurrentVersion();
+            Optional<TaskTemplateRevision> revision = taskTemplate.get().getRevisions().stream().parallel()
+                .filter(r -> r.getVersion().equals(templateVersion)).findFirst();
+            if (revision.isPresent()) {
+              executionTask.setTemplateResults(revision.get().getResults());
+            } else {
+           // TODO: throw more accurate exception
+              throw new IllegalArgumentException("Invalid task template version selected: " + templateId + "@" + templateVersion);
             }
+          } else {
+            // TODO: throw more accurate exception
+            throw new IllegalArgumentException("Invalid task template selected: " + templateId);
           }
-          executionTask.setParams(wfRevisionTask.getParams());
-        } else {
-          // TODO: throw more accurate exception
-          throw new IllegalArgumentException("Invalid task template selected: " + templateId);
+        } else if (TaskType.decision.equals(wfRevisionTask.getType())) {
+          executionTask.setDecisionValue(wfRevisionTask.getParams().get("value").toString());
         }
-      } else if (TaskType.decision.equals(wfRevisionTask.getType())) {
-        executionTask.setDecisionValue(wfRevisionTask.getParams().get("value").toString());
+
+        executionTask = this.taskRunRepository.save(executionTask);
+        LOGGER.info("[{}] TaskRunEntity ({}) created for: {}", wfRunId, executionTask.getId(), executionTask.getName());
+        taskList.add(executionTask);
       }
-      LOGGER.info(executionTask.toString());
-      taskList.add(executionTask);
     }
+    LOGGER.info("[{}] Task List: {}", wfRunId, taskList.toString());
     return taskList;
   }
 
-  public List<TaskExecution> createTaskListFromRevisionAndRuns(String workflowName,
-      WorkflowRevisionEntity wfRevisionEntity, WorkflowRunEntity wfRunEntity) {
-    //Build on top of a fresh revision list
-    final List<TaskExecution> taskList = createTaskListFromRevision(workflowName,
-        wfRevisionEntity, wfRunEntity);
-    List<TaskRunEntity> taskRuns = taskRunRepository.findByWorkflowRunRef(wfRunEntity.getId());
-    for (final TaskRunEntity tr : taskRuns) {
-      final TaskExecution executionTask = taskList.stream().filter(t -> t.getName().equals(tr.getTaskName())).findFirst().get();
-      taskList.remove(executionTask);
-      executionTask.setId(tr.getTaskExecutionRef());
-      executionTask.setName(tr.getTaskName());
-      executionTask.setType(tr.getTaskType());
-      executionTask.setStatus(tr.getStatus());
-      executionTask.setRunRef(tr.getId());
-      executionTask.setRunResults(tr.getResults());
-      executionTask.setParams(tr.getParams());
-      executionTask.setTemplateRef(tr.getTaskTemplateRef());
-      executionTask.setTemplateVersion(tr.getTaskTemplateVersion());
-      executionTask.setWorkflowRunRef(tr.getWorkflowRunRef());
-
-      if (TaskType.decision.equals(tr.getTaskType())) {
-        executionTask.setDecisionValue(tr.getDecisionValue());
-      }
-      LOGGER.info("Re-created Execution Task: " + executionTask.toString());
-      taskList.add(executionTask);
-    }
-    return taskList;
-  }
-
-  public boolean canCompleteTask(List<TaskExecution> tasks, TaskExecution current) {
-    final TaskExecution start = tasks.stream().filter(tsk -> TaskType.start.equals(tsk.getType()))
+  public boolean canCompleteTask(List<TaskRunEntity> tasks, TaskRunEntity current) {
+    final TaskRunEntity start = tasks.stream().filter(tsk -> TaskType.start.equals(tsk.getType()))
         .findAny().orElse(null);
     Graph<String, DefaultEdge> graph = this.createGraph(tasks);
     DijkstraShortestPath<String, DefaultEdge> dijkstraAlg = new DijkstraShortestPath<>(graph);
@@ -166,19 +141,16 @@ public class DAGUtility {
   }
 
   private void updateTaskExecutionStatus(Graph<String, DefaultEdge> graph,
-      List<TaskExecution> tasks, WorkflowRunEntity wfRunEntity) {
+      List<TaskRunEntity> tasks, WorkflowRunEntity wfRunEntity) {
     TopologicalOrderIterator<String, DefaultEdge> orderIterator =
         new TopologicalOrderIterator<>(graph);
     while (orderIterator.hasNext()) {
       final String taskId = orderIterator.next();
-      TaskExecution currentTask = this.getTaskById(tasks, taskId);
+      TaskRunEntity currentTask = this.getTaskById(tasks, taskId);
       if (!TaskType.start.equals(currentTask.getType())
           && !TaskType.end.equals(currentTask.getType())) {
-        if (currentTask.getRunRef() == null) {
-          continue;
-        }
 
-        Optional<TaskRunEntity> taskRunEntity = taskRunRepository.findById(currentTask.getRunRef());
+        Optional<TaskRunEntity> taskRunEntity = taskRunRepository.findById(currentTask.getId());
 
         if (taskRunEntity.isPresent()) {
           RunStatus taskRunStatus = taskRunEntity.get().getStatus();
@@ -198,8 +170,8 @@ public class DAGUtility {
     }
   }
 
-  private void processDecision(Graph<String, DefaultEdge> graph, List<TaskExecution> tasksToRun,
-      String workflowRunId, String value, final String currentVertex, TaskExecution currentTask) {
+  private void processDecision(Graph<String, DefaultEdge> graph, List<TaskRunEntity> tasksToRun,
+      String workflowRunId, String value, final String currentVertex, TaskRunEntity currentTask) {
     List<String> removeList =
         calculateNodesToRemove(graph, tasksToRun, workflowRunId, value, currentVertex, currentTask);
     Iterator<DefaultEdge> itrerator = graph.edgesOf(currentVertex).iterator();
@@ -216,8 +188,8 @@ public class DAGUtility {
   }
 
   private List<String> calculateNodesToRemove(Graph<String, DefaultEdge> graph,
-      List<TaskExecution> tasksToRun, String activityId, String value, final String currentVert,
-      TaskExecution currentTask) {
+      List<TaskRunEntity> tasksToRun, String activityId, String value, final String currentVert,
+      TaskRunEntity currentTask) {
     Set<DefaultEdge> outgoingEdges = graph.outgoingEdgesOf(currentVert);
 
     List<String> matchedNodes = new LinkedList<>();
@@ -225,7 +197,7 @@ public class DAGUtility {
 
     for (DefaultEdge edge : outgoingEdges) {
       String destination = graph.getEdgeTarget(edge);
-      TaskExecution destTask =
+      TaskRunEntity destTask =
           tasksToRun.stream().filter(t -> t.getId().equals(destination)).findFirst().orElse(null);
       if (destTask != null) {
         Optional<TaskDependency> optionalDependency = getOptionalDependency(currentVert, destTask);
@@ -263,8 +235,8 @@ public class DAGUtility {
     return removeList;
   }
 
-  private void updateTaskInGraph(Graph<String, DefaultEdge> graph, List<TaskExecution> tasksToRun,
-      TaskExecution currentTask) {
+  private void updateTaskInGraph(Graph<String, DefaultEdge> graph, List<TaskRunEntity> tasksToRun,
+      TaskRunEntity currentTask) {
     String currentVert = currentTask.getId();
     List<String> matchedNodes = new LinkedList<>();
     Set<DefaultEdge> outgoingEdges = graph.outgoingEdgesOf(currentVert);
@@ -272,7 +244,7 @@ public class DAGUtility {
 
     for (DefaultEdge edge : outgoingEdges) {
       String destination = graph.getEdgeTarget(edge);
-      TaskExecution destTask =
+      TaskRunEntity destTask =
           tasksToRun.stream().filter(t -> t.getId().equals(destination)).findFirst().orElse(null);
       if (destTask != null) {
         Optional<TaskDependency> optionalDependency = getOptionalDependency(currentVert, destTask);
@@ -304,18 +276,18 @@ public class DAGUtility {
   }
 
   private Optional<TaskDependency> getOptionalDependency(final String currentVert,
-      TaskExecution destTask) {
+      TaskRunEntity destTask) {
     Optional<TaskDependency> optionalDependency = destTask.getDependencies().stream()
         .filter(d -> d.getTaskRef().equals(currentVert)).findAny();
     return optionalDependency;
   }
 
-  private TaskExecution getTaskById(List<TaskExecution> tasks, String id) {
+  private TaskRunEntity getTaskById(List<TaskRunEntity> tasks, String id) {
     return tasks.stream().filter(tsk -> id.equals(tsk.getId())).findAny().orElse(null);
   }
 
-  public List<TaskExecution> getTasksDependants(List<TaskExecution> tasks,
-      TaskExecution currentTask) {
+  public List<TaskRunEntity> getTasksDependants(List<TaskRunEntity> tasks,
+      TaskRunEntity currentTask) {
     return tasks.stream().filter(t -> t.getDependencies().stream()
         .anyMatch(d -> d.getTaskRef().equals(currentTask.getName())))
         .collect(Collectors.toList());

@@ -1,6 +1,7 @@
 package io.boomerang.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +28,7 @@ public class WorkflowV1Controller {
   @Operation(summary = "Create a new workflow")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public Workflow addWorkflow(@RequestBody Workflow workflow) {
+  public ResponseEntity<?> addWorkflow(@RequestBody Workflow workflow) {
     return workflowService.addWorkflow(workflow);
   }
 

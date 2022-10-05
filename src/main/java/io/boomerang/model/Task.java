@@ -10,16 +10,15 @@ import io.boomerang.model.enums.TaskType;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Task {
   
-  //TODO: add back in if needed post decision - i think we can use a metadata NodeID for the Front End
-//  private String id = new ObjectId().toString();
+  private String name;
   
   private TaskType type;
-  
-  private String name;
   
   private String templateRef;
   
   private Integer templateVersion;
+  
+  private Map<String, String> labels = new HashMap<>();
   
   private Map<String, Object> params = new HashMap<>();
   
@@ -29,14 +28,6 @@ public class Task {
   
   //This is needed as some of our Tasks allow you to define Result Definitions on the fly
   private List<TaskTemplateResult> results;
-
-//  public String getId() {
-//    return id;
-//  }
-//
-//  public void setId(String id) {
-//    this.id = id;
-//  }
 
   public TaskType getType() {
     return type;
@@ -100,5 +91,13 @@ public class Task {
 
   public void setResults(List<TaskTemplateResult> results) {
     this.results = results;
+  }
+
+  public Map<String, String> getLabels() {
+    return labels;
+  }
+
+  public void setLabels(Map<String, String> labels) {
+    this.labels = labels;
   }
 }

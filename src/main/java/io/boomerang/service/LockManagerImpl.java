@@ -18,7 +18,7 @@ import com.github.alturkovic.lock.exception.LockNotAvailableException;
 import com.github.alturkovic.lock.mongo.impl.SimpleMongoLock;
 import com.github.alturkovic.lock.retry.RetriableLock;
 import io.boomerang.config.MongoConfiguration;
-import io.boomerang.data.model.TaskExecution;
+import io.boomerang.data.entity.TaskRunEntity;
 
 @Service
 public class LockManagerImpl implements LockManager {
@@ -35,7 +35,7 @@ public class LockManagerImpl implements LockManager {
   private static final Logger LOGGER = LogManager.getLogger(LockManagerImpl.class);
 
   @Override
-  public void acquireLock(TaskExecution taskExecution, String wfRunId) {
+  public void acquireLock(TaskRunEntity taskExecution, String wfRunId) {
     long timeout = 60000;
     String key = null;
 
@@ -112,7 +112,7 @@ public class LockManagerImpl implements LockManager {
   }
 
   @Override
-  public void releaseLock(TaskExecution taskExecution, String wfRunId) {
+  public void releaseLock(TaskRunEntity taskExecution, String wfRunId) {
     String key = null;
     if (taskExecution != null) {
       String workflowId = taskExecution.getWorkflowRef();

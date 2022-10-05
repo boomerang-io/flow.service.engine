@@ -1,7 +1,6 @@
 package io.boomerang.service;
 
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -16,8 +15,6 @@ import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.data.model.TaskExecution;
-import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.exceptions.InvalidWorkflowRuntimeException;
 import io.boomerang.model.TaskExecutionRequest;
@@ -31,9 +28,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
   @Autowired
   private WorkflowRunRepository workflowRunRepository;
-
-  @Autowired
-  private TaskRunRepository taskRunRepository;
 
   @Autowired
   private DAGUtility dagUtility;
@@ -50,15 +44,12 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   @Override
   public CompletableFuture<Boolean> executeWorkflowVersion(WorkflowEntity workflow, WorkflowRevisionEntity wfRevisionEntity,
       WorkflowRunEntity wfRunEntity) {
-    final List<TaskExecution> tasks = dagUtility.createTaskListFromRevision(workflow.getName(), wfRevisionEntity, wfRunEntity);
+    final List<TaskRunEntity> tasks = dagUtility.createTaskList(wfRevisionEntity, wfRunEntity.getId());
     LOGGER.info("[{}] Found {} tasks: {}", wfRunEntity.getId(), tasks.size(), tasks.toString());
-    final TaskExecution start = getTaskByType(tasks, TaskType.start);
-    final TaskExecution end = getTaskByType(tasks, TaskType.end);
+    final TaskRunEntity start = getTaskByType(tasks, TaskType.start);
+    final TaskRunEntity end = getTaskByType(tasks, TaskType.end);
     final Graph<String, DefaultEdge> graph = dagUtility.createGraph(tasks);
     if (dagUtility.validateWorkflow(wfRunEntity, tasks)) {
-      createTaskPlan(tasks, wfRunEntity.getId(), start, end, graph);
-
-      LOGGER.debug("!!! Task plan created: {}", tasks.toString());
       return CompletableFuture
           .supplyAsync(executeWorkflowAsync(wfRunEntity.getId(), start, end, graph, tasks));
     }
@@ -69,42 +60,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     throw new InvalidWorkflowRuntimeException();
   }
 
-  private void createTaskPlan(List<TaskExecution> tasks, String wfRunId, final TaskExecution start,
-      final TaskExecution end, final Graph<String, DefaultEdge> graph) {
-    final List<String> nodes =
-        GraphProcessor.createOrderedTaskList(graph, start.getId(), end.getId());
-    LOGGER.debug("!!! Tasks to plan: " + nodes.size());
-    final List<TaskExecution> tasksToExecute = new LinkedList<>();
-    for (final String node : nodes) {
-      final TaskExecution taskToAdd =
-          tasks.stream().filter(tsk -> node.equals(tsk.getId())).findAny().orElse(null);
-      tasksToExecute.add(taskToAdd);
-    }
-
-//    long order = 1;
-    for (final TaskExecution executionTask : tasksToExecute) {
-      TaskRunEntity taskRunEntity = new TaskRunEntity();
-      taskRunEntity.setWorkflowRunRef(wfRunId);
-      taskRunEntity.setTaskExecutionRef(executionTask.getId());
-      taskRunEntity.setStatus(RunStatus.notstarted);
-//      taskRunEntity.setOrder(order);
-      taskRunEntity.setTaskName(executionTask.getName());
-      taskRunEntity.setTaskType(executionTask.getType());
-      if (executionTask.getTemplateRef() != null) {
-        taskRunEntity.setTaskTemplateRef(executionTask.getTemplateRef());
-        taskRunEntity.setTaskTemplateVersion(executionTask.getTemplateVersion());
-      }
-
-      taskRunEntity = this.taskRunRepository.save(taskRunEntity);
-      LOGGER.debug("!!! TaskRunEntity ({}) created for: {}", taskRunEntity.getId(), executionTask.getName());
-      tasks.get(tasks.indexOf(executionTask)).setRunRef(taskRunEntity.getId());
-//      order++;
-    }
-  }
-
-  private Supplier<Boolean> executeWorkflowAsync(String wfRunId, final TaskExecution start,
-      final TaskExecution end, final Graph<String, DefaultEdge> graph,
-      final List<TaskExecution> tasksToRun) {
+  private Supplier<Boolean> executeWorkflowAsync(String wfRunId, final TaskRunEntity start,
+      final TaskRunEntity end, final Graph<String, DefaultEdge> graph,
+      final List<TaskRunEntity> tasksToRun) {
     return () -> {
       final Optional<WorkflowRunEntity> optWfRunEntity =
           this.workflowRunRepository.findById(wfRunId);
@@ -133,18 +91,18 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         LOGGER.info("[{}] Executing Workflow Async...", wfRunEntity.getId());
 
           try {
-            List<TaskExecution> nextNodes = dagUtility.getTasksDependants(tasksToRun, start);
+            List<TaskRunEntity> nextNodes = dagUtility.getTasksDependants(tasksToRun, start);
             LOGGER.debug("[{}] Next Nodes Size: {}", wfRunEntity.getId(), nextNodes.size());
-            for (TaskExecution next : nextNodes) {
+            for (TaskRunEntity next : nextNodes) {
               final List<String> nodes =
                   GraphProcessor.createOrderedTaskList(graph, start.getId(), end.getId());
 
               if (nodes.contains(next.getId())) {
-                LOGGER.info("[{}] Creating TaskRun ({})...", wfRunEntity.getId(), next.getRunRef());
+                LOGGER.info("[{}] Creating TaskRun ({})...", wfRunEntity.getId(), next.getId());
                 TaskExecutionRequest taskRequest = new TaskExecutionRequest();
-                taskRequest.setTaskRunId(next.getRunRef());
+                taskRequest.setTaskRunId(next.getId());
                 taskRequest.setWorkflowRunId(wfRunId);
-                taskClient.createTask(taskService, next);
+                taskClient.queueTask(taskService, next);
               }
             }
           } catch (Exception e) {
@@ -157,7 +115,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     };
   }
 
-  private TaskExecution getTaskByType(List<TaskExecution> tasks, TaskType type) {
+  private TaskRunEntity getTaskByType(List<TaskRunEntity> tasks, TaskType type) {
     return tasks.stream().filter(tsk -> type.equals(tsk.getType())).findAny().orElse(null);
   }
 }
