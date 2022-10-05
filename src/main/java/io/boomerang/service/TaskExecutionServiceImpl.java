@@ -127,7 +127,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
     List<TaskExecution> tasks =
-        dagUtility.createTaskList(workflowName, wfRevisionEntity.get(), wfRunEntity.get());
+        dagUtility.createTaskListFromRevisionAndRuns(workflowName, wfRevisionEntity.get(), wfRunEntity.get());
+    LOGGER.debug("!!! Tasks: " + tasks.toString());
     boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
 
     String wfRunId = wfRunEntity.get().getId();
@@ -239,7 +240,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.getWorkflowRevisionRef());
-    List<TaskExecution> tasks = dagUtility.createTaskList(taskExecution.getWorkflowName(),
+    List<TaskExecution> tasks = dagUtility.createTaskListFromRevision(taskExecution.getWorkflowName(),
         wfRevisionEntity.get(), wfRunEntity);
 
     List<String> keys = new LinkedList<>();

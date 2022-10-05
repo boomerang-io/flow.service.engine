@@ -50,7 +50,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   @Override
   public CompletableFuture<Boolean> executeWorkflowVersion(WorkflowEntity workflow, WorkflowRevisionEntity wfRevisionEntity,
       WorkflowRunEntity wfRunEntity) {
-    final List<TaskExecution> tasks = dagUtility.createTaskList(workflow.getName(), wfRevisionEntity, wfRunEntity);
+    final List<TaskExecution> tasks = dagUtility.createTaskListFromRevision(workflow.getName(), wfRevisionEntity, wfRunEntity);
     LOGGER.info("[{}] Found {} tasks: {}", wfRunEntity.getId(), tasks.size(), tasks.toString());
     final TaskExecution start = getTaskByType(tasks, TaskType.start);
     final TaskExecution end = getTaskByType(tasks, TaskType.end);

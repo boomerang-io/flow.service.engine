@@ -73,7 +73,7 @@ public class DAGUtility {
     return GraphProcessor.createGraph(vertices, edgeList);
   }
 
-  public List<TaskExecution> createTaskList(String workflowName, WorkflowRevisionEntity wfRevisionEntity, WorkflowRunEntity wfRunEntity) {
+  public List<TaskExecution> createTaskListFromRevision(String workflowName, WorkflowRevisionEntity wfRevisionEntity, WorkflowRunEntity wfRunEntity) {
     final List<TaskExecution> taskList = new LinkedList<>();
     for (final WorkflowRevisionTask wfRevisionTask : wfRevisionEntity.getTasks()) {
 
@@ -102,15 +102,13 @@ public class DAGUtility {
               .filter(revision -> revision.getVersion().equals(templateVersion)).findAny();
           if (result.isPresent()) {
             TaskTemplateRevision revision = result.get();
-            executionTask.setRevision(revision);
-            executionTask.setTemplateResults(revision.getResults());
+            executionTask.setTemplateRevision(revision);
           } else {
             Optional<TaskTemplateRevision> latestRevision = revisions.stream()
                 .sorted(Comparator.comparingInt(TaskTemplateRevision::getVersion).reversed())
                 .findFirst();
             if (latestRevision.isPresent()) {
-              executionTask.setRevision(latestRevision.get());
-              executionTask.setTemplateResults(executionTask.getRevision().getResults());
+              executionTask.setTemplateRevision(latestRevision.get());
             }
           }
           executionTask.setParams(wfRevisionTask.getParams());
@@ -123,6 +121,66 @@ public class DAGUtility {
       }
       LOGGER.info(executionTask.toString());
       taskList.add(executionTask);
+    }
+    return taskList;
+  }
+
+  public List<TaskExecution> createTaskListFromRevisionAndRuns(String workflowName,
+      WorkflowRevisionEntity wfRevisionEntity, WorkflowRunEntity wfRunEntity) {
+    // Check if the WorkflowRun already has TaskRun's created
+    final List<TaskExecution> taskList = new LinkedList<>();
+    List<TaskRunEntity> taskRuns = taskRunRepository.findByWorkflowRunRef(wfRunEntity.getId());
+    if (!taskRuns.isEmpty()) {
+      for (final TaskRunEntity tr : taskRuns) {
+        final TaskExecution executionTask = new TaskExecution();
+        executionTask.setId(tr.getTaskExecutionRef());
+        executionTask.setName(tr.getTaskName());
+        executionTask.setType(tr.getTaskType());
+        executionTask.setStatus(tr.getStatus());
+        executionTask.setRunRef(tr.getId());
+        executionTask.setRunResults(tr.getResults());
+        executionTask.setParams(tr.getParams());
+        executionTask.setTemplateRef(tr.getTaskTemplateRef());
+        executionTask.setTemplateVersion(tr.getTaskTemplateVersion());
+        executionTask.setWorkflowRunRef(tr.getWorkflowRunRef());
+
+        executionTask.setWorkflowName(workflowName);
+        executionTask.setWorkflowRef(wfRevisionEntity.getWorkflowRef());
+        WorkflowRevisionTask wfRevisionTask = wfRevisionEntity.getTasks().stream().filter(t -> t.getName().equals(tr.getTaskName())).findFirst().get();
+        executionTask.setDependencies(wfRevisionTask.getDependencies());
+        // if (TaskType.script.equals(tr.getTaskType())
+        // || TaskType.template.equals(tr.getTaskType())
+        // || TaskType.customtask.equals(tr.getTaskType())) {
+
+        // Optional<TaskTemplateEntity> taskTemplate =
+        // taskTemplateRepository.findById(tr.getTaskTemplateRef());
+        // if (taskTemplate.isPresent() && taskTemplate.get().getRevisions() != null) {
+        // List<TaskTemplateRevision> revisions = taskTemplate.get().getRevisions();
+        // Optional<TaskTemplateRevision> result = revisions.stream().parallel()
+        // .filter(revision -> revision.getVersion().equals(tr.getTaskTemplateVersion())).findAny();
+        // if (result.isPresent()) {
+        // TaskTemplateRevision revision = result.get();
+        // executionTask.setTemplateRevision(revision);
+        // } else {
+        // Optional<TaskTemplateRevision> latestRevision = revisions.stream()
+        // .sorted(Comparator.comparingInt(TaskTemplateRevision::getVersion).reversed())
+        // .findFirst();
+        // if (latestRevision.isPresent()) {
+        // executionTask.setTemplateRevision(latestRevision.get());
+        // }
+        // }
+        // } else {
+        // // TODO: throw more accurate exception
+        // throw new IllegalArgumentException("Invalid task template selected: " +
+        // tr.getTaskTemplateRef());
+        // }
+        // } else
+        if (TaskType.decision.equals(tr.getTaskType())) {
+          executionTask.setDecisionValue(tr.getDecisionValue());
+        }
+        LOGGER.info(executionTask.toString());
+        taskList.add(executionTask);
+      }
     }
     return taskList;
   }

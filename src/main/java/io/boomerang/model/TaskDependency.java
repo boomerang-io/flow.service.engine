@@ -11,6 +11,12 @@ public class TaskDependency {
   private String decisionCondition;
 
   private ExecutionCondition executionCondition = ExecutionCondition.always;
+  
+  @Override
+  public String toString() {
+    return "TaskDependency [taskRef=" + taskRef + ", decisionCondition=" + decisionCondition
+        + ", executionCondition=" + executionCondition + "]";
+  }
 
   public String getTaskRef() {
     return taskRef;
