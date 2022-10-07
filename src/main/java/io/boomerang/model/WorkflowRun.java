@@ -5,14 +5,14 @@ import org.springframework.beans.BeanUtils;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.boomerang.data.entity.WorkflowRunEntity;
 
-@JsonPropertyOrder({"id", "creationDate", "status", "duration", "workflowName", "workflowRef", "workflowRevisionRef", "labels", "params", "tasks" })
+@JsonPropertyOrder({"id", "creationDate", "status", "phase", "duration", "workflowName", "workflowRef", "workflowRevisionRef", "labels", "params", "tasks" })
 public class WorkflowRun extends WorkflowRunEntity {
 
   private String description;
 
   private String workflowName;
 
-  private List<TaskExecutionResponse> tasks;
+  private List<TaskRun> tasks;
   
   public WorkflowRun() {
     
@@ -39,11 +39,11 @@ public class WorkflowRun extends WorkflowRunEntity {
     this.workflowName = workflowName;
   }
 
-  public List<TaskExecutionResponse> getTasks() {
+  public List<TaskRun> getTasks() {
     return tasks;
   }
 
-  public void setTasks(List<TaskExecutionResponse> taskRuns) {
+  public void setTasks(List<TaskRun> taskRuns) {
     this.tasks = taskRuns;
   }
 }

@@ -54,8 +54,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Submit a Workflow to be run. Will queue the Workflow Run ready for execution.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<?> submitWorkflow(@PathVariable String workflowId,
-      @RequestBody Optional<WorkflowExecutionRequest> executionRequest) {
+  public ResponseEntity<?> submitWorkflow(@RequestBody Optional<WorkflowExecutionRequest> executionRequest) {
     return workflowRunService.submit(executionRequest);
   }
 
@@ -63,8 +62,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Start Workflow Run execution. The Workflow Run has to already have been queued.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<?> startWorkflow(@PathVariable String workflowId,
-      @RequestBody Optional<WorkflowExecutionRequest> executionRequest) {
+  public ResponseEntity<?> startWorkflow(@RequestBody Optional<WorkflowExecutionRequest> executionRequest) {
     return workflowRunService.start(executionRequest);
   }
 
@@ -72,8 +70,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "End a Workflow Run")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<?> endWorkflow(@PathVariable String workflowId,
-      @RequestBody Optional<WorkflowExecutionRequest> executionRequest) {
+  public ResponseEntity<?> endWorkflow(@RequestBody Optional<WorkflowExecutionRequest> executionRequest) {
     return workflowRunService.end(executionRequest);
   }
 }

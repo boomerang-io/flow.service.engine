@@ -1,5 +1,6 @@
 package io.boomerang.service;
 
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,6 +29,7 @@ import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.model.TaskDependency;
 import io.boomerang.model.enums.ExecutionCondition;
+import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.util.GraphProcessor;
@@ -48,7 +50,7 @@ public class DAGUtility {
     final TaskRunEntity end =
         tasks.stream().filter(tsk -> TaskType.end.equals(tsk.getType())).findAny().orElse(null);
     Graph<String, DefaultEdge> graph = this.createGraph(tasks);
-    updateTaskExecutionStatus(graph, tasks, wfRunEntity);
+    updateTaskExecutionStatus(graph, tasks);
     DijkstraShortestPath<String, DefaultEdge> dijkstraAlg = new DijkstraShortestPath<>(graph);
     final SingleSourcePaths<String, DefaultEdge> pathFromStart =
         dijkstraAlg.getPaths(start.getId());
@@ -70,6 +72,7 @@ public class DAGUtility {
     return GraphProcessor.createGraph(vertices, edgeList);
   }
 
+  //TODO: determine a better way to handle the start and end task without saving them as a TaskRunEntity
   public List<TaskRunEntity> createTaskList(WorkflowRevisionEntity wfRevisionEntity,
       String wfRunId) {
     final List<TaskRunEntity> taskList = new LinkedList<>();
@@ -82,7 +85,9 @@ public class DAGUtility {
         TaskRunEntity executionTask = new TaskRunEntity();
         executionTask.setName(wfRevisionTask.getName());
         executionTask.setStatus(RunStatus.notstarted);
+        executionTask.setPhase(RunPhase.pending);
         executionTask.setType(wfRevisionTask.getType());
+        executionTask.setCreationDate(new Date());
         executionTask.setTemplateVersion(wfRevisionTask.getTemplateVersion());
         executionTask.setParams(wfRevisionTask.getParams());
         executionTask.setLabels(wfRevisionTask.getLabels());
@@ -117,11 +122,13 @@ public class DAGUtility {
             // TODO: throw more accurate exception
             throw new IllegalArgumentException("Invalid task template selected: " + templateId);
           }
-        } else if (TaskType.decision.equals(wfRevisionTask.getType())) {
-          executionTask.setDecisionValue(wfRevisionTask.getParams().get("value").toString());
-        }
+        } 
+        //TODO: ensure we don't need this set at this point
+//        else if (TaskType.decision.equals(wfRevisionTask.getType())) {
+//          executionTask.setDecisionValue(wfRevisionTask.getParams().get("value").toString());
+//        }
 
-        executionTask = this.taskRunRepository.save(executionTask);
+        taskRunRepository.save(executionTask);
         LOGGER.info("[{}] TaskRunEntity ({}) created for: {}", wfRunId, executionTask.getId(), executionTask.getName());
         taskList.add(executionTask);
       }
@@ -131,17 +138,21 @@ public class DAGUtility {
   }
 
   public boolean canCompleteTask(List<TaskRunEntity> tasks, TaskRunEntity current) {
-    final TaskRunEntity start = tasks.stream().filter(tsk -> TaskType.start.equals(tsk.getType()))
-        .findAny().orElse(null);
+    final TaskRunEntity start = this.getTaskByType(tasks, TaskType.start);
     Graph<String, DefaultEdge> graph = this.createGraph(tasks);
+    updateTaskExecutionStatus(graph, tasks);
     DijkstraShortestPath<String, DefaultEdge> dijkstraAlg = new DijkstraShortestPath<>(graph);
     final SingleSourcePaths<String, DefaultEdge> pathFromStart =
         dijkstraAlg.getPaths(start.getId());
     return (pathFromStart.getPath(current.getId()) != null);
   }
+  
+  public TaskRunEntity getTaskByType(List<TaskRunEntity> tasks, TaskType type) {
+    return tasks.stream().filter(tsk -> type.equals(tsk.getType())).findAny().orElse(null);
+  }
 
   private void updateTaskExecutionStatus(Graph<String, DefaultEdge> graph,
-      List<TaskRunEntity> tasks, WorkflowRunEntity wfRunEntity) {
+      List<TaskRunEntity> tasks) {
     TopologicalOrderIterator<String, DefaultEdge> orderIterator =
         new TopologicalOrderIterator<>(graph);
     while (orderIterator.hasNext()) {
@@ -158,7 +169,8 @@ public class DAGUtility {
               || RunStatus.failed.equals(taskRunStatus)) {
             if (TaskType.decision.equals(currentTask.getType())) {
               String decisionValue = taskRunEntity.get().getDecisionValue();
-              processDecision(graph, tasks, wfRunEntity.getId(), decisionValue, currentTask.getId(),
+              LOGGER.debug("!!! Decision Value: {}", decisionValue);
+              processDecision(graph, tasks, decisionValue, currentTask.getId(),
                   currentTask);
             } else {
               currentTask.setStatus(taskRunStatus);
@@ -171,9 +183,9 @@ public class DAGUtility {
   }
 
   private void processDecision(Graph<String, DefaultEdge> graph, List<TaskRunEntity> tasksToRun,
-      String workflowRunId, String value, final String currentVertex, TaskRunEntity currentTask) {
+      String value, final String currentVertex, TaskRunEntity currentTask) {
     List<String> removeList =
-        calculateNodesToRemove(graph, tasksToRun, workflowRunId, value, currentVertex, currentTask);
+        calculateNodesToRemove(graph, tasksToRun, value, currentVertex, currentTask);
     Iterator<DefaultEdge> itrerator = graph.edgesOf(currentVertex).iterator();
     while (itrerator.hasNext()) {
       DefaultEdge e = itrerator.next();
@@ -188,7 +200,7 @@ public class DAGUtility {
   }
 
   private List<String> calculateNodesToRemove(Graph<String, DefaultEdge> graph,
-      List<TaskRunEntity> tasksToRun, String activityId, String value, final String currentVert,
+      List<TaskRunEntity> tasksToRun, String value, final String currentVert,
       TaskRunEntity currentTask) {
     Set<DefaultEdge> outgoingEdges = graph.outgoingEdgesOf(currentVert);
 
@@ -200,11 +212,12 @@ public class DAGUtility {
       TaskRunEntity destTask =
           tasksToRun.stream().filter(t -> t.getId().equals(destination)).findFirst().orElse(null);
       if (destTask != null) {
-        Optional<TaskDependency> optionalDependency = getOptionalDependency(currentVert, destTask);
+        Optional<TaskDependency> optionalDependency = getOptionalDependency(currentTask.getName(), destTask);
         if (optionalDependency.isPresent()) {
           TaskDependency dependency = optionalDependency.get();
           String linkValue = dependency.getDecisionCondition();
 
+          LOGGER.debug("!!! Decision Condition: {}", linkValue);
           String node = destTask.getId();
 
           boolean matched = false;
@@ -256,7 +269,8 @@ public class DAGUtility {
               && (RunStatus.failed.equals(status) && ExecutionCondition.failure.equals(condition))
               || (RunStatus.succeeded.equals(status)
                   && ExecutionCondition.success.equals(condition))
-              || (ExecutionCondition.always.equals(condition))) {
+              || (ExecutionCondition.always.equals(condition))
+              || (ExecutionCondition.conditional.equals(condition))) {
             matchedNodes.add(node);
           }
         }

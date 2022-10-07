@@ -21,6 +21,7 @@ import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.model.TaskExecutionResponse;
+import io.boomerang.model.TaskRun;
 import io.boomerang.model.WorkflowExecutionRequest;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.enums.RunStatus;
@@ -117,9 +118,11 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
       workflowExecutionClient.queueRevision(workflowExecutionService, wfRunEntity);
 
-      final List<TaskExecutionResponse> taskRuns = getTaskExecutions(wfRunEntity.getId());
+//      final List<TaskExecutionResponse> taskRuns = getTaskExecutions(wfRunEntity.getId());
       final WorkflowRun response = new WorkflowRun(wfRunEntity);
-      response.setTasks(taskRuns);
+//      response.setTasks(taskRuns);
+
+      response.setTasks(getTaskRuns(wfRunEntity.getId()));
       response.setWorkflowName(workflow.getName());
       return ResponseEntity.ok(response);
     } else {
@@ -137,9 +140,10 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
         workflowExecutionClient.startRevision(workflowExecutionService, wfRunEntity.get());
 
-        final List<TaskExecutionResponse> taskRuns = getTaskExecutions(wfRunEntity.get().getId());
+//        final List<TaskExecutionResponse> taskRuns = getTaskExecutions(wfRunEntity.get().getId());
         final WorkflowRun response = new WorkflowRun(wfRunEntity.get());
-        response.setTasks(taskRuns);
+        response.setTasks(getTaskRuns(wfRunEntity.get().getId()));
+//        response.setTasks(taskRuns);
 //        response.setWorkflowName(workflow.getName());
         return ResponseEntity.ok(response);
     }
@@ -157,6 +161,17 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     } else {
       return ResponseEntity.notFound().build();
     }
+  }
+
+  private List<TaskRun> getTaskRuns(String workflowRunId) {
+    List<TaskRunEntity> runs = taskRunRepository.findByWorkflowRunRef(workflowRunId);
+    List<TaskRun> taskRuns = new LinkedList<>();
+
+    for (TaskRunEntity run : runs) {
+      TaskRun tr = new TaskRun(run);
+      taskRuns.add(tr);
+    }
+    return taskRuns;
   }
 
   private List<TaskExecutionResponse> getTaskExecutions(String workflowRunId) {
