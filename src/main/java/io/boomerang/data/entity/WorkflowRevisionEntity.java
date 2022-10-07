@@ -11,7 +11,6 @@ import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.WorkflowParam;
 import io.boomerang.model.WorkflowWorkspace;
-import io.boomerang.model.projectstormv5.RestConfig;
 
 /*
  * Workflow Revision Entity stores the detail for each version of the workflow in conjunction with Workflow Entity
@@ -36,7 +35,7 @@ public class WorkflowRevisionEntity {
   private String markdown;
   
   //TODO: merge into the DAG
-  private RestConfig config;
+//  private RestConfig config;
   
   private List<WorkflowWorkspace> workspaces;
 
@@ -89,14 +88,14 @@ public class WorkflowRevisionEntity {
   public void setMarkdown(String markdown) {
     this.markdown = markdown;
   }
-
-  public RestConfig getConfig() {
-    return config;
-  }
-
-  public void setConfig(RestConfig config) {
-    this.config = config;
-  }
+//
+//  public RestConfig getConfig() {
+//    return config;
+//  }
+//
+//  public void setConfig(RestConfig config) {
+//    this.config = config;
+//  }
 
   public List<WorkflowParam> getParams() {
     return params;

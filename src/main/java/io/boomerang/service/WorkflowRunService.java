@@ -1,17 +1,21 @@
 package io.boomerang.service;
 
 import java.util.List;
-import java.util.Map;
-import io.boomerang.data.entity.WorkflowRevisionEntity;
-import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.model.TaskExecutionResponse;
+import java.util.Optional;
+import org.springframework.http.ResponseEntity;
 import io.boomerang.model.WorkflowExecutionRequest;
+import io.boomerang.model.WorkflowRun;
 
 public interface WorkflowRunService {
 
-  List<TaskExecutionResponse> getTaskExecutions(String workflowRunId);
+  ResponseEntity<?> get(String workflowRunId);
 
-  WorkflowRunEntity createRun(WorkflowRevisionEntity revision, WorkflowExecutionRequest request,
-      Map<String, String> labels);
+  List<WorkflowRun> query(Optional<String> labels);
+
+  ResponseEntity<?> submit(Optional<WorkflowExecutionRequest> executionRequest);
+
+  ResponseEntity<?> start(Optional<WorkflowExecutionRequest> executionRequest);
+
+  ResponseEntity<?> end(Optional<WorkflowExecutionRequest> executionRequest);
   
 }

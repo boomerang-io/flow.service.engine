@@ -111,7 +111,7 @@ public class DAGUtility {
               executionTask.setTemplateResults(revision.get().getResults());
             } else {
            // TODO: throw more accurate exception
-              throw new IllegalArgumentException("Invalid task template version selected: " + templateId + "@" + templateVersion);
+              throw new IllegalArgumentException("Invalid task template version selected: " + templateId + " @ " + templateVersion);
             }
           } else {
             // TODO: throw more accurate exception
@@ -154,8 +154,8 @@ public class DAGUtility {
 
         if (taskRunEntity.isPresent()) {
           RunStatus taskRunStatus = taskRunEntity.get().getStatus();
-          if (RunStatus.completed.equals(taskRunStatus)
-              || RunStatus.failure.equals(taskRunStatus)) {
+          if (RunStatus.succeeded.equals(taskRunStatus)
+              || RunStatus.failed.equals(taskRunStatus)) {
             if (TaskType.decision.equals(currentTask.getType())) {
               String decisionValue = taskRunEntity.get().getDecisionValue();
               processDecision(graph, tasks, wfRunEntity.getId(), decisionValue, currentTask.getId(),
@@ -253,8 +253,8 @@ public class DAGUtility {
           ExecutionCondition condition = dependency.getExecutionCondition();
           String node = destTask.getId();
           if (condition != null
-              && (RunStatus.failure.equals(status) && ExecutionCondition.failure.equals(condition))
-              || (RunStatus.completed.equals(status)
+              && (RunStatus.failed.equals(status) && ExecutionCondition.failure.equals(condition))
+              || (RunStatus.succeeded.equals(status)
                   && ExecutionCondition.success.equals(condition))
               || (ExecutionCondition.always.equals(condition))) {
             matchedNodes.add(node);

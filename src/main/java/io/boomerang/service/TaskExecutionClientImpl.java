@@ -5,10 +5,13 @@ import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskRunEntity;
 
 /*
- * This service performs Async magic
+ * Internal client allowing for async processing of individual tasks.
+ * 
+ * Referenced by both the external TaskRun Controller and the internal Workflow Execution.
  */
 @Service
 public class TaskExecutionClientImpl implements TaskExecutionClient {
+  
   @Override
   @Async
   public void queueTask(TaskExecutionService taskService, TaskRunEntity taskRequest) {

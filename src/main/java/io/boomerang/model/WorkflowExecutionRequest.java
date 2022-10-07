@@ -9,9 +9,11 @@ public class WorkflowExecutionRequest {
 
   private String workflowRef;
 
+  private String workflowRunRef;
+
   private Map<String, String> labels = new HashMap<>();
-  
-  boolean applyQuotas;
+
+  private Map<String, Object> annotations = new HashMap<>();
   
   private List<WorkflowRunParam> params = new LinkedList<>();
   
@@ -25,6 +27,14 @@ public class WorkflowExecutionRequest {
     this.workflowRef = workflowRef;
   }
 
+  public String getWorkflowRunRef() {
+    return workflowRunRef;
+  }
+
+  public void setWorkflowRunRef(String workflowRunRef) {
+    this.workflowRunRef = workflowRunRef;
+  }
+
   public Map<String, String> getLabels() {
     return labels;
   }
@@ -33,12 +43,12 @@ public class WorkflowExecutionRequest {
     this.labels = labels;
   }
 
-  public boolean isApplyQuotas() {
-    return applyQuotas;
+  public Map<String, Object> getAnnotations() {
+    return annotations;
   }
 
-  public void setApplyQuotas(boolean applyQuotas) {
-    this.applyQuotas = applyQuotas;
+  public void setAnnotations(Map<String, Object> annotations) {
+    this.annotations = annotations;
   }
 
   public List<WorkflowRunParam> getParams() {

@@ -8,7 +8,7 @@ import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 @Configuration
 public class MongoConfiguration {
   
-  @Value("${mongo.collection.prefix}")
+  @Value("${flow.mongo.collection.prefix}")
   private String collectionPrefix;
   
   public String fullCollectionName(String collectionName) {

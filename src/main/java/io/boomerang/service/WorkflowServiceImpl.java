@@ -1,8 +1,11 @@
 package io.boomerang.service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateEntity;
@@ -25,6 +28,7 @@ import io.boomerang.util.TaskMapper;
  */
 @Service
 public class WorkflowServiceImpl implements WorkflowService {
+  private static final Logger LOGGER = LogManager.getLogger();
 
   @Autowired
   private WorkflowRepository workflowRepository;
@@ -36,7 +40,7 @@ public class WorkflowServiceImpl implements WorkflowService {
   private TaskTemplateRepository taskTemplateRepository;
 
   @Override
-  public Workflow getWorkflow(String workflowId) {
+  public Workflow get(String workflowId) {
 
     Workflow workflow = new Workflow();
     final Optional<WorkflowEntity> OptWfEntity = workflowRepository.findById(workflowId);
@@ -79,7 +83,7 @@ public class WorkflowServiceImpl implements WorkflowService {
    * Adds a new Workflow as WorkflowEntity and WorkflowRevisionEntity
    */
   @Override
-  public ResponseEntity<?> addWorkflow(Workflow workflow) {
+  public ResponseEntity<?> create(Workflow workflow) {
     WorkflowEntity wfEntity = new WorkflowEntity();
     // TODO: should I be using a bean copy here?
     wfEntity.setName(workflow.getName());
@@ -97,7 +101,13 @@ public class WorkflowServiceImpl implements WorkflowService {
     wfRevisionEntity.setParams(workflow.getParams());
     wfRevisionEntity.setWorkspaces(workflow.getWorkspaces());
     wfRevisionEntity.setTasks(TaskMapper.tasksToListOfRevisionTasks(workflow.getTasks()));
-
+    
+    //Check Task Names are unique
+    List<String> filteredNames = wfRevisionEntity.getTasks().stream().map(t -> t.getName()).collect(Collectors.toList());
+    List<String> uniqueFilteredNames = filteredNames.stream().distinct().collect(Collectors.toList());
+    LOGGER.debug("Name sizes: {} -> {}", filteredNames, uniqueFilteredNames);
+    
+    //Check Task Template references are valid
     for (final WorkflowRevisionTask wfRevisionTask : wfRevisionEntity.getTasks()) {
       if (!TaskType.start.equals(wfRevisionTask.getType())
           && !TaskType.end.equals(wfRevisionTask.getType())) {
@@ -105,6 +115,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         String templateId = wfRevisionTask.getTemplateRef();
         Optional<TaskTemplateEntity> taskTemplate = taskTemplateRepository.findById(templateId);
 
+        //TODO: separate into a shared method with DAGUtility ~line100
         if (taskTemplate.isPresent() && taskTemplate.get().getRevisions() != null) {
           // Set template version to specified or default to currentVersion
           Integer templateVersion =
@@ -115,7 +126,7 @@ public class WorkflowServiceImpl implements WorkflowService {
           if (!revision.isPresent()) {
             //TODO: implement standard error response body
             return ResponseEntity.badRequest().body(
-                "Invalid task template version selected: " + templateId + "@" + templateVersion);
+                "Invalid task template version selected: " + templateId + " @ " + templateVersion);
           }
         } else {
           //TODO: implement standard error response body
