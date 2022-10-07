@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.model.RunResult;
 import io.boomerang.model.WorkflowRunParam;
+import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -23,14 +24,20 @@ public class WorkflowRunEntity   {
   private String id;
 
   private String initiatedByRef;
-  
-  private Date creationDate;
 
   private Map<String, String> labels = new HashMap<>();
 
-  private long duration;
+  private Map<String, Object> annotations = new HashMap<>();
+  
+  private Date creationDate;
+  
+  private Date startTime;
 
-  private RunStatus status;
+  private long duration = 0;
+
+  private RunStatus status = RunStatus.notstarted;
+  
+  private RunPhase phase = RunPhase.pending;
 
   private RunStatus statusOverride;
 
@@ -62,12 +69,32 @@ public class WorkflowRunEntity   {
     this.labels.putAll(labels);
   }
 
+  public Map<String, Object> getAnnotations() {
+    return annotations;
+  }
+
+  public void setAnnotations(Map<String, Object> annotations) {
+    this.annotations = annotations;
+  }
+
+  public void putAnnotations(Map<String, Object> annotations) {
+    this.annotations.putAll(annotations);
+  }
+
   public Date getCreationDate() {
     return creationDate;
   }
 
   public void setCreationDate(Date creationDate) {
     this.creationDate = creationDate;
+  }
+
+  public Date getStartTime() {
+    return startTime;
+  }
+
+  public void setStartTime(Date startTime) {
+    this.startTime = startTime;
   }
 
   public long getDuration() {
@@ -100,6 +127,14 @@ public class WorkflowRunEntity   {
 
   public void setStatus(RunStatus status) {
     this.status = status;
+  }
+
+  public RunPhase getPhase() {
+    return phase;
+  }
+
+  public void setPhase(RunPhase phase) {
+    this.phase = phase;
   }
 
   public RunStatus getStatusOverride() {

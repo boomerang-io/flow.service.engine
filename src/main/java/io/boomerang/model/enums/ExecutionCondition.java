@@ -1,5 +1,5 @@
 package io.boomerang.model.enums;
 
 public enum ExecutionCondition {
-  always, success, failure // NOSONAR
+  always, success, failure, conditional // NOSONAR
 }

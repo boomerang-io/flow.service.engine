@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.boomerang.data.model.TaskTemplateResult;
 import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
+import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 
@@ -42,6 +43,8 @@ public class TaskRunEntity {
   private List<RunResult> results = new LinkedList<>();
 
   private RunStatus status;
+  
+  private RunPhase phase;
 
   private String statusMessage;
   
@@ -68,6 +71,13 @@ public class TaskRunEntity {
   private String workflowRevisionRef;
 
   private String workflowRunRef;
+
+  @Override
+  public String toString() {
+    return "TaskRunEntity [id=" + id + ", type=" + type + ", name=" + name + ", labels=" + labels
+        + ", annotations=" + annotations + ", creationDate=" + creationDate + ", startTime="
+        + startTime + ", params=" + params + ", status=" + status + ", phase=" + phase + "]";
+  }
 
   @JsonIgnore
   private List<RunResult> workflowResults;
@@ -158,6 +168,14 @@ public class TaskRunEntity {
 
   public void setStatus(RunStatus status) {
     this.status = status;
+  }
+
+  public RunPhase getPhase() {
+    return phase;
+  }
+
+  public void setPhase(RunPhase phase) {
+    this.phase = phase;
   }
 
   public String getStatusMessage() {

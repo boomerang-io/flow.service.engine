@@ -9,16 +9,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
+import org.slf4j.helpers.MessageFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
+import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.exceptions.InvalidWorkflowRuntimeException;
 import io.boomerang.model.TaskExecutionRequest;
+import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.util.GraphProcessor;
@@ -41,6 +44,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   
   @Autowired
   private TaskExecutionClient taskClient;
+  
+  @Autowired
+  private TaskRunRepository taskRunRepository;
 
 //  @Autowired
 //  private WorkflowService workflowService;
@@ -51,12 +57,11 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   @Override
   public void queueRevision(WorkflowRunEntity workflowExecution) {
     LOGGER.debug("[{}] Recieved queue Workflow request.", workflowExecution.getId());
-    workflowExecution.setStatus(RunStatus.queued);
-    workflowRunRepository.save(workflowExecution);
+    updateStatusAndSaveWorkflow(workflowExecution, RunStatus.ready, RunPhase.pending, Optional.empty());
 
     //TODO: do we move the dagUtility.validateWorkflow() here and validate earlier?
 
-//  String workflowId = wfRunEntity.getWorkflowId();
+//  String workflowId = workflowExecution.getWorkflowId();
 //  WorkflowEntity workflow = workflowService.getWorkflow(workflowId);
 //  if (workflow != null) {
 //    String workflowName = workflow.getName();
@@ -72,66 +77,60 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   @Override
   public CompletableFuture<Boolean> startRevision(WorkflowRunEntity workflowExecution) {
     final Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity =
-        this.workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflowExecution.getWorkflowRevisionRef());
+        this.workflowRevisionRepository.findById(workflowExecution.getWorkflowRevisionRef());
     if (optWorkflowRevisionEntity.isPresent()) {
       WorkflowRevisionEntity wfRevisionEntity = optWorkflowRevisionEntity.get();
       final List<TaskRunEntity> tasks = dagUtility.createTaskList(wfRevisionEntity, workflowExecution.getId());
       LOGGER.info("[{}] Found {} tasks: {}", workflowExecution.getId(), tasks.size(), tasks.toString());
-      final TaskRunEntity start = getTaskByType(tasks, TaskType.start);
-      final TaskRunEntity end = getTaskByType(tasks, TaskType.end);
+      final TaskRunEntity start = dagUtility.getTaskByType(tasks, TaskType.start);
+      final TaskRunEntity end = dagUtility.getTaskByType(tasks, TaskType.end);
       final Graph<String, DefaultEdge> graph = dagUtility.createGraph(tasks);
       if (dagUtility.validateWorkflow(workflowExecution, tasks)) {
         return CompletableFuture
             .supplyAsync(executeWorkflowAsync(workflowExecution.getId(), start, end, graph, tasks));
       }
       LOGGER.error("[{}] Failed to run workflow: incomplete, or invalid, workflow", workflowExecution.getId());
-      workflowExecution.setStatus(RunStatus.invalid);
-      workflowExecution.setStatusMessage("Failed to run workflow: incomplete, or invalid, workflow");
-      workflowRunRepository.save(workflowExecution);
+      updateStatusAndSaveWorkflow(workflowExecution, RunStatus.invalid, RunPhase.running, Optional.of("Failed to run workflow: incomplete, or invalid, workflow"));
       throw new InvalidWorkflowRuntimeException();
     }
     LOGGER.error("[{}] Failed to run workflow: incomplete, or invalid, workflow revision: {}", workflowExecution.getId(), workflowExecution.getWorkflowRevisionRef());
-    workflowExecution.setStatus(RunStatus.invalid);
-    workflowExecution.setStatusMessage("Failed to run workflow: incomplete, or invalid, workflow revision: " + workflowExecution.getWorkflowRevisionRef());
-    workflowRunRepository.save(workflowExecution);
+    updateStatusAndSaveWorkflow(workflowExecution, RunStatus.invalid, RunPhase.running, Optional.of("Failed to run workflow: incomplete, or invalid, workflow revision: {}"), workflowExecution.getWorkflowRevisionRef());
     throw new InvalidWorkflowRuntimeException();
   }
 
   @Override
-  public void endRevision(WorkflowRunEntity wfRunEntity) {
-    // TODO Auto-generated method stub
-    
+  public void endRevision(WorkflowRunEntity workflowExecution) {
+    workflowExecution.setPhase(RunPhase.finalized);
+    workflowRunRepository.save(workflowExecution);
   }
 
   private Supplier<Boolean> executeWorkflowAsync(String wfRunId, final TaskRunEntity start,
       final TaskRunEntity end, final Graph<String, DefaultEdge> graph,
       final List<TaskRunEntity> tasksToRun) {
     return () -> {
-      final Optional<WorkflowRunEntity> optWfRunEntity =
+      final Optional<WorkflowRunEntity> optworkflowExecution =
           this.workflowRunRepository.findById(wfRunId);
-      if (optWfRunEntity.isPresent()) {
-        WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
-        wfRunEntity.setCreationDate(new Date());
+      if (optworkflowExecution.isPresent()) {
+        WorkflowRunEntity workflowExecution = optworkflowExecution.get();
         if (tasksToRun.size() == 2) {
-          wfRunEntity.setStatus(RunStatus.succeeded);
-          wfRunEntity.setCreationDate(new Date());
-          workflowRunRepository.save(wfRunEntity);
+          updateStatusAndSaveWorkflow(workflowExecution, RunStatus.succeeded, RunPhase.running, Optional.empty());
           return true;
         }
 
-        wfRunEntity.setStatus(RunStatus.running);
-        workflowRunRepository.save(wfRunEntity);
-        LOGGER.info("[{}] Executing Workflow Async...", wfRunEntity.getId());
+        //Set Workflow to Running (Status and Phase). From this point, the duration needs to be calculated.
+        workflowExecution.setStartTime(new Date());
+        updateStatusAndSaveWorkflow(workflowExecution, RunStatus.running, RunPhase.running, Optional.empty());
+        LOGGER.info("[{}] Executing Workflow Async...", workflowExecution.getId());
 
           try {
             List<TaskRunEntity> nextNodes = dagUtility.getTasksDependants(tasksToRun, start);
-            LOGGER.debug("[{}] Next Nodes Size: {}", wfRunEntity.getId(), nextNodes.size());
+            LOGGER.debug("[{}] Next Nodes Size: {}", workflowExecution.getId(), nextNodes.size());
             for (TaskRunEntity next : nextNodes) {
               final List<String> nodes =
                   GraphProcessor.createOrderedTaskList(graph, start.getId(), end.getId());
 
               if (nodes.contains(next.getId())) {
-                LOGGER.debug("[{}] Creating TaskRun ({})...", wfRunEntity.getId(), next.getId());
+                LOGGER.debug("[{}] Creating TaskRun ({})...", workflowExecution.getId(), next.getId());
                 TaskExecutionRequest taskRequest = new TaskExecutionRequest();
                 taskRequest.setTaskRunId(next.getId());
                 taskRequest.setWorkflowRunId(wfRunId);
@@ -148,7 +147,13 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     };
   }
 
-  private TaskRunEntity getTaskByType(List<TaskRunEntity> tasks, TaskType type) {
-    return tasks.stream().filter(tsk -> type.equals(tsk.getType())).findAny().orElse(null);
+  
+  private void updateStatusAndSaveWorkflow(WorkflowRunEntity workflowExecution, RunStatus status, RunPhase phase, Optional<String> message, Object... messageArgs) {
+    if (message.isPresent()) {
+      workflowExecution.setStatusMessage(MessageFormatter.arrayFormat(message.get(), messageArgs).getMessage());
+    }
+    workflowExecution.setStatus(status);
+    workflowExecution.setPhase(phase);
+    workflowRunRepository.save(workflowExecution);
   }
 }
