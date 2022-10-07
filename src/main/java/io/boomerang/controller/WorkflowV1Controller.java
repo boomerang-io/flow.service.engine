@@ -16,7 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/workflow")
 @Tag(name = "Workflow Management",
 description = "Create, List, and Manage your workflows.")
 public class WorkflowV1Controller {
@@ -24,19 +24,19 @@ public class WorkflowV1Controller {
   @Autowired
   private WorkflowService workflowService;
 
-  @PostMapping(value = "/workflow")
+  @PostMapping(value = "/")
   @Operation(summary = "Create a new workflow")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<?> addWorkflow(@RequestBody Workflow workflow) {
-    return workflowService.addWorkflow(workflow);
+    return workflowService.create(workflow);
   }
 
-  @GetMapping(value = "/workflow/{workflowId}")
+  @GetMapping(value = "/{workflowId}")
   @Operation(summary = "Retrieve latest version of the workflow")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public Workflow getWorkflow(@PathVariable String workflowId) {
-    return workflowService.getWorkflow(workflowId);
+    return workflowService.get(workflowId);
   }
 }

@@ -1,10 +1,15 @@
 package io.boomerang.service;
 
-import java.util.Optional;
-import io.boomerang.model.WorkflowRun;
-import io.boomerang.model.WorkflowExecutionRequest;
+import io.boomerang.data.entity.WorkflowRunEntity;
 
 public interface WorkflowExecutionClient {
-  public WorkflowRun executeWorkflow(String workflowId,
-      Optional<WorkflowExecutionRequest> executionRequest);
+
+  void queueRevision(WorkflowExecutionService workflowExecutionService,
+      WorkflowRunEntity wfRunEntity);
+
+  void startRevision(WorkflowExecutionService workflowExecutionService,
+      WorkflowRunEntity wfRunEntity);
+
+  void endRevision(WorkflowExecutionService workflowExecutionService,
+      WorkflowRunEntity wfRunEntity);
 }

@@ -33,6 +33,17 @@ public class TaskRunServiceImpl implements TaskRunService {
   private TaskRunRepository taskRunRepository;
 
   @Override
+  public ResponseEntity<?> get(String taskRunId) {
+    Optional<TaskRunEntity> taskRunEntity =
+        taskRunRepository.findById(taskRunId);
+    if (taskRunEntity.isPresent()) {
+      return ResponseEntity.ok(taskRunEntity.get());
+    } else {
+      return ResponseEntity.notFound().build();
+    }
+  }
+
+  @Override
   public List<TaskRun> query(Optional<String> labels) {
     List<Criteria> criteriaList = new ArrayList<>();
 
@@ -115,5 +126,4 @@ public class TaskRunServiceImpl implements TaskRunService {
       return ResponseEntity.notFound().build();
     }
   }
-
 }

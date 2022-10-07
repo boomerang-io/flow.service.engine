@@ -13,4 +13,6 @@ public interface TaskRunService {
   ResponseEntity<?> start(Optional<TaskExecutionRequest> taskExecutionRequest);
 
   ResponseEntity<?> end(Optional<TaskExecutionRequest> taskExecutionRequest);
+
+  ResponseEntity<?> get(String taskRunId);
 }

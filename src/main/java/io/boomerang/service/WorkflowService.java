@@ -7,7 +7,7 @@ public interface WorkflowService {
 
 //  void deleteWorkflow(String workFlowid);
 //
-  Workflow getWorkflow(String workflowId);
+  Workflow get(String workflowId);
 //
 //  List<WorkflowSummary> getWorkflowsForTeam(String flowTeamId);
 //  
@@ -63,5 +63,5 @@ public interface WorkflowService {
 //  ResponseEntity<WFETriggerResponse> getRevisionProperties(String workflowId, long workflowVersion, String taskId,
 //      String propertyKey);
 
-  ResponseEntity<?> addWorkflow(Workflow workflow);
+  ResponseEntity<?> create(Workflow workflow);
 }

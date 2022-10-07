@@ -10,11 +10,12 @@ import org.apache.logging.log4j.Logger;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskRunEntity;
-import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
+import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.exceptions.InvalidWorkflowRuntimeException;
 import io.boomerang.model.TaskExecutionRequest;
@@ -28,6 +29,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
   @Autowired
   private WorkflowRunRepository workflowRunRepository;
+  
+  @Autowired
+  private WorkflowRevisionRepository workflowRevisionRepository;
 
   @Autowired
   private DAGUtility dagUtility;
@@ -40,24 +44,63 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
 //  @Autowired
 //  private WorkflowService workflowService;
+  
+  @Value("${flow.engine.mode}")
+  private String engineMode;
 
   @Override
-  public CompletableFuture<Boolean> executeWorkflowVersion(WorkflowEntity workflow, WorkflowRevisionEntity wfRevisionEntity,
-      WorkflowRunEntity wfRunEntity) {
-    final List<TaskRunEntity> tasks = dagUtility.createTaskList(wfRevisionEntity, wfRunEntity.getId());
-    LOGGER.info("[{}] Found {} tasks: {}", wfRunEntity.getId(), tasks.size(), tasks.toString());
-    final TaskRunEntity start = getTaskByType(tasks, TaskType.start);
-    final TaskRunEntity end = getTaskByType(tasks, TaskType.end);
-    final Graph<String, DefaultEdge> graph = dagUtility.createGraph(tasks);
-    if (dagUtility.validateWorkflow(wfRunEntity, tasks)) {
-      return CompletableFuture
-          .supplyAsync(executeWorkflowAsync(wfRunEntity.getId(), start, end, graph, tasks));
+  public void queueRevision(WorkflowRunEntity workflowExecution) {
+    LOGGER.debug("[{}] Recieved queue Workflow request.", workflowExecution.getId());
+    workflowExecution.setStatus(RunStatus.queued);
+    workflowRunRepository.save(workflowExecution);
+
+    //TODO: do we move the dagUtility.validateWorkflow() here and validate earlier?
+
+//  String workflowId = wfRunEntity.getWorkflowId();
+//  WorkflowEntity workflow = workflowService.getWorkflow(workflowId);
+//  if (workflow != null) {
+//    String workflowName = workflow.getName();
+    
+    //If in sync mode, don't wait for external prompt to startRevision
+    if ("sync".equals(engineMode)) {
+      // controllerClient.createFlow(workflowId, workflowName, workflowExecution.getId(), enablePVC, ,
+      // executionProperties);
+      startRevision(workflowExecution);
     }
-    LOGGER.error("[{}] Failed to run workflow: incomplete, or invalid, workflow", wfRunEntity.getId());
-    wfRunEntity.setStatus(RunStatus.invalid);
-    wfRunEntity.setStatusMessage("Failed to run workflow: incomplete, or invalid, workflow");
-    workflowRunRepository.save(wfRunEntity);
+  }
+
+  @Override
+  public CompletableFuture<Boolean> startRevision(WorkflowRunEntity workflowExecution) {
+    final Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity =
+        this.workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflowExecution.getWorkflowRevisionRef());
+    if (optWorkflowRevisionEntity.isPresent()) {
+      WorkflowRevisionEntity wfRevisionEntity = optWorkflowRevisionEntity.get();
+      final List<TaskRunEntity> tasks = dagUtility.createTaskList(wfRevisionEntity, workflowExecution.getId());
+      LOGGER.info("[{}] Found {} tasks: {}", workflowExecution.getId(), tasks.size(), tasks.toString());
+      final TaskRunEntity start = getTaskByType(tasks, TaskType.start);
+      final TaskRunEntity end = getTaskByType(tasks, TaskType.end);
+      final Graph<String, DefaultEdge> graph = dagUtility.createGraph(tasks);
+      if (dagUtility.validateWorkflow(workflowExecution, tasks)) {
+        return CompletableFuture
+            .supplyAsync(executeWorkflowAsync(workflowExecution.getId(), start, end, graph, tasks));
+      }
+      LOGGER.error("[{}] Failed to run workflow: incomplete, or invalid, workflow", workflowExecution.getId());
+      workflowExecution.setStatus(RunStatus.invalid);
+      workflowExecution.setStatusMessage("Failed to run workflow: incomplete, or invalid, workflow");
+      workflowRunRepository.save(workflowExecution);
+      throw new InvalidWorkflowRuntimeException();
+    }
+    LOGGER.error("[{}] Failed to run workflow: incomplete, or invalid, workflow revision: {}", workflowExecution.getId(), workflowExecution.getWorkflowRevisionRef());
+    workflowExecution.setStatus(RunStatus.invalid);
+    workflowExecution.setStatusMessage("Failed to run workflow: incomplete, or invalid, workflow revision: " + workflowExecution.getWorkflowRevisionRef());
+    workflowRunRepository.save(workflowExecution);
     throw new InvalidWorkflowRuntimeException();
+  }
+
+  @Override
+  public void endRevision(WorkflowRunEntity wfRunEntity) {
+    // TODO Auto-generated method stub
+    
   }
 
   private Supplier<Boolean> executeWorkflowAsync(String wfRunId, final TaskRunEntity start,
@@ -70,24 +113,14 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
         wfRunEntity.setCreationDate(new Date());
         if (tasksToRun.size() == 2) {
-          wfRunEntity.setStatus(RunStatus.completed);
+          wfRunEntity.setStatus(RunStatus.succeeded);
           wfRunEntity.setCreationDate(new Date());
           workflowRunRepository.save(wfRunEntity);
           return true;
         }
 
-        wfRunEntity.setStatus(RunStatus.inProgress);
+        wfRunEntity.setStatus(RunStatus.running);
         workflowRunRepository.save(wfRunEntity);
-
-//        String workflowId = wfRunEntity.getWorkflowId();
-//        WorkflowEntity workflow = workflowService.getWorkflow(workflowId);
-//        if (workflow != null) {
-//          String workflowName = workflow.getName();
-//          List<AbstractKeyValue> labels = workflow.getLabels();
-
-          // TODO: Initial Workflow Creation Steps in Controller or Other
-          // controllerClient.createFlow(workflowId, workflowName, activityId, enablePVC, labels,
-          // executionProperties);
         LOGGER.info("[{}] Executing Workflow Async...", wfRunEntity.getId());
 
           try {
@@ -98,7 +131,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                   GraphProcessor.createOrderedTaskList(graph, start.getId(), end.getId());
 
               if (nodes.contains(next.getId())) {
-                LOGGER.info("[{}] Creating TaskRun ({})...", wfRunEntity.getId(), next.getId());
+                LOGGER.debug("[{}] Creating TaskRun ({})...", wfRunEntity.getId(), next.getId());
                 TaskExecutionRequest taskRequest = new TaskExecutionRequest();
                 taskRequest.setTaskRunId(next.getId());
                 taskRequest.setWorkflowRunId(wfRunId);

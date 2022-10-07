@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -87,7 +88,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   private TaskRunRepository taskRunRepository;
   //
   // @Autowired
-  // private WorkflowScheduleService scheduleService;
+  // private WorkflowScheduleService scheduleService;  
+  
+  @Value("${flow.engine.mode}")
+  private String engineMode;
 
   @Override
   @Async("asyncTaskExecutor")
@@ -98,20 +102,68 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     Optional<WorkflowRunEntity> wfRunEntity =
         workflowRunRepository.findById(taskExecution.getWorkflowRunRef());
     if (!wfRunEntity.isPresent() || RunStatus.cancelled.equals(wfRunEntity.get().getStatus())) {
-      LOGGER.error("[{}] Workflow has been marked as cancelled, not starting task.",
+      LOGGER.error("[{}] Workflow has been marked as cancelled, unable to queue task.",
           wfRunEntity.get().getId());
       return;
     }
 
     //Check if TaskRun status is valid
     if (!RunStatus.notstarted.equals(taskExecution.getStatus())) {
-      LOGGER.debug("Task is null or hasn't started yet");
+      LOGGER.debug("Task is null or hasn't been created yet");
       return;
     }
 
-    //TODO: change this to queued
+    //Queue Task
+    taskExecution.setStatus(RunStatus.queued);
+    taskExecution = taskRunRepository.save(taskExecution);
+    
+    //If in sync mode, don't wait for external prompt to startTask
+    if ("sync".equals(engineMode)) {
+      startTask(taskExecution);
+    }
+  }
+
+  @Override
+  @Async("asyncTaskExecutor")
+  public void startTask(TaskRunEntity taskExecution) {
+    String taskRunId = taskExecution.getId();
+    LOGGER.info("[{}] Recieved start task request.", taskRunId);
+    
+    //Check if WorkflowRun status is valid
+    Optional<WorkflowRunEntity> wfRunEntity =
+        workflowRunRepository.findById(taskExecution.getWorkflowRunRef());
+    if (!wfRunEntity.isPresent() || RunStatus.cancelled.equals(wfRunEntity.get().getStatus())) {
+      LOGGER.error(
+          "[{}] Workflow has been marked as cancelled. Setting task as Cancelled. Task will still run to completion.",
+          taskRunId);
+      //TODO handle task being cancelled if in Queued. There will be no start time.
+      taskExecution.setStatus(RunStatus.cancelled);
+      taskExecution.setStatusMessage("Workflow has been marked as cancelled. Setting task as Cancelled. Task will still run to completion.");
+      long duration = new Date().getTime() - taskExecution.getStartTime().getTime();
+      taskExecution.setDuration(duration);
+      taskRunRepository.save(taskExecution);
+      return;
+    } else if (!wfRunEntity.isPresent() || RunStatus.failed.equals(wfRunEntity.get().getStatus()) || RunStatus.invalid.equals(wfRunEntity.get().getStatus())) {
+      LOGGER.error(
+          "[{}] Workflow has been marked as failed or invalid. Setting task as Cancelled. Task will still run to completion.",
+          taskRunId);
+      //TODO handle task being cancelled if in Queued. There will be no start time.
+      taskExecution.setStatus(RunStatus.cancelled);
+      taskExecution.setStatusMessage("Workflow has been marked as failed or invalid. Setting task as Cancelled. Task will still run to completion.");
+      long duration = new Date().getTime() - taskExecution.getStartTime().getTime();
+      taskExecution.setDuration(duration);
+      taskRunRepository.save(taskExecution);
+      return;
+    }
+
+    //Check if TaskRun status is valid
+    if (!RunStatus.queued.equals(taskExecution.getStatus())) {
+      LOGGER.debug("Task is null or hasn't been queued yet");
+      return;
+    }
+
     taskExecution.setStartTime(new Date());
-    taskExecution.setStatus(RunStatus.inProgress);
+    taskExecution.setStatus(RunStatus.running);
     taskExecution = taskRunRepository.save(taskExecution);
 
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
@@ -128,7 +180,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     if (canRunTask) {
       LOGGER.debug("[{}] Can run task? {}", wfRunId, taskExecutionId);
       if (TaskType.decision.equals(taskType)) {
-        taskExecution.setStatus(RunStatus.completed);
+        taskExecution.setStatus(RunStatus.succeeded);
         // processDecision(taskRunEntity, wfRunId);
         this.endTask(taskExecution);
       } else if (TaskType.template.equals(taskType) || TaskType.script.equals(taskType)) {
@@ -137,24 +189,24 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         LOGGER.info("[{}] Execute Template Task", wfRunId);
         // controllerClient.submitTemplateTask(this, flowClient, task, wfRunId, workflowName,
         // labels);
-        taskExecution.setStatus(RunStatus.completed);
+        taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
       } else if (TaskType.customtask.equals(taskType)) {
         // TODO: how do we submit the tasks
         LOGGER.info("[{}] Execute Custom Task", wfRunId);
 //        Map<String, String> labels = wfRunEntity.get().getLabels();
         // controllerClient.submitCustomTask(this, flowClient, task, wfRunId, workflowName, labels);
-        taskExecution.setStatus(RunStatus.completed);
+        taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
       } else if (TaskType.acquirelock.equals(taskType)) {
         LOGGER.info("[{}] Execute Acquire Lock", wfRunId);
         lockManager.acquireLock(taskExecution, wfRunEntity.get().getId());
-         taskExecution.setStatus(RunStatus.completed);
+         taskExecution.setStatus(RunStatus.succeeded);
          this.endTask(taskExecution);
       } else if (TaskType.releaselock.equals(taskType)) {
         LOGGER.info("[{}] Execute Release Lock", wfRunId);
         lockManager.releaseLock(taskExecution, wfRunEntity.get().getId());
-        taskExecution.setStatus(RunStatus.completed);
+        taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
       } else if (TaskType.runworkflow.equals(taskType)) {
         LOGGER.info("TODO - Run Workflow");
@@ -165,12 +217,12 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       } else if (TaskType.setwfstatus.equals(taskType)) {
         LOGGER.info("[{}] Save Workflow Status", wfRunId);
         saveWorkflowStatus(taskExecution, wfRunEntity.get());
-        taskExecution.setStatus(RunStatus.completed);
+        taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
       } else if (TaskType.setwfproperty.equals(taskType)) {
         LOGGER.info("TODO - Save Workflow Property");
         // saveWorkflowProperty(taskExecution, wfRunEntity.get());
-        taskExecution.setStatus(RunStatus.completed);
+        taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
       } else if (TaskType.approval.equals(taskType)) {
         LOGGER.info("TODO - Create Approval");
@@ -190,12 +242,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   }
 
   @Override
-  public void startTask(TaskRunEntity taskExecution) {
-    String taskRunId = taskExecution.getId();
-    LOGGER.info("[{}] Recieved start task request.", taskRunId);
-  }
-
-  @Override
   @Async("asyncTaskExecutor")
   public void endTask(TaskRunEntity taskExecution) {
     String taskRunId = taskExecution.getId();
@@ -203,7 +249,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     // Check if task has been previously completed or cancelled
     TaskRunEntity storedTaskRun = taskRunRepository.findById(taskExecution.getId()).get();
-    if (RunStatus.completed.equals(storedTaskRun.getStatus())
+    if (RunStatus.succeeded.equals(storedTaskRun.getStatus())
         || RunStatus.cancelled.equals(storedTaskRun.getStatus())) {
       LOGGER.error("[{}] Task has already been completed or cancelled.", taskRunId);
       return;
@@ -218,12 +264,24 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
           taskRunId);
       //TODO handle task being cancelled if in Queued. There will be no start time.
       taskExecution.setStatus(RunStatus.cancelled);
+      taskExecution.setStatusMessage("Workflow has been marked as cancelled. Setting task as Cancelled. Task will still run to completion.");
+      long duration = new Date().getTime() - taskExecution.getStartTime().getTime();
+      taskExecution.setDuration(duration);
+      taskRunRepository.save(taskExecution);
+      return;
+    } else if (!wfRunEntity.isPresent() || RunStatus.failed.equals(wfRunEntity.get().getStatus()) || RunStatus.invalid.equals(wfRunEntity.get().getStatus())) {
+      LOGGER.error(
+          "[{}] Workflow has been marked as failed or invalid. Setting task as Cancelled. Task will still run to completion.",
+          taskRunId);
+      //TODO handle task being cancelled if in Queued. There will be no start time.
+      taskExecution.setStatus(RunStatus.cancelled);
+      taskExecution.setStatusMessage("Workflow has been marked as failed or invalid. Setting task as Cancelled. Task will still run to completion.");
       long duration = new Date().getTime() - taskExecution.getStartTime().getTime();
       taskExecution.setDuration(duration);
       taskRunRepository.save(taskExecution);
       return;
     }
-
+    
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
     List<TaskRunEntity> tasks = dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get().getId());
@@ -311,11 +369,11 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     LOGGER.info("[{}] SubmitActivity: {}", taskRunId, taskStatus);
 
-    RunStatus status = RunStatus.completed;
+    RunStatus status = RunStatus.succeeded;
     if ("success".equals(taskStatus)) {
-      status = RunStatus.completed;
+      status = RunStatus.succeeded;
     } else if ("failure".equals(taskStatus)) {
-      status = RunStatus.failure;
+      status = RunStatus.failed;
     }
 
     Optional<TaskRunEntity> taskRunEntity = this.taskRunRepository.findById(taskRunId);
@@ -594,9 +652,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       wfRunEntity.setStatus(wfRunEntity.getStatusOverride());
     } else {
       if (workflowCompleted) {
-        wfRunEntity.setStatus(RunStatus.completed);
+        wfRunEntity.setStatus(RunStatus.succeeded);
       } else {
-        wfRunEntity.setStatus(RunStatus.failure);
+        wfRunEntity.setStatus(RunStatus.failed);
       }
     }
 
@@ -659,7 +717,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
           }
 
           RunStatus status = taskRunEntity.get().getStatus();
-          if (RunStatus.inProgress.equals(status) || RunStatus.notstarted.equals(status)
+          if (RunStatus.running.equals(status) || RunStatus.notstarted.equals(status)
               || RunStatus.waiting.equals(status)) {
             finishedAll = false;
           }
@@ -676,7 +734,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       Optional<TaskRunEntity> taskRunEntity = this.taskRunRepository.findById(dep.getTaskRef());
       if (taskRunEntity.isPresent()) {
         RunStatus status = taskRunEntity.get().getStatus();
-        if (RunStatus.inProgress.equals(status) || RunStatus.notstarted.equals(status)
+        if (RunStatus.running.equals(status) || RunStatus.notstarted.equals(status)
             || RunStatus.waiting.equals(status)) {
           return false;
         }

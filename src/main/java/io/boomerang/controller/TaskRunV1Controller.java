@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,11 +29,20 @@ public class TaskRunV1Controller {
   @Autowired
   private TaskRunService taskRunService;
 
+  @GetMapping(value = "/{taskRunId}")
+  @Operation(summary = "Retrieve a specific Task Run.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public ResponseEntity<?> getTaskRuns(@PathVariable String taskRunId) {
+    return taskRunService.get(taskRunId);
+  }
+
+  //TODO: add status to the query
   @GetMapping(value = "/query")
   @Operation(summary = "Search for Task Runs.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public List<TaskRun> getTaskRuns(@Parameter(
+  public List<TaskRun> queryTaskRuns(@Parameter(
       name = "labels",
       description = "Comma separated list of url encoded labels. For example Organization=IBM,customKey=test would be encoded as Organization%3DIBM%2CcustomKey%3Dtest)",
       required = true) @RequestParam(required = true) Optional<String> labels) {

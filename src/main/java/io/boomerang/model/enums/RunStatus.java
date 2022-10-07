@@ -4,7 +4,7 @@ import java.util.Arrays;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum RunStatus {
-  completed("completed"), failure("failure"), inProgress("inProgress"), notstarted( // NOSONAR
+  succeeded("succeeded"), completed("completed"), failed("failed"), running("running"), notstarted( // NOSONAR
       "notstarted"), invalid("invalid"), skipped("skipped"), waiting("waiting"), queued("queued"), cancelled("cancelled"); // NOSONAR
 
   private String status;
