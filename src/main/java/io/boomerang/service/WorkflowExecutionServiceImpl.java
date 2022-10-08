@@ -113,6 +113,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       if (optworkflowExecution.isPresent()) {
         WorkflowRunEntity workflowExecution = optworkflowExecution.get();
         if (tasksToRun.size() == 2) {
+          //TODO: validate this
           updateStatusAndSaveWorkflow(workflowExecution, RunStatus.succeeded, RunPhase.running, Optional.empty());
           return true;
         }

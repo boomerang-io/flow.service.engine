@@ -86,6 +86,10 @@ public class DAGUtility {
         executionTask.setName(wfRevisionTask.getName());
         executionTask.setStatus(RunStatus.notstarted);
         executionTask.setPhase(RunPhase.pending);
+        if (TaskType.start.equals(wfRevisionTask.getType())) {
+          executionTask.setStatus(RunStatus.succeeded);
+          executionTask.setPhase(RunPhase.completed);
+        }
         executionTask.setType(wfRevisionTask.getType());
         executionTask.setCreationDate(new Date());
         executionTask.setTemplateVersion(wfRevisionTask.getTemplateVersion());
@@ -127,8 +131,10 @@ public class DAGUtility {
 //        else if (TaskType.decision.equals(wfRevisionTask.getType())) {
 //          executionTask.setDecisionValue(wfRevisionTask.getParams().get("value").toString());
 //        }
-
-        taskRunRepository.save(executionTask);
+//        if (!TaskType.start.equals(executionTask.getType())
+//            && !TaskType.end.equals(executionTask.getType())) {
+          taskRunRepository.save(executionTask);
+//        }
         LOGGER.info("[{}] TaskRunEntity ({}) created for: {}", wfRunId, executionTask.getId(), executionTask.getName());
         taskList.add(executionTask);
       }
@@ -164,16 +170,15 @@ public class DAGUtility {
         Optional<TaskRunEntity> taskRunEntity = taskRunRepository.findById(currentTask.getId());
 
         if (taskRunEntity.isPresent()) {
-          RunStatus taskRunStatus = taskRunEntity.get().getStatus();
-          if (RunStatus.succeeded.equals(taskRunStatus)
-              || RunStatus.failed.equals(taskRunStatus)) {
+          RunPhase taskRunPhase = taskRunEntity.get().getPhase();
+          LOGGER.debug("[{}] Phase: {}", taskId, taskRunPhase.toString());
+          if (RunPhase.completed.equals(taskRunPhase)) {
             if (TaskType.decision.equals(currentTask.getType())) {
               String decisionValue = taskRunEntity.get().getDecisionValue();
-              LOGGER.debug("!!! Decision Value: {}", decisionValue);
               processDecision(graph, tasks, decisionValue, currentTask.getId(),
                   currentTask);
             } else {
-              currentTask.setStatus(taskRunStatus);
+              currentTask.setStatus(taskRunEntity.get().getStatus());
               this.updateTaskInGraph(graph, tasks, currentTask);
             }
           }
@@ -216,10 +221,7 @@ public class DAGUtility {
         if (optionalDependency.isPresent()) {
           TaskDependency dependency = optionalDependency.get();
           String linkValue = dependency.getDecisionCondition();
-
-          LOGGER.debug("!!! Decision Condition: {}", linkValue);
           String node = destTask.getId();
-
           boolean matched = false;
 
           if (linkValue != null) {
@@ -238,6 +240,7 @@ public class DAGUtility {
           } else {
             defaultNodes.add(node);
           }
+          LOGGER.debug("[{}] Matched: {}, Decision Value: {}, Condition: {}", currentVert, matched, value, linkValue);
         }
       }
     }
@@ -260,7 +263,7 @@ public class DAGUtility {
       TaskRunEntity destTask =
           tasksToRun.stream().filter(t -> t.getId().equals(destination)).findFirst().orElse(null);
       if (destTask != null) {
-        Optional<TaskDependency> optionalDependency = getOptionalDependency(currentVert, destTask);
+        Optional<TaskDependency> optionalDependency = getOptionalDependency(currentTask.getName(), destTask);
         if (optionalDependency.isPresent()) {
           TaskDependency dependency = optionalDependency.get();
           ExecutionCondition condition = dependency.getExecutionCondition();
@@ -269,8 +272,7 @@ public class DAGUtility {
               && (RunStatus.failed.equals(status) && ExecutionCondition.failure.equals(condition))
               || (RunStatus.succeeded.equals(status)
                   && ExecutionCondition.success.equals(condition))
-              || (ExecutionCondition.always.equals(condition))
-              || (ExecutionCondition.conditional.equals(condition))) {
+              || (ExecutionCondition.always.equals(condition))) {
             matchedNodes.add(node);
           }
         }

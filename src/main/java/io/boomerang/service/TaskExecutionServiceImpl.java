@@ -659,6 +659,14 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     // TODO: implement Workflow Termination Endpoint
     // this.controllerClient.terminateFlow(workflow.getId(), workflow.getName(),
     // wfRunEntity.getId());
+
+    //Loop through and validate all paths have been taken
+    //It also updates the status of each task and checks dependencies.
+    tasks.stream().filter(t -> TaskType.end.equals(t.getType())).forEach(t -> {
+      t.setStatus(RunStatus.succeeded);
+      t.setPhase(RunPhase.completed);
+      taskRunRepository.save(t);
+    });
     boolean workflowCompleted = dagUtility.validateWorkflow(wfRunEntity, tasks);
 
     if (wfRunEntity.getStatusOverride() != null) {
@@ -683,7 +691,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
 
     this.workflowRunRepository.save(wfRunEntity);
-
+    LOGGER.info("[{}] Completed Workflow with status: {}.", wfRunEntity.getId(), wfRunEntity.getStatus());
   }
 
   private void executeNextStep(WorkflowRunEntity wfRunEntity, List<TaskRunEntity> tasks,
