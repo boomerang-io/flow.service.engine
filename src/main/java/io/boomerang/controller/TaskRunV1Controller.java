@@ -3,6 +3,12 @@ package io.boomerang.controller;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.model.TaskExecutionRequest;
 import io.boomerang.model.TaskRun;
 import io.boomerang.service.TaskRunService;
@@ -37,16 +44,27 @@ public class TaskRunV1Controller {
     return taskRunService.get(taskRunId);
   }
 
-  //TODO: add status to the query
   @GetMapping(value = "/query")
   @Operation(summary = "Search for Task Runs.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public List<TaskRun> queryTaskRuns(@Parameter(
-      name = "labels",
-      description = "Comma separated list of url encoded labels. For example Organization=IBM,customKey=test would be encoded as Organization%3DIBM%2CcustomKey%3Dtest)",
-      required = true) @RequestParam(required = true) Optional<String> labels) {
-    return taskRunService.query(labels);
+  public Page<TaskRunEntity> queryTaskRuns(
+      @Parameter(name = "labels",
+      description = "Comma separated list of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
+      required = false) @RequestParam(required = false) Optional<List<String>> labels,
+      @Parameter(name = "status",
+      description = "Comma separated list of statuses to filter for. Defaults to all.", example = "succeeded,skipped",
+      required = false) @RequestParam(required = false)  Optional<List<String>> status,
+      @Parameter(name = "phase",
+      description = "Comma separated list of phases to filter for. Defaults to all.", example = "completed,finalized",
+      required = false) @RequestParam(required = false)  Optional<List<String>> phase,
+      @Parameter(name = "limit", description = "Result Size", example = "10",
+          required = true) @RequestParam(defaultValue = "10") int limit,
+      @Parameter(name = "page", description = "Page Number", example = "0",
+          required = true) @RequestParam(defaultValue = "0") int page) {
+    final Sort sort = Sort.by(new Order(Direction.ASC, "creationDate"));
+    final Pageable pageable = PageRequest.of(page, limit, sort);
+    return taskRunService.query(pageable, labels, status, phase);
   }
 
   @PostMapping(value = "/start")
