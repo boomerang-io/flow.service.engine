@@ -1,6 +1,9 @@
 package io.boomerang.error;
 
 import java.util.Locale;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.core.Ordered;
@@ -15,6 +18,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
+  
+  private static final Logger LOGGER = LogManager.getLogger(ResponseEntityExceptionHandler.class);
 
   @Autowired
   private MessageSource messageSource;
@@ -23,16 +28,18 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
   public ResponseEntity<Object> handleBoomerangException(
       BoomerangException ex, WebRequest request) {
     
-    ErrorDetail errorDetail = new ErrorDetail();
-    errorDetail.setCode(ex.getCode());
-    errorDetail.setDescription(ex.getDescription());
+    ErrorResponse errorResponse = new ErrorResponse();
+    errorResponse.setCode(ex.getCode());
+    errorResponse.setReason(ex.getReason());
+    if (ex.getMessage().isBlank()) {
+    errorResponse.setMessage(messageSource.getMessage(ex.getReason(), ex.getArgs(), Locale.ENGLISH));
+    }
+    errorResponse.setStatus(ex.getStatus());
 
-    String message = messageSource.getMessage(errorDetail.getDescription(), null, Locale.ENGLISH);
-    errorDetail.setMessage(message);
+    LOGGER.error("Exception["+errorResponse.getCode()+"] " + errorResponse.getReason() + " - " + errorResponse.getMessage());
+    LOGGER.error(ExceptionUtils.getStackTrace(ex));
     
     return new ResponseEntity<>(
-        errorDetail, new HttpHeaders(), ex.getHttpStatus()); 
+        errorResponse, new HttpHeaders(), ex.getStatus()); 
   }
-
-
 }

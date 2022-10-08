@@ -7,33 +7,65 @@ public class BoomerangException extends RuntimeException {
   private static final long serialVersionUID = 1L;
   
   private final int code;
-  private final String description;
-  private final HttpStatus httpStatus;
+  private final String reason;
+  private final String message;
+  private final HttpStatus status;
+  private final Object[] args;
   
-  public BoomerangException(int code, String description, HttpStatus httpStatus) {
+  public BoomerangException(int code, String reason, String message, HttpStatus status, Object... args) {
     super();
     this.code = code;
-    this.description = description;
-    this.httpStatus = httpStatus;
+    this.reason = reason;
+    this.message = message;
+    this.status = status;
+    this.args = args;
+  }
+  
+  public BoomerangException(Throwable ex, int code, String reason, String message, HttpStatus status, Object... args) {
+    super(ex);
+    this.code = code;
+    this.reason = reason;
+    this.message = message;
+    this.status = status;
+    this.args = args;
   }
 
-  public BoomerangException(BoomerangError error) {
+  public BoomerangException(BoomerangError error, Object... args) {
     super();
     this.code = error.getCode();
-    this.description = error.getDescription();
-    this.httpStatus = error.getHttpStatus();
+    this.reason = error.getReason();
+    this.message = "";
+    this.status = error.getStatus();
+    this.args = args;
+  }
+
+  public BoomerangException(Throwable ex, BoomerangError error, Object... args) {
+    super(ex);
+    this.code = error.getCode();
+    this.reason = error.getReason();
+    this.message = "";
+    this.status = error.getStatus();
+    this.args = args;
   }
   
   public int getCode() {
     return code;
   }
 
-  public String getDescription() {
-    return description;
+  public String getReason() {
+    return reason;
   }
 
-  public HttpStatus getHttpStatus() {
-    return httpStatus;
+  public String getMessage() {
+    return message;
+  }
+
+  public Object[] getArgs() {
+      return args;
+  }
+
+  public HttpStatus getStatus() {
+    return status;
   }
 
 }

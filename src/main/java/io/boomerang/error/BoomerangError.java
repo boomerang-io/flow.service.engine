@@ -4,36 +4,29 @@ import org.springframework.http.HttpStatus;
 
 public enum BoomerangError {
   
-  /** Add reusable error list here. */
-  TEAM_NAME_ALREADY_EXISTS(100, "TEAM_NAME_ALREADY_EXISTS", HttpStatus.BAD_REQUEST),
+  /** Add reusable error list here. Map to messages.properties*/
   TOO_MANY_REQUESTS(429, "TOO_MANY_REQUESTS", HttpStatus.TOO_MANY_REQUESTS),
-  IMPORT_WORKFLOW_FAILED(400, "IMPORT_WORKFLOW_FAILED", HttpStatus.BAD_REQUEST),
-  WORKFLOW_TRIGGER_DISABLED(429, "WORKFLOW_TRIGGER_DISABLED", HttpStatus.UNAUTHORIZED),
-  WORKFLOW_TEAM_INACTIVE(429, "WORKFLOW_TEAM_INACTIVE", HttpStatus.UNAUTHORIZED);
+  QUERY_INVALID_FILTERS(1001, "QUERY_INVALID_FILTERS", HttpStatus.BAD_REQUEST);
   
   private final int code;
-  private final String description;
-  private final HttpStatus httpStatus;
-
+  private final String reason;
+  private final HttpStatus status;
 
   public int getCode() {
     return code;
   }
 
-  public String getDescription() {
-    return description;
+  public String getReason() {
+    return reason;
   }
 
-
-  public HttpStatus getHttpStatus() {
-    return httpStatus;
+  public HttpStatus getStatus() {
+    return status;
   }
 
-  private BoomerangError(int code, String description, HttpStatus httpStatus) {
+  private BoomerangError(int code, String reason, HttpStatus status) {
     this.code = code;
-    this.description = description;
-    this.httpStatus = httpStatus;
+    this.reason = reason;
+    this.status = status;
   }
-
-
 }
