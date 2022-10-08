@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.BeanUtils;
@@ -29,10 +30,13 @@ import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
+import io.boomerang.error.BoomerangError;
+import io.boomerang.error.BoomerangException;
 import io.boomerang.model.TaskExecutionResponse;
 import io.boomerang.model.TaskRun;
 import io.boomerang.model.WorkflowExecutionRequest;
 import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 
 @Service
@@ -84,8 +88,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         try {
           decodedLabel = URLDecoder.decode(l, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
+          throw new BoomerangException(e, BoomerangError.QUERY_INVALID_FILTERS, "labels");
         }
         LOGGER.debug(decodedLabel.toString());
         String[] label = decodedLabel.split("[=]+");
@@ -96,13 +99,21 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     }
 
     if (queryStatus.isPresent()) {
-      Criteria statusCriteria = Criteria.where("status").in(queryStatus.get());
-      criteriaList.add(statusCriteria);
+      if (queryStatus.get().stream().allMatch(q -> EnumUtils.isValidEnumIgnoreCase(RunStatus.class, q))) {
+        Criteria criteria = Criteria.where("status").in(queryStatus.get());
+        criteriaList.add(criteria);
+      } else {
+        throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "status");
+      }
     }
 
     if (queryPhase.isPresent()) {
-      Criteria statusCriteria = Criteria.where("phase").in(queryPhase.get());
-      criteriaList.add(statusCriteria);
+      if (queryPhase.get().stream().allMatch(q -> EnumUtils.isValidEnumIgnoreCase(RunPhase.class, q))) {
+        Criteria criteria = Criteria.where("phase").in(queryPhase.get());
+        criteriaList.add(criteria);
+      } else {
+        throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "phase");
+      }
     }
     
     Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);
