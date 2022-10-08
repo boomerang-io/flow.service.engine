@@ -1,5 +1,8 @@
 package io.boomerang.service;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -8,6 +11,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -48,6 +57,9 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   
   @Autowired
   private WorkflowExecutionService workflowExecutionService;
+
+  @Autowired
+  private MongoTemplate mongoTemplate;
   
   @Override
   public ResponseEntity<?> get(String workflowRunId) {
@@ -61,9 +73,51 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   }
 
   @Override
-  public List<WorkflowRun> query(Optional<String> labels) {
-    // TODO Auto-generated method stub
-    return null;
+  //TODO change this to return WorkflowRuns
+  public Page<WorkflowRunEntity> query(Pageable pageable, Optional<List<String>> queryLabels,
+      Optional<List<String>> queryStatus, Optional<List<String>> queryPhase) {
+    List<Criteria> criteriaList = new ArrayList<>();
+
+    if (queryLabels.isPresent()) {
+      queryLabels.get().stream().forEach(l -> {
+        String decodedLabel = "";
+        try {
+          decodedLabel = URLDecoder.decode(l, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+        LOGGER.debug(decodedLabel.toString());
+        String[] label = decodedLabel.split("[=]+");
+        Criteria labelsCriteria =
+            Criteria.where("labels." + label[0].replace(".", "#")).is(label[1]);
+        criteriaList.add(labelsCriteria);
+      });
+    }
+
+    if (queryStatus.isPresent()) {
+      Criteria statusCriteria = Criteria.where("status").in(queryStatus.get());
+      criteriaList.add(statusCriteria);
+    }
+
+    if (queryPhase.isPresent()) {
+      Criteria statusCriteria = Criteria.where("phase").in(queryPhase.get());
+      criteriaList.add(statusCriteria);
+    }
+    
+    Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);
+    Criteria allCriteria = new Criteria();
+    if (criteriaArray.length > 0) {
+      allCriteria.andOperator(criteriaArray);
+    }
+    Query query = new Query(allCriteria);
+    query.with(pageable);
+
+    Page<WorkflowRunEntity> pages = PageableExecutionUtils.getPage(
+        mongoTemplate.find(query.with(pageable), WorkflowRunEntity.class), pageable,
+        () -> mongoTemplate.count(query, WorkflowRunEntity.class));
+    
+    return pages;
   }
 
   @Override
