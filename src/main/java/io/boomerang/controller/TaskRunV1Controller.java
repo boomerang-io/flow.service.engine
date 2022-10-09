@@ -20,8 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.data.entity.TaskRunEntity;
+import io.boomerang.model.TaskRun;
 import io.boomerang.model.TaskRunRequest;
-import io.boomerang.model.WorkflowRun;
 import io.boomerang.service.TaskRunService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,7 +42,7 @@ public class TaskRunV1Controller {
   @Operation(summary = "Retrieve a specific Task Run.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<?> getTaskRuns(@PathVariable String taskRunId) {
+  public ResponseEntity<TaskRun> getTaskRuns(@PathVariable String taskRunId) {
     return taskRunService.get(taskRunId);
   }
 
@@ -73,7 +73,7 @@ public class TaskRunV1Controller {
   @Operation(summary = "Start a Task Run. The Task Run has to already be queued.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<?> startTaskRun(
+  public ResponseEntity<TaskRun> startTaskRun(
       @Parameter(name = "taskRunId",
       description = "ID of Task Run to Start",
       required = true) @PathVariable(required = true) String taskRunId,
@@ -85,7 +85,7 @@ public class TaskRunV1Controller {
   @Operation(summary = "End the Task Run.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<?> endTaskRun(
+  public ResponseEntity<TaskRun> endTaskRun(
       @Parameter(name = "taskRunId",
       description = "ID of Task Run to End",
       required = true) @PathVariable(required = true) String taskRunId) {
@@ -97,7 +97,7 @@ public class TaskRunV1Controller {
   @Operation(summary = "Cancel a Task Run")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<WorkflowRun> cancelTaskRun(
+  public ResponseEntity<TaskRun> cancelTaskRun(
       @Parameter(name = "taskRunId",
       description = "ID of Task Run to Cancel",
       required = true) @PathVariable(required = true) String taskRunId) {
