@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.data.model.WorkflowStatus;
+import io.boomerang.model.WorkflowStatus;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
@@ -18,25 +18,19 @@ public class WorkflowEntity {
 
   private String name;
   
+  private WorkflowStatus status = WorkflowStatus.active;
+  
   private String icon;
 
   private String description;
 
   private String shortDescription;
 
-//  private List<KeyValuePair> labels;
-//  private Labels labels;
   private Map<String, String> labels = new HashMap<>();
   
-//  private List<KeyValuePair> annotations;
-//  private Annotations annotations;
   private Map<String, Object> annotations = new HashMap<>();
 
-  private WorkflowStatus status;
-
 //private List<WorkflowTrigger> triggers;
-
-//  private WorkflowScope scope;
 
   public String getId() {
     return id;

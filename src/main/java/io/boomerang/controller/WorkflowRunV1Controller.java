@@ -52,7 +52,6 @@ public class WorkflowRunV1Controller {
     return workflowRunService.get(workflowRunId, withTasks);
   }
 
-  //TODO: add status to the query
   @GetMapping(value = "/run/query")
   @Operation(summary = "Search for Workflow Runs")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),

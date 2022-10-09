@@ -1,24 +1,21 @@
 package io.boomerang.service;
 
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.model.Workflow;
 
 public interface WorkflowService {
 
-//  void deleteWorkflow(String workFlowid);
-//
-  Workflow get(String workflowId);
-//
-//  List<WorkflowSummary> getWorkflowsForTeam(String flowTeamId);
-//  
-//  /**
-//   * Get workflows for a list of teams
-//   * @param flowTeamIds
-//   * @return Map<teamId, List<WorkflowSummary>>
-//   */
-//  Map<String, List<WorkflowSummary>> getWorkflowsForTeams(List<String> flowTeamIds);
-//
-//  WorkflowSummary saveWorkflow(WorkflowEntity flowWorkflowEntity);
+  ResponseEntity<Workflow> get(String workflowId, Optional<Integer> version);
+
+  ResponseEntity<Workflow> create(Workflow workflow);
+
+  Page<WorkflowEntity> query(Pageable pageable, Optional<List<String>> labels,
+      Optional<List<String>> status);
 //
 //  WorkflowSummary updateWorkflow(WorkflowSummary summary);
 //
@@ -33,18 +30,10 @@ public interface WorkflowService {
 //  boolean canExecuteWorkflowForQuotas(String teamId);
 //
 //  boolean canExecuteWorkflow(String workFlowId, Optional<String> trigger);
-//  
-//  public List<WorkflowShortSummary> getWorkflowShortSummaryList();
 //
 //  ResponseEntity<HttpStatus> validateWorkflowToken(String id, GenerateTokenResponse tokenPayload);
 //
 //  void deleteToken(String id, String label);
-//
-//  List<WorkflowSummary> getSystemWorkflows();
-//  
-//  UserWorkflowSummary getUserWorkflows();
-//
-//  List<WorkflowShortSummary> getSystemWorkflowShortSummaryList();
 //
 //  List<String> getWorkflowParameters(String workFlowId);
 //
@@ -62,6 +51,4 @@ public interface WorkflowService {
 //
 //  ResponseEntity<WFETriggerResponse> getRevisionProperties(String workflowId, long workflowVersion, String taskId,
 //      String propertyKey);
-
-  ResponseEntity<?> create(Workflow workflow);
 }

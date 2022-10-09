@@ -71,7 +71,8 @@ public class LockManagerImpl implements LockManager {
         SimpleMongoLock mongoLock = new SimpleMongoLock(supplier, this.mongoTemplate);
         RetryTemplate retryTemplate = getRetryTemplate();
         RetriableLock retryLock = new RetriableLock(mongoLock, retryTemplate);
-        String storeId = mongoConfiguration.fullCollectionName("task_locks");
+        //This name has to match the Locks index in the Loader
+        String storeId = mongoConfiguration.fullCollectionName("tasks_locks");
         final List<String> keys = new LinkedList<>();
         keys.add(key);
 
