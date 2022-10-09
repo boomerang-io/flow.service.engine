@@ -17,7 +17,8 @@ import io.boomerang.data.model.WorkflowStatus;
 import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
-import io.boomerang.exceptions.InvalidWorkflowRuntimeException;
+import io.boomerang.error.BoomerangError;
+import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.enums.TaskType;
@@ -48,8 +49,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflowId);
 
     if (!OptWfEntity.isPresent() || !OptWfRevisionEntity.isPresent()) {
-      // TODO: throw a specific exception
-      throw new InvalidWorkflowRuntimeException();
+      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
     WorkflowEntity wfEntity = OptWfEntity.get();
     WorkflowRevisionEntity wfRevisionEntity = OptWfRevisionEntity.get();
@@ -68,7 +68,6 @@ public class WorkflowServiceImpl implements WorkflowService {
     workflow.setTasks(TaskMapper.revisionTasksToListOfTasks(wfRevisionEntity.getTasks()));
 
     // TODO: filter sensitive inputs/results
-    // TODO: handle not found with Exception.
     // TODO: Add in the handling of Workspaces
     // if (workflow.getStorage() == null) {
     // workflow.setStorage(new Storage());
@@ -124,13 +123,10 @@ public class WorkflowServiceImpl implements WorkflowService {
           Optional<TaskTemplateRevision> revision = taskTemplate.get().getRevisions().stream()
               .parallel().filter(r -> r.getVersion().equals(templateVersion)).findFirst();
           if (!revision.isPresent()) {
-            //TODO: implement standard error response body
-            return ResponseEntity.badRequest().body(
-                "Invalid task template version selected: " + templateId + " @ " + templateVersion);
+            throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_VERSION, templateId, templateVersion);
           }
         } else {
-          //TODO: implement standard error response body
-          return ResponseEntity.badRequest().body("Invalid task template selected: " + templateId);
+          throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateId);
         }
       }
     }

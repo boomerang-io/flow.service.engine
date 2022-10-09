@@ -1,27 +1,34 @@
 package io.boomerang.model;
 
+import java.util.HashMap;
 import java.util.Map;
 
-public class TaskExecutionRequest {
-  
-  private String workflowRunId;
-  
-  private String taskRunId;
+public class TaskRunRequest {
+
+  private Map<String, String> labels = new HashMap<>();
+
+  private Map<String, Object> annotations = new HashMap<>();
   
   private Map<String, Object> params;
   
   private Map<String, String> resources;
   
-//  private TaskType taskType;
-  
   private boolean preApproved;
 
-  public String getWorkflowRunId() {
-    return workflowRunId;
+  public Map<String, String> getLabels() {
+    return labels;
   }
 
-  public void setWorkflowRunId(String workflowRunId) {
-    this.workflowRunId = workflowRunId;
+  public void setLabels(Map<String, String> labels) {
+    this.labels = labels;
+  }
+
+  public Map<String, Object> getAnnotations() {
+    return annotations;
+  }
+
+  public void setAnnotations(Map<String, Object> annotations) {
+    this.annotations = annotations;
   }
 
   public Map<String, Object> getParams() {
@@ -40,27 +47,11 @@ public class TaskExecutionRequest {
     this.resources = resources;
   }
 
-//  public TaskType getTaskType() {
-//    return taskType;
-//  }
-//
-//  public void setTaskType(TaskType taskType) {
-//    this.taskType = taskType;
-//  }
-
   public boolean isPreApproved() {
     return preApproved;
   }
 
   public void setPreApproved(boolean preApproved) {
     this.preApproved = preApproved;
-  }
-
-  public String getTaskRunId() {
-    return taskRunId;
-  }
-
-  public void setTaskRunId(String taskRunId) {
-    this.taskRunId = taskRunId;
   }
 }

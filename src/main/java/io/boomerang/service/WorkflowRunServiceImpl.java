@@ -4,13 +4,12 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,10 +31,9 @@ import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
-import io.boomerang.model.TaskExecutionResponse;
 import io.boomerang.model.TaskRun;
-import io.boomerang.model.WorkflowExecutionRequest;
 import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 
@@ -55,29 +53,35 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
   @Autowired
   private TaskRunRepository taskRunRepository;
-  
+
   @Autowired
   private WorkflowExecutionClient workflowExecutionClient;
-  
+
   @Autowired
   private WorkflowExecutionService workflowExecutionService;
 
   @Autowired
   private MongoTemplate mongoTemplate;
-  
+
   @Override
-  public ResponseEntity<?> get(String workflowRunId) {
-    Optional<WorkflowRunEntity> workflowRunEntity =
-        workflowRunRepository.findById(workflowRunId);
+  public ResponseEntity<WorkflowRun> get(String workflowRunId, boolean withTasks) {
+    if (workflowRunId == null || workflowRunId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+    }
+    Optional<WorkflowRunEntity> workflowRunEntity = workflowRunRepository.findById(workflowRunId);
     if (workflowRunEntity.isPresent()) {
-      return ResponseEntity.ok(workflowRunEntity.get());
+      WorkflowRun wfRun = new WorkflowRun(workflowRunEntity.get());
+      if (withTasks) {
+        wfRun.setTasks(getTaskRuns(workflowRunId));
+      }
+      return ResponseEntity.ok(wfRun);
     } else {
-      return ResponseEntity.notFound().build();
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
     }
   }
 
   @Override
-  //TODO change this to return WorkflowRuns
+  // TODO switch to WorkflowRun
   public Page<WorkflowRunEntity> query(Pageable pageable, Optional<List<String>> queryLabels,
       Optional<List<String>> queryStatus, Optional<List<String>> queryPhase) {
     List<Criteria> criteriaList = new ArrayList<>();
@@ -99,7 +103,8 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     }
 
     if (queryStatus.isPresent()) {
-      if (queryStatus.get().stream().allMatch(q -> EnumUtils.isValidEnumIgnoreCase(RunStatus.class, q))) {
+      if (queryStatus.get().stream()
+          .allMatch(q -> EnumUtils.isValidEnumIgnoreCase(RunStatus.class, q))) {
         Criteria criteria = Criteria.where("status").in(queryStatus.get());
         criteriaList.add(criteria);
       } else {
@@ -108,14 +113,15 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     }
 
     if (queryPhase.isPresent()) {
-      if (queryPhase.get().stream().allMatch(q -> EnumUtils.isValidEnumIgnoreCase(RunPhase.class, q))) {
+      if (queryPhase.get().stream()
+          .allMatch(q -> EnumUtils.isValidEnumIgnoreCase(RunPhase.class, q))) {
         Criteria criteria = Criteria.where("phase").in(queryPhase.get());
         criteriaList.add(criteria);
       } else {
         throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "phase");
       }
     }
-    
+
     Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);
     Criteria allCriteria = new Criteria();
     if (criteriaArray.length > 0) {
@@ -127,28 +133,22 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     Page<WorkflowRunEntity> pages = PageableExecutionUtils.getPage(
         mongoTemplate.find(query.with(pageable), WorkflowRunEntity.class), pageable,
         () -> mongoTemplate.count(query, WorkflowRunEntity.class));
-    
+
     return pages;
   }
 
   @Override
-  public ResponseEntity<?> submit(Optional<WorkflowExecutionRequest> executionRequest) {
-    WorkflowExecutionRequest request = new WorkflowExecutionRequest();
-    if (executionRequest.isPresent()) {
-      request = executionRequest.get();
-      logPayload(request);
-    } else {
-      LOGGER.error("No Workflow Run execution request was provided.");
-      return ResponseEntity.badRequest().body("No Workflow Run execution request was provided.");
+  public ResponseEntity<WorkflowRun> submit(String workflowId,
+      Optional<WorkflowRunRequest> optRunRequest) {
+    if (workflowId == null || workflowId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
-    final Optional<WorkflowEntity> optWorkflow =
-        workflowRepository.findById(request.getWorkflowRef());
+    final Optional<WorkflowEntity> optWorkflow = workflowRepository.findById(workflowId);
     WorkflowEntity workflow = new WorkflowEntity();
     if (optWorkflow.isPresent()) {
       workflow = optWorkflow.get();
     } else {
-      LOGGER.error("No Workflow found with matching reference.");
-      return ResponseEntity.badRequest().body("No Workflow found with matching reference.");
+      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
 
     final Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity =
@@ -161,9 +161,16 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       workflowRun.setCreationDate(new Date());
       workflowRun.setStatus(RunStatus.notstarted);
       workflowRun.putLabels(workflow.getLabels());
-      workflowRun.putLabels(request.getLabels());
-      //TODO: add default values from params on Workflow
-      workflowRun.setParams(request.getParams());
+      revision.getParams().stream().filter(p -> p.getDefaultValue() != null)
+          .forEach(p -> workflowRun.putParam(p.getKey(), p.getDefaultValue()));
+
+      // Add values from Run Request if Present
+      if (optRunRequest.isPresent()) {
+        logPayload(optRunRequest.get());
+        workflowRun.putLabels(optRunRequest.get().getLabels());
+        workflowRun.putAnnotations(optRunRequest.get().getAnnotations());
+        workflowRun.putParams(optRunRequest.get().getParams());
+      }
 
       // TODO: add trigger and set initiatedBy
       // workflowRun.setTrigger(null);
@@ -174,116 +181,109 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
       // TODO: add resources
       // workflowRun.setResources(null);
-
       final WorkflowRunEntity wfRunEntity = workflowRunRepository.save(workflowRun);
-      
+
       // TODO: Check if Workflow is active and triggers enabled
       // Throws Execution exception if not able to
       // workflowService.canExecuteWorkflow(workflowId);
 
       workflowExecutionClient.queueRevision(workflowExecutionService, wfRunEntity);
 
-//      final List<TaskExecutionResponse> taskRuns = getTaskExecutions(wfRunEntity.getId());
       final WorkflowRun response = new WorkflowRun(wfRunEntity);
-//      response.setTasks(taskRuns);
-
       response.setTasks(getTaskRuns(wfRunEntity.getId()));
-      response.setWorkflowName(workflow.getName());
       return ResponseEntity.ok(response);
     } else {
-      LOGGER.error("No Workflow version found to execute.");
-      return ResponseEntity.badRequest().body("No Workflow version found to execute.");
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REQ);
     }
   }
 
   @Override
-  public ResponseEntity<?> start(Optional<WorkflowExecutionRequest> executionRequest) {
-    final Optional<WorkflowRunEntity> wfRunEntity =
-        workflowRunRepository.findById(executionRequest.get().getWorkflowRunRef());
-    // TODO handle updating the TaskRun with values from the request
-    if (wfRunEntity.isPresent()) {
-
-        workflowExecutionClient.startRevision(workflowExecutionService, wfRunEntity.get());
-
-//        final List<TaskExecutionResponse> taskRuns = getTaskExecutions(wfRunEntity.get().getId());
-        final WorkflowRun response = new WorkflowRun(wfRunEntity.get());
-        response.setTasks(getTaskRuns(wfRunEntity.get().getId()));
-//        response.setTasks(taskRuns);
-//        response.setWorkflowName(workflow.getName());
-        return ResponseEntity.ok(response);
+  public ResponseEntity<WorkflowRun> start(String workflowRunId,
+      Optional<WorkflowRunRequest> optRunRequest) {
+    if (workflowRunId == null || workflowRunId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
     }
-    return ResponseEntity.notFound().build();
-  }
+    final Optional<WorkflowRunEntity> optWfRunEntity =
+        workflowRunRepository.findById(workflowRunId);
+    if (optWfRunEntity.isPresent()) {
+      WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
+      // Add values from Run Request
+      if (optRunRequest.isPresent()) {
+        logPayload(optRunRequest.get());
+        wfRunEntity.putLabels(optRunRequest.get().getLabels());
+        wfRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
+        wfRunEntity.putParams(optRunRequest.get().getParams());
+        workflowRunRepository.save(wfRunEntity);
+      }
 
-  @Override
-  public ResponseEntity<?> end(Optional<WorkflowExecutionRequest> executionRequest) {
-    Optional<WorkflowRunEntity> workflowRunEntity =
-        workflowRunRepository.findById(executionRequest.get().getWorkflowRunRef());
-      //TODO: check if status is already completed or cancelled
-    if (workflowRunEntity.isPresent()) {
-      workflowExecutionClient.endRevision(workflowExecutionService, workflowRunEntity.get());
-      return ResponseEntity.ok().build();
+      workflowExecutionClient.startRevision(workflowExecutionService, wfRunEntity);
+      final WorkflowRun response = new WorkflowRun(wfRunEntity);
+      response.setTasks(getTaskRuns(wfRunEntity.getId()));
+      return ResponseEntity.ok(response);
     } else {
-      return ResponseEntity.notFound().build();
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+    }
+  }
+
+  @Override
+  public ResponseEntity<WorkflowRun> end(String workflowRunId) {
+    if (workflowRunId == null || workflowRunId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+    }
+    final Optional<WorkflowRunEntity> optWfRunEntity =
+        workflowRunRepository.findById(workflowRunId);
+    if (optWfRunEntity.isPresent()) {
+      WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
+
+      workflowExecutionClient.endRevision(workflowExecutionService, wfRunEntity);
+      final WorkflowRun response = new WorkflowRun(wfRunEntity);
+      response.setTasks(getTaskRuns(wfRunEntity.getId()));
+      return ResponseEntity.ok(response);
+    } else {
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
     }
   }
 
   private List<TaskRun> getTaskRuns(String workflowRunId) {
-    List<TaskRunEntity> runs = taskRunRepository.findByWorkflowRunRef(workflowRunId);
-    List<TaskRun> taskRuns = new LinkedList<>();
+    List<TaskRunEntity> taskRunEntities = taskRunRepository.findByWorkflowRunRef(workflowRunId);
+    return taskRunEntities.stream().map(t -> new TaskRun(t)).collect(Collectors.toList());
 
-    for (TaskRunEntity run : runs) {
-      TaskRun tr = new TaskRun(run);
-      taskRuns.add(tr);
-    }
-    return taskRuns;
+
+    //
+    // TODO: Update the following or make sure they are set on the run at execution end task time.
+    // if (TaskType.approval.equals(run.getTaskType())
+    // || TaskType.manual.equals(run.getTaskType())) {
+    // Action approval = approvalService.getApprovalByTaskActivits(task.getId());
+    // response.setApproval(approval);
+    // } else if (TaskType.runworkflow == task.getTaskType()
+    // && task.getRunWorkflowActivityId() != null) {
+    //
+    // String runWorkflowActivityId = task.getRunWorkflowActivityId();
+    // ActivityEntity activity =
+    // this.flowActivityService.findWorkflowActivtyById(runWorkflowActivityId);
+    // if (activity != null) {
+    // response.setRunWorkflowActivityStatus(activity.getStatus());
+    // }
+    // } else if (TaskType.eventwait == task.getTaskType()) {
+    // List<TaskOutputResult> results = new LinkedList<>();
+    // TaskOutputResult result = new TaskOutputResult();
+    // result.setName("eventPayload");
+    // result.setDescription("Payload that was received with the Wait For Event");
+    // if (task.getOutputs() != null) {
+    // String json = task.getOutputs().get("eventPayload");
+    // result.setValue(json);
+    // }
+    // results.add(result);
+    // response.setResults(results);
+    // } else if (TaskType.template == task.getTaskType()
+    // || TaskType.customtask == task.getTaskType() || TaskType.script == task.getTaskType()) {
+    // List<TaskOutputResult> results = new LinkedList<>();
+    // setupTaskOutputResults(task, response, results);
+    //
+    // }
   }
 
-  private List<TaskExecutionResponse> getTaskExecutions(String workflowRunId) {
-    List<TaskRunEntity> runs = taskRunRepository.findByWorkflowRunRef(workflowRunId);
-    List<TaskExecutionResponse> taskExecutionResponses = new LinkedList<>();
-
-    for (TaskRunEntity run : runs) {
-      TaskExecutionResponse response = new TaskExecutionResponse();
-      BeanUtils.copyProperties(run, response);
-//
-//      TODO: Update the following or make sure they are set on the run at execution end task time.
-//      if (TaskType.approval.equals(run.getTaskType())
-//          || TaskType.manual.equals(run.getTaskType())) {
-//        Action approval = approvalService.getApprovalByTaskActivits(task.getId());
-//        response.setApproval(approval);
-//      } else if (TaskType.runworkflow == task.getTaskType()
-//          && task.getRunWorkflowActivityId() != null) {
-//
-//        String runWorkflowActivityId = task.getRunWorkflowActivityId();
-//        ActivityEntity activity =
-//            this.flowActivityService.findWorkflowActivtyById(runWorkflowActivityId);
-//        if (activity != null) {
-//          response.setRunWorkflowActivityStatus(activity.getStatus());
-//        }
-//      } else if (TaskType.eventwait == task.getTaskType()) {
-//        List<TaskOutputResult> results = new LinkedList<>();
-//        TaskOutputResult result = new TaskOutputResult();
-//        result.setName("eventPayload");
-//        result.setDescription("Payload that was received with the Wait For Event");
-//        if (task.getOutputs() != null) {
-//          String json = task.getOutputs().get("eventPayload");
-//          result.setValue(json);
-//        }
-//        results.add(result);
-//        response.setResults(results);
-//      } else if (TaskType.template == task.getTaskType()
-//          || TaskType.customtask == task.getTaskType() || TaskType.script == task.getTaskType()) {
-//        List<TaskOutputResult> results = new LinkedList<>();
-//        setupTaskOutputResults(task, response, results);
-//
-//      }
-      taskExecutionResponses.add(response);
-    }
-    return taskExecutionResponses;
-  }
-
-  private void logPayload(WorkflowExecutionRequest request) {
+  private void logPayload(WorkflowRunRequest request) {
     try {
       ObjectMapper objectMapper = new ObjectMapper();
       String payload = objectMapper.writeValueAsString(request);
