@@ -14,7 +14,7 @@ public interface WorkflowRevisionRepository
 
   Integer countByWorkflowRef(String workflowRef);
 
-  WorkflowRevisionEntity findByWorkflowRefAndVersion(String workflowRef, Integer version);
+  Optional<WorkflowRevisionEntity> findByWorkflowRefAndVersion(String workflowRef, Integer version);
 
   Page<WorkflowRevisionEntity> findByWorkflowRef(String string, Pageable pageable);
     

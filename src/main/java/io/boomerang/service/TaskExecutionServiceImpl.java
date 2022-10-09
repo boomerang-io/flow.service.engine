@@ -1,6 +1,5 @@
 package io.boomerang.service;
 
-import java.text.MessageFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -293,8 +292,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       taskRunRepository.save(taskExecution);
       return;
     }
-
-
     List<String> keys = new LinkedList<>();
     keys.add(taskRunId);
 
@@ -311,31 +308,16 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get().getId());
     boolean finishedAllDependencies = this.finishedAll(wfRunEntity.get(), tasks, taskExecution);
     LOGGER.debug("[{}] Finished all previous tasks? {}", taskRunId, finishedAllDependencies);
-    // if (finishedAllDependencies) {
-    // this.finishWorkflow(wfRunEntity.get(), tasks);
-    // }
 
     LOGGER.debug("[{}] Attempting to get lock", taskRunId);
     String tokenId = getLock(taskRunId, keys, 105000);
     LOGGER.debug("[{}] Obtained lock", taskRunId);
 
-    // Refresh wfRunEntity
+    // Refresh wfRunEntity and Execute Next Task
     wfRunEntity = this.workflowRunRepository.findById(taskExecution.getWorkflowRunRef());
-    String wfRunId = wfRunEntity.get().getId();
-
-    // TODO: reimplement quotas
-    // if (this.flowActivityService.hasExceededExecutionQuotas(wfRunId)) {
-    // LOGGER.error("Workflow has been cancelled due to its max workflow duration has exceeded.");
-    // ErrorResponse response = new ErrorResponse();
-    // response
-    // .setMessage("Workflow execution terminated due to exceeding maxinum workflow duration.");
-    // response.setCode("001");
-    //
-    // this.flowActivityService.cancelWorkflowActivity(wfRunId, response);
-    // } else {
     executeNextStep(wfRunEntity.get(), tasks, taskExecution, finishedAllDependencies);
-    // }
-    // lock.release(keys, "locks", tokenId);
+    
+    lock.release(keys, "locks", tokenId);
     LOGGER.debug("[{}] Released lock", taskRunId);
   }
 
@@ -354,8 +336,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         if (TaskType.eventwait.equals(task.getType())) {
           Map<String, Object> params = task.getParams();
           if (params != null && params.containsKey("topic")) {
-            String paramTopic = params.get("topic").toString();
             // TODO: bring back parameter layering
+//            String paramTopic = params.get("topic").toString();
             // ControllerRequestProperties properties = propertyManager
             // .buildRequestPropertyLayering(null, taskRunId, activity.getWorkflowId());
             // topic = propertyManager.replaceValueWithProperty(paramTopic, taskRunId, properties);

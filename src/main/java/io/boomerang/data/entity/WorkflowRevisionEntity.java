@@ -33,13 +33,13 @@ public class WorkflowRevisionEntity {
   private ChangeLog changelog;
 
   private String markdown;
+
+  private List<WorkflowParam> params;
+  
+  private List<WorkflowWorkspace> workspaces;
   
   //TODO: merge into the DAG
 //  private RestConfig config;
-  
-  private List<WorkflowWorkspace> workspaces;
-
-  private List<WorkflowParam> params;
 
   public String getId() {
     return id;

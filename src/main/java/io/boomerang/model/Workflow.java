@@ -4,7 +4,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.BeanUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.boomerang.data.entity.WorkflowEntity;
+import io.boomerang.data.entity.WorkflowRevisionEntity;
 
 /*
  * Workflow Model joining Workflow Entity and Workflow Revision Entity
@@ -17,6 +20,10 @@ public class Workflow {
   private String id;
 
   private String name;
+
+  private WorkflowStatus status = WorkflowStatus.active;
+  
+  private Integer version = 1;
   
   private String icon;
 
@@ -36,7 +43,16 @@ public class Workflow {
 
   private List<WorkflowParam> params = new LinkedList<>();
   
-  private List<WorkflowWorkspace> workspaces = new LinkedList<>()   ;
+  private List<WorkflowWorkspace> workspaces = new LinkedList<>();
+  
+  public Workflow() {
+    
+  }
+
+  public Workflow(WorkflowEntity wfEntity, WorkflowRevisionEntity wfRevisionEntity) {
+    BeanUtils.copyProperties(wfEntity, this);
+    BeanUtils.copyProperties(wfRevisionEntity, this, "tasks");
+  }
 
   public String getId() {
     return id;
@@ -52,6 +68,22 @@ public class Workflow {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public WorkflowStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(WorkflowStatus status) {
+    this.status = status;
+  }
+
+  public Integer getVersion() {
+    return version;
+  }
+
+  public void setVersion(Integer version) {
+    this.version = version;
   }
 
   public String getIcon() {
