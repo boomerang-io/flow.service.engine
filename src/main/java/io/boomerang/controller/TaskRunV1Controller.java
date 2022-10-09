@@ -9,17 +9,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.domain.Sort.Order;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.data.entity.TaskRunEntity;
-import io.boomerang.model.TaskExecutionRequest;
-import io.boomerang.model.TaskRun;
+import io.boomerang.model.TaskRunRequest;
+import io.boomerang.model.WorkflowRun;
 import io.boomerang.service.TaskRunService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -67,19 +69,38 @@ public class TaskRunV1Controller {
     return taskRunService.query(pageable, labels, status, phase);
   }
 
-  @PostMapping(value = "/start")
+  @PostMapping(value = "/{taskRunId}/start")
   @Operation(summary = "Start a Task Run. The Task Run has to already be queued.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<?> startTaskRun(@RequestBody Optional<TaskExecutionRequest> taskExecutionRequest) {
-    return taskRunService.start(taskExecutionRequest);
+  public ResponseEntity<?> startTaskRun(
+      @Parameter(name = "taskRunId",
+      description = "ID of Task Run to Start",
+      required = true) @PathVariable(required = true) String taskRunId,
+      @RequestBody Optional<TaskRunRequest> taskRunRequest) {
+    return taskRunService.start(taskRunId, taskRunRequest);
   }
 
-  @PostMapping(value = "/end")
-  @Operation(summary = "Complete the Task Run.")
+  @PostMapping(value = "/{taskRunId}/end")
+  @Operation(summary = "End the Task Run.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<?> endTaskRun(@RequestBody Optional<TaskExecutionRequest> taskExecutionRequest) {
-    return taskRunService.end(taskExecutionRequest);
+  public ResponseEntity<?> endTaskRun(
+      @Parameter(name = "taskRunId",
+      description = "ID of Task Run to End",
+      required = true) @PathVariable(required = true) String taskRunId) {
+    return taskRunService.end(taskRunId);
+  }
+
+  //TODO implement
+  @PutMapping(value = "/{taskRunId}/cancel")
+  @Operation(summary = "Cancel a Task Run")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public ResponseEntity<WorkflowRun> cancelTaskRun(
+      @Parameter(name = "taskRunId",
+      description = "ID of Task Run to Cancel",
+      required = true) @PathVariable(required = true) String taskRunId) {
+    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
   }
 }

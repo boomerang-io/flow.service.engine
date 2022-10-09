@@ -16,6 +16,8 @@ docker run --name local-mongo -d mongo:latest
 
 For distributed locking, we use this [distributed lock](https://github.com/alturkovic/distributed-lock) project with the Mongo implementation.
 
+The implementation in `LockManagerImpl.java` relies on the TTL Index for Retries having been added via the `flow.loader`.
+
 ## Change Log
 
 The following attempts to list the changes from Workflow Service to Workflow Engine

@@ -12,15 +12,14 @@ import org.jgrapht.graph.DefaultEdge;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
-import io.boomerang.exceptions.InvalidWorkflowRuntimeException;
-import io.boomerang.model.TaskExecutionRequest;
+import io.boomerang.error.BoomerangException;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
@@ -44,12 +43,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   
   @Autowired
   private TaskExecutionClient taskClient;
-  
-  @Autowired
-  private TaskRunRepository taskRunRepository;
-
-//  @Autowired
-//  private WorkflowService workflowService;
   
   @Value("${flow.engine.mode}")
   private String engineMode;
@@ -89,13 +82,11 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         return CompletableFuture
             .supplyAsync(executeWorkflowAsync(workflowExecution.getId(), start, end, graph, tasks));
       }
-      LOGGER.error("[{}] Failed to run workflow: incomplete, or invalid, workflow", workflowExecution.getId());
       updateStatusAndSaveWorkflow(workflowExecution, RunStatus.invalid, RunPhase.running, Optional.of("Failed to run workflow: incomplete, or invalid, workflow"));
-      throw new InvalidWorkflowRuntimeException();
+      throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION", "[{0}] Failed to run workflow: incomplete, or invalid, workflow", HttpStatus.INTERNAL_SERVER_ERROR, workflowExecution.getId());
     }
-    LOGGER.error("[{}] Failed to run workflow: incomplete, or invalid, workflow revision: {}", workflowExecution.getId(), workflowExecution.getWorkflowRevisionRef());
     updateStatusAndSaveWorkflow(workflowExecution, RunStatus.invalid, RunPhase.running, Optional.of("Failed to run workflow: incomplete, or invalid, workflow revision: {}"), workflowExecution.getWorkflowRevisionRef());
-    throw new InvalidWorkflowRuntimeException();
+    throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION", "[{0}] Failed to run workflow: incomplete, or invalid, workflow revision: {1}", HttpStatus.INTERNAL_SERVER_ERROR, workflowExecution.getId(), workflowExecution.getWorkflowRevisionRef());
   }
 
   @Override
@@ -132,9 +123,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
               if (nodes.contains(next.getId())) {
                 LOGGER.debug("[{}] Creating TaskRun ({})...", workflowExecution.getId(), next.getId());
-                TaskExecutionRequest taskRequest = new TaskExecutionRequest();
-                taskRequest.setTaskRunId(next.getId());
-                taskRequest.setWorkflowRunId(wfRunId);
                 taskClient.queueTask(taskService, next);
               }
             }

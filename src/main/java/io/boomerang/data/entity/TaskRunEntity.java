@@ -114,12 +114,20 @@ public class TaskRunEntity {
     this.labels = labels;
   }
 
+  public void putLabels(Map<String, String> labels) {
+    this.params.putAll(labels);
+  }
+
   public Map<String, Object> getAnnotations() {
     return annotations;
   }
 
   public void setAnnotations(Map<String, Object> annotations) {
     this.annotations = annotations;
+  }
+
+  public void putAnnotations(Map<String, Object> annotations) {
+    this.params.putAll(annotations);
   }
 
   public Date getCreationDate() {
@@ -152,6 +160,14 @@ public class TaskRunEntity {
 
   public void setParams(Map<String, Object> params) {
     this.params = params;
+  }
+
+  public void putParam(String key, Object value) {
+    this.params.put(key, value);
+  }
+
+  public void putParams(Map<String, Object> params) {
+    this.params.putAll(params);
   }
 
   public List<RunResult> getResults() {

@@ -3,9 +3,7 @@ package io.boomerang.service;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.logging.log4j.LogManager;
@@ -23,8 +21,8 @@ import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
-import io.boomerang.model.TaskExecutionRequest;
 import io.boomerang.model.TaskRun;
+import io.boomerang.model.TaskRunRequest;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 
@@ -48,12 +46,16 @@ public class TaskRunServiceImpl implements TaskRunService {
   private MongoTemplate mongoTemplate;
 
   @Override
-  public ResponseEntity<?> get(String taskRunId) {
-    Optional<TaskRunEntity> taskRunEntity = taskRunRepository.findById(taskRunId);
-    if (taskRunEntity.isPresent()) {
-      return ResponseEntity.ok(taskRunEntity.get());
+  public ResponseEntity<TaskRun> get(String taskRunId) {
+    if (taskRunId == null || taskRunId.isBlank()) {
+      throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_REF);
+    }
+    Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
+    if (optTaskRunEntity.isPresent()) {
+      TaskRun taskRun = new TaskRun(optTaskRunEntity.get());
+      return ResponseEntity.ok(taskRun);
     } else {
-      return ResponseEntity.notFound().build();
+      throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_REF);
     }
   }
 
@@ -115,28 +117,41 @@ public class TaskRunServiceImpl implements TaskRunService {
   }
 
   @Override
-  public ResponseEntity<?> start(Optional<TaskExecutionRequest> taskExecutionRequest) {
-    Optional<TaskRunEntity> taskRunEntity =
-        taskRunRepository.findById(taskExecutionRequest.get().getTaskRunId());
-    if (taskRunEntity.isPresent()) {
-      // TODO handle updating the TaskRun with values from the request
-      taskExecutionClient.startTask(taskExecutionService, taskRunEntity.get());
-      return ResponseEntity.ok().build();
+  public ResponseEntity<?> start(String taskRunId, Optional<TaskRunRequest> optRunRequest) {
+    if (taskRunId == null || taskRunId.isBlank()) {
+      throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_REF);
+    }
+    Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
+    if (optTaskRunEntity.isPresent()) {
+      TaskRunEntity taskRunEntity = optTaskRunEntity.get();
+      // Add values from Run Request
+      if (optRunRequest.isPresent()) {
+        taskRunEntity.putLabels(optRunRequest.get().getLabels());
+        taskRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
+        taskRunEntity.putParams(optRunRequest.get().getParams());
+        taskRunRepository.save(taskRunEntity);
+      }
+      taskExecutionClient.startTask(taskExecutionService, taskRunEntity);
+      
+      TaskRun taskRun = new TaskRun(taskRunEntity);
+      return ResponseEntity.ok(taskRun);
     } else {
-      return ResponseEntity.notFound().build();
+      throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_REF);
     }
   }
 
   @Override
-  public ResponseEntity<?> end(Optional<TaskExecutionRequest> taskExecutionRequest) {
-    Optional<TaskRunEntity> taskRunEntity =
-        taskRunRepository.findById(taskExecutionRequest.get().getTaskRunId());
-    if (taskRunEntity.isPresent()) {
-      // TODO: check if status is already completed or cancelled
-      taskExecutionClient.endTask(taskExecutionService, taskRunEntity.get());
-      return ResponseEntity.ok().build();
+  public ResponseEntity<?> end(String taskRunId) {
+    if (taskRunId == null || taskRunId.isBlank()) {
+      throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_REF);
+    }
+    Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
+    if (optTaskRunEntity.isPresent()) {
+      taskExecutionClient.endTask(taskExecutionService, optTaskRunEntity.get());
+      TaskRun taskRun = new TaskRun(optTaskRunEntity.get());
+      return ResponseEntity.ok(taskRun);
     } else {
-      return ResponseEntity.notFound().build();
+      throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_REF);
     }
   }
 }
