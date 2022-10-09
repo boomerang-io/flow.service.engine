@@ -117,7 +117,7 @@ public class TaskRunServiceImpl implements TaskRunService {
   }
 
   @Override
-  public ResponseEntity<?> start(String taskRunId, Optional<TaskRunRequest> optRunRequest) {
+  public ResponseEntity<TaskRun> start(String taskRunId, Optional<TaskRunRequest> optRunRequest) {
     if (taskRunId == null || taskRunId.isBlank()) {
       throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_REF);
     }
@@ -141,7 +141,7 @@ public class TaskRunServiceImpl implements TaskRunService {
   }
 
   @Override
-  public ResponseEntity<?> end(String taskRunId) {
+  public ResponseEntity<TaskRun> end(String taskRunId) {
     if (taskRunId == null || taskRunId.isBlank()) {
       throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_REF);
     }
