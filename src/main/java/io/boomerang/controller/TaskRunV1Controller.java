@@ -13,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,7 +41,10 @@ public class TaskRunV1Controller {
   @Operation(summary = "Retrieve a specific Task Run.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<TaskRun> getTaskRuns(@PathVariable String taskRunId) {
+  public ResponseEntity<TaskRun> getTaskRuns(
+      @Parameter(name = "taskRunId",
+      description = "ID of Task Run to Start",
+      required = true) @PathVariable(required = true) String taskRunId) {
     return taskRunService.get(taskRunId);
   }
 
@@ -69,7 +71,7 @@ public class TaskRunV1Controller {
     return taskRunService.query(pageable, labels, status, phase);
   }
 
-  @PostMapping(value = "/{taskRunId}/start")
+  @PutMapping(value = "/{taskRunId}/start")
   @Operation(summary = "Start a Task Run. The Task Run has to already be queued.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
@@ -81,7 +83,7 @@ public class TaskRunV1Controller {
     return taskRunService.start(taskRunId, taskRunRequest);
   }
 
-  @PostMapping(value = "/{taskRunId}/end")
+  @PutMapping(value = "/{taskRunId}/end")
   @Operation(summary = "End the Task Run.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
