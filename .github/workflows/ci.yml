@@ -20,8 +20,8 @@ jobs:
           cache: 'gradle'
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
-        with:
-          arguments: test
+      - name: Test
+        run: gradle test
       - name: Slack
         uses: 8398a7/action-slack@v3
         if: ${{ always() }}
@@ -43,8 +43,8 @@ jobs:
           cache: 'gradle'
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
-        with:
-          arguments: build
+      - name: Build
+        run: gradle build 
       - uses: actions/upload-artifact@v2
         if: ${{ success() }}
         with:
