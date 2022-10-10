@@ -1,6 +1,7 @@
 package io.boomerang.model;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -20,9 +21,9 @@ public class Task {
   
   private Map<String, String> labels = new HashMap<>();
   
-  private Map<String, Object> params = new HashMap<>();
-  
   private Map<String, Object> annotations = new HashMap<>();
+  
+  private List<ParamSpec> params = new LinkedList<>();
   
   private List<TaskDependency> dependencies;
   
@@ -61,11 +62,11 @@ public class Task {
     this.templateVersion = templateVersion;
   }
 
-  public Map<String, Object> getParams() {
+  public List<ParamSpec> getParams() {
     return params;
   }
 
-  public void setParams(Map<String, Object> params) {
+  public void setParams(List<ParamSpec> params) {
     this.params = params;
   }
 

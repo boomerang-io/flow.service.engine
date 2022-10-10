@@ -36,6 +36,7 @@ import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
+import io.boomerang.util.ParameterUtil;
 
 @Service
 public class WorkflowRunServiceImpl implements WorkflowRunService {
@@ -155,21 +156,20 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         this.workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflow.getId());
     if (optWorkflowRevisionEntity.isPresent()) {
       WorkflowRevisionEntity revision = optWorkflowRevisionEntity.get();
-      final WorkflowRunEntity workflowRun = new WorkflowRunEntity();
-      workflowRun.setWorkflowRevisionRef(revision.getId());
-      workflowRun.setWorkflowRef(revision.getWorkflowRef());
-      workflowRun.setCreationDate(new Date());
-      workflowRun.setStatus(RunStatus.notstarted);
-      workflowRun.putLabels(workflow.getLabels());
-      revision.getParams().stream().filter(p -> p.getDefaultValue() != null)
-          .forEach(p -> workflowRun.putParam(p.getKey(), p.getDefaultValue()));
+      final WorkflowRunEntity wfRunEntity = new WorkflowRunEntity();
+      wfRunEntity.setWorkflowRevisionRef(revision.getId());
+      wfRunEntity.setWorkflowRef(revision.getWorkflowRef());
+      wfRunEntity.setCreationDate(new Date());
+      wfRunEntity.setStatus(RunStatus.notstarted);
+      wfRunEntity.putLabels(workflow.getLabels());
+      wfRunEntity.setParams(ParameterUtil.paramToRunParam(revision.getParams()));
 
       // Add values from Run Request if Present
       if (optRunRequest.isPresent()) {
         logPayload(optRunRequest.get());
-        workflowRun.putLabels(optRunRequest.get().getLabels());
-        workflowRun.putAnnotations(optRunRequest.get().getAnnotations());
-        workflowRun.putParams(optRunRequest.get().getParams());
+        wfRunEntity.putLabels(optRunRequest.get().getLabels());
+        wfRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
+        wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(), optRunRequest.get().getParams()));
       }
 
       // TODO: add trigger and set initiatedBy
@@ -181,7 +181,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
       // TODO: add resources
       // workflowRun.setResources(null);
-      final WorkflowRunEntity wfRunEntity = workflowRunRepository.save(workflowRun);
+      workflowRunRepository.save(wfRunEntity);
 
       // TODO: Check if Workflow is active and triggers enabled
       // Throws Execution exception if not able to
@@ -212,13 +212,17 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         logPayload(optRunRequest.get());
         wfRunEntity.putLabels(optRunRequest.get().getLabels());
         wfRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
-        wfRunEntity.putParams(optRunRequest.get().getParams());
+        wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(), optRunRequest.get().getParams()));
         workflowRunRepository.save(wfRunEntity);
       }
 
       workflowExecutionClient.startRevision(workflowExecutionService, wfRunEntity);
-      final WorkflowRun response = new WorkflowRun(wfRunEntity);
-      response.setTasks(getTaskRuns(wfRunEntity.getId()));
+      
+      //Retrieve the refreshed status
+      WorkflowRunEntity updatedWfRunEntity = 
+          workflowRunRepository.findById(workflowRunId).get();
+      final WorkflowRun response = new WorkflowRun(updatedWfRunEntity);
+      response.setTasks(getTaskRuns(workflowRunId));
       return ResponseEntity.ok(response);
     } else {
       throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);

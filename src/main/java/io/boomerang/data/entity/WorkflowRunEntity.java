@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.model.RunResult;
+import io.boomerang.model.RunParam;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 
@@ -50,7 +51,7 @@ public class WorkflowRunEntity   {
 
   private String trigger;
   
-  private Map<String, Object> params = new HashMap<>();
+  private List<RunParam> params = new LinkedList<>();
 
   private List<RunResult> results = new LinkedList<>();
   
@@ -176,20 +177,12 @@ public class WorkflowRunEntity   {
     this.trigger = trigger;
   }
 
-  public Map<String, Object> getParams() {
+  public List<RunParam> getParams() {
     return params;
   }
 
-  public void setParams(Map<String, Object> params) {
+  public void setParams(List<RunParam> params) {
     this.params = params;
-  }
-
-  public void putParam(String key, Object value) {
-    this.params.put(key, value);
-  }
-
-  public void putParams(Map<String, Object> params) {
-    this.params.putAll(params);
   }
 
   public List<RunResult> getResults() {

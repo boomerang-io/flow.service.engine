@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.model.ChangeLog;
-import io.boomerang.model.WorkflowParam;
+import io.boomerang.model.ParamSpec;
 import io.boomerang.model.WorkflowWorkspace;
 
 /*
@@ -34,7 +34,7 @@ public class WorkflowRevisionEntity {
 
   private String markdown;
 
-  private List<WorkflowParam> params;
+  private List<ParamSpec> params;
   
   private List<WorkflowWorkspace> workspaces;
   
@@ -97,11 +97,11 @@ public class WorkflowRevisionEntity {
 //    this.config = config;
 //  }
 
-  public List<WorkflowParam> getParams() {
+  public List<ParamSpec> getParams() {
     return params;
   }
 
-  public void setParams(List<WorkflowParam> params) {
+  public void setParams(List<ParamSpec> params) {
     this.params = params;
   }
 

@@ -33,6 +33,7 @@ import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.util.GraphProcessor;
+import io.boomerang.util.ParameterUtil;
 
 @Service
 public class DAGUtility {
@@ -93,7 +94,7 @@ public class DAGUtility {
         executionTask.setType(wfRevisionTask.getType());
         executionTask.setCreationDate(new Date());
         executionTask.setTemplateVersion(wfRevisionTask.getTemplateVersion());
-        executionTask.setParams(wfRevisionTask.getParams());
+        executionTask.setParams(ParameterUtil.paramToRunParam(wfRevisionTask.getParams()));
         executionTask.setLabels(wfRevisionTask.getLabels());
         executionTask.setAnnotations(wfRevisionTask.getAnnotations());
         executionTask.setDependencies(wfRevisionTask.getDependencies());
@@ -114,10 +115,12 @@ public class DAGUtility {
             Integer templateVersion =
                 wfRevisionTask.getTemplateVersion() != null ? wfRevisionTask.getTemplateVersion()
                     : taskTemplate.get().getCurrentVersion();
-            Optional<TaskTemplateRevision> revision = taskTemplate.get().getRevisions().stream().parallel()
+            Optional<TaskTemplateRevision> ttRevision = taskTemplate.get().getRevisions().stream().parallel()
                 .filter(r -> r.getVersion().equals(templateVersion)).findFirst();
-            if (revision.isPresent()) {
-              executionTask.setTemplateResults(revision.get().getResults());
+            if (ttRevision.isPresent()) {
+              executionTask.setTemplateResults(ttRevision.get().getResults());
+              ParameterUtil.addUniqueParams(ParameterUtil.ttConfigToRunParam(ttRevision.get().getConfig()), ParameterUtil.paramToRunParam(wfRevisionTask.getParams()));
+              executionTask.setParams(null);
             } else {
            // TODO: throw more accurate exception
               throw new IllegalArgumentException("Invalid task template version selected: " + templateId + " @ " + templateVersion);
@@ -127,14 +130,7 @@ public class DAGUtility {
             throw new IllegalArgumentException("Invalid task template selected: " + templateId);
           }
         } 
-        //TODO: ensure we don't need this set at this point
-//        else if (TaskType.decision.equals(wfRevisionTask.getType())) {
-//          executionTask.setDecisionValue(wfRevisionTask.getParams().get("value").toString());
-//        }
-//        if (!TaskType.start.equals(executionTask.getType())
-//            && !TaskType.end.equals(executionTask.getType())) {
-          taskRunRepository.save(executionTask);
-//        }
+        taskRunRepository.save(executionTask);
         LOGGER.info("[{}] TaskRunEntity ({}) created for: {}", wfRunId, executionTask.getId(), executionTask.getName());
         taskList.add(executionTask);
       }

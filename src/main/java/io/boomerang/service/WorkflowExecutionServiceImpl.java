@@ -20,6 +20,7 @@ import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.error.BoomerangException;
+import io.boomerang.model.RunParam;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
@@ -44,15 +45,21 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   @Autowired
   private TaskExecutionClient taskClient;
   
+  @Autowired
+  private ParameterManager paramManager;
+  
   @Value("${flow.engine.mode}")
   private String engineMode;
 
   @Override
   public void queueRevision(WorkflowRunEntity workflowExecution) {
     LOGGER.debug("[{}] Recieved queue Workflow request.", workflowExecution.getId());
-    updateStatusAndSaveWorkflow(workflowExecution, RunStatus.ready, RunPhase.pending, Optional.empty());
-
+    //Resolve Parameter Substitutions
+    List<RunParam> resolvedParams = paramManager.resolveWorkflowParams(workflowExecution);
+    workflowExecution.setParams(resolvedParams);
     //TODO: do we move the dagUtility.validateWorkflow() here and validate earlier?
+    
+    updateStatusAndSaveWorkflow(workflowExecution, RunStatus.ready, RunPhase.pending, Optional.empty());
 
 //  String workflowId = workflowExecution.getWorkflowId();
 //  WorkflowEntity workflow = workflowService.getWorkflow(workflowId);
@@ -79,6 +86,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       final TaskRunEntity end = dagUtility.getTaskByType(tasks, TaskType.end);
       final Graph<String, DefaultEdge> graph = dagUtility.createGraph(tasks);
       if (dagUtility.validateWorkflow(workflowExecution, tasks)) {
+        //Set Workflow to Running (Status and Phase). From this point, the duration needs to be calculated.
+        workflowExecution.setStartTime(new Date());
+        updateStatusAndSaveWorkflow(workflowExecution, RunStatus.running, RunPhase.running, Optional.empty());
         return CompletableFuture
             .supplyAsync(executeWorkflowAsync(workflowExecution.getId(), start, end, graph, tasks));
       }
@@ -104,14 +114,10 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       if (optworkflowExecution.isPresent()) {
         WorkflowRunEntity workflowExecution = optworkflowExecution.get();
         if (tasksToRun.size() == 2) {
-          //TODO: validate this
+          //Workflow only has Start and End and therefore can succeed.
           updateStatusAndSaveWorkflow(workflowExecution, RunStatus.succeeded, RunPhase.running, Optional.empty());
           return true;
         }
-
-        //Set Workflow to Running (Status and Phase). From this point, the duration needs to be calculated.
-        workflowExecution.setStartTime(new Date());
-        updateStatusAndSaveWorkflow(workflowExecution, RunStatus.running, RunPhase.running, Optional.empty());
         LOGGER.info("[{}] Executing Workflow Async...", workflowExecution.getId());
 
           try {

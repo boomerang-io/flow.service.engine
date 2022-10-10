@@ -2,7 +2,6 @@ package io.boomerang.service;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -19,6 +18,8 @@ import com.github.alturkovic.lock.mongo.impl.SimpleMongoLock;
 import com.github.alturkovic.lock.retry.RetriableLock;
 import io.boomerang.config.MongoConfiguration;
 import io.boomerang.data.entity.TaskRunEntity;
+import io.boomerang.model.RunParam;
+import io.boomerang.util.ParameterUtil;
 
 @Service
 public class LockManagerImpl implements LockManager {
@@ -42,16 +43,16 @@ public class LockManagerImpl implements LockManager {
     if (taskExecution != null) {
 //      String workflowId = taskExecution.getWorkflowRef();
 
-      Map<String, Object> params = taskExecution.getParams();
-      if (params.containsKey("timeout")) {
-        String timeoutStr = params.get("timeout").toString();
+      List<RunParam> params = taskExecution.getParams();
+      if (ParameterUtil.containsName(params, "timeout")) {
+        String timeoutStr = ParameterUtil.getValue(params, "timeout").toString();
         if (!timeoutStr.isBlank() && NumberUtils.isCreatable(timeoutStr)) {
           timeout = Long.valueOf(timeoutStr);
         }
       }
       
-      if (params.containsKey("key")) {
-        key = params.get("key").toString();
+      if (ParameterUtil.containsName(params, "key")) {
+        key = ParameterUtil.getValue(params, "key").toString();
         //TODO: implement parameter layering
 //        ControllerRequestProperties propertiesList =
 //            propertyManager.buildRequestPropertyLayering(null, activityId, workflowId);
@@ -118,9 +119,9 @@ public class LockManagerImpl implements LockManager {
     if (taskExecution != null) {
       String workflowId = taskExecution.getWorkflowRef();
 
-      Map<String, Object> params = taskExecution.getParams();
-      if (params.containsKey("key")) {
-        key = params.get("key").toString();
+      List<RunParam> params = taskExecution.getParams();
+      if (ParameterUtil.containsName(params, "key")) {
+        key = ParameterUtil.getValue(params, "key").toString();
 //        ControllerRequestProperties propertiesList =
 //            propertyManager.buildRequestPropertyLayering(taskExecution, wfRunId, workflowId);
 //        key = propertyManager.replaceValueWithProperty(key, wfRunId, propertiesList);

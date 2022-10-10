@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.boomerang.data.model.TaskTemplateResult;
+import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
 import io.boomerang.model.enums.RunPhase;
@@ -38,7 +39,7 @@ public class TaskRunEntity {
 
   private long duration;
   
-  private Map<String, Object> params = new HashMap<>();
+  private List<RunParam> params = new LinkedList<>();
 
   private List<RunResult> results = new LinkedList<>();
 
@@ -115,7 +116,7 @@ public class TaskRunEntity {
   }
 
   public void putLabels(Map<String, String> labels) {
-    this.params.putAll(labels);
+    this.labels.putAll(labels);
   }
 
   public Map<String, Object> getAnnotations() {
@@ -127,7 +128,7 @@ public class TaskRunEntity {
   }
 
   public void putAnnotations(Map<String, Object> annotations) {
-    this.params.putAll(annotations);
+    this.annotations.putAll(annotations);
   }
 
   public Date getCreationDate() {
@@ -154,20 +155,12 @@ public class TaskRunEntity {
     this.duration = duration;
   }
 
-  public Map<String, Object> getParams() {
+  public List<RunParam> getParams() {
     return params;
   }
 
-  public void setParams(Map<String, Object> params) {
+  public void setParams(List<RunParam> params) {
     this.params = params;
-  }
-
-  public void putParam(String key, Object value) {
-    this.params.put(key, value);
-  }
-
-  public void putParams(Map<String, Object> params) {
-    this.params.putAll(params);
   }
 
   public List<RunResult> getResults() {

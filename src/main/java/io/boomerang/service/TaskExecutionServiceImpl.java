@@ -3,7 +3,6 @@ package io.boomerang.service;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -28,11 +27,13 @@ import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
+import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
+import io.boomerang.util.ParameterUtil;
 
 @Service
 public class TaskExecutionServiceImpl implements TaskExecutionService {
@@ -326,36 +327,28 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     List<String> ids = new LinkedList<>();
 
     LOGGER.info("[{}] Finding taskRunId based on topic.", workflowRunId);
-    Optional<WorkflowRunEntity> workflowRunEntity = workflowRunRepository.findById(workflowRunId);
-    Optional<WorkflowRevisionEntity> workflowRevisionEntity =
-        workflowRevisionRepository.findById(workflowRunEntity.get().getWorkflowRevisionRef());
-
-    if (workflowRevisionEntity.isPresent()) {
-      List<WorkflowRevisionTask> tasks = workflowRevisionEntity.get().getTasks();
-      for (WorkflowRevisionTask task : tasks) {
-        if (TaskType.eventwait.equals(task.getType())) {
-          Map<String, Object> params = task.getParams();
-          if (params != null && params.containsKey("topic")) {
-            // TODO: bring back parameter layering
-//            String paramTopic = params.get("topic").toString();
-            // ControllerRequestProperties properties = propertyManager
-            // .buildRequestPropertyLayering(null, taskRunId, activity.getWorkflowId());
-            // topic = propertyManager.replaceValueWithProperty(paramTopic, taskRunId, properties);
-            // String taskId = task.getId();
-            Optional<TaskRunEntity> taskRunEntity = this.taskRunRepository
-                .findFirstByNameAndWorkflowRunRef(task.getName(), workflowRunId);
-            if (taskRunEntity.isPresent() && taskRunEntity != null) {
-              LOGGER.info("[{}] Found task run id: {} ", workflowRunId,
-                  taskRunEntity.get().getId());
-              taskRunEntity.get().setPreApproved(true);
-              this.taskRunRepository.save(taskRunEntity.get());
-
-              ids.add(taskRunEntity.get().getId());
-            }
-          }
-        }
+    List<TaskRunEntity> taskRunEntities = this.taskRunRepository.findByWorkflowRunRef(workflowRunId);
+    
+    for (TaskRunEntity taskRun : taskRunEntities) {
+      if (TaskType.eventwait.equals(taskRun.getType())) {
+        List<RunParam> params = taskRun.getParams();
+        if (params != null && ParameterUtil.containsName(params, "topic")) {
+          // TODO: bring back parameter layering
+//        String paramTopic = params.get("topic").toString();
+        // ControllerRequestProperties properties = propertyManager
+        // .buildRequestPropertyLayering(null, taskRunId, activity.getWorkflowId());
+        // topic = propertyManager.replaceValueWithProperty(paramTopic, taskRunId, properties);
+        // String taskId = task.getId();
+          LOGGER.info("[{}] Found task run id: {} ", workflowRunId,
+              taskRun.getId());
+          taskRun.setPreApproved(true);
+          this.taskRunRepository.save(taskRun);
+          ids.add(taskRun.getId());
+      }
       }
     }
+
+    //TODO: figure out what to return
     LOGGER.info("[{}] No task activity ids found for topic: {}", workflowRunId, topic);
     return ids;
   }
@@ -385,8 +378,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
   }
 
-  private void saveWorkflowStatus(TaskRunEntity task, WorkflowRunEntity wfRunEntity) {
-    String status = task.getParams().get("status").toString();
+  private void saveWorkflowStatus(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {
+    String status = ParameterUtil.getValue(taskExecution.getParams(), "status").toString();
     if (!status.isBlank()) {
       RunStatus taskStatus = RunStatus.valueOf(status);
       wfRunEntity.setStatusOverride(taskStatus);
@@ -395,7 +388,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   }
 
   private void processDecision(TaskRunEntity taskExecution, String activityId) {
-    String decisionValue = taskExecution.getParams().get("value").toString();
+    String decisionValue = ParameterUtil.getValue(taskExecution.getParams(), "value").toString();
     // ControllerRequestProperties properties =
     // propertyManager.buildRequestPropertyLayering(taskExecution, activityId,
     // task.getWorkflowId());
