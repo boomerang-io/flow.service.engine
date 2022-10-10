@@ -8,6 +8,10 @@ group = 'io.boomerang'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '18'
 
+jar {
+	archiveFileName='service-engine.jar'
+}
+
 repositories {
 	mavenCentral()
 	maven { url 'https://jitpack.io' }
