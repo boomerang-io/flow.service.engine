@@ -48,7 +48,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: ${{ success() }}
         with:
-          name: service-flow.jar
+          name: service-engine.jar
           path: build/libs/service-engine.jar
       - name: Slack
         uses: 8398a7/action-slack@v3
