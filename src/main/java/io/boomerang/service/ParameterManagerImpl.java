@@ -13,10 +13,13 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringSubstitutor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.WorkflowRunRepository;
@@ -66,40 +69,45 @@ public class ParameterManagerImpl implements ParameterManager {
 
   final String[] reserved = {"system", "workflow", "global", "team", "workflow"};
   
+  @Override
+  public void resolveWorkflowRunParams(String wfRunId, List<RunParam> wfRunParams) {
+    ParamLayers paramLayers = buildParameterLayering(Optional.of(wfRunParams), Optional.empty());
+    resolveParams(wfRunId, wfRunParams, paramLayers);
+  }
+  
+  @Override
+  public void resolveTaskRunParams(String wfRunId, List<RunParam> wfRunParams, List<RunParam> taskRunParams) {
+    ParamLayers paramLayers = buildParameterLayering(Optional.of(wfRunParams), Optional.of(taskRunParams));
+    resolveParams(wfRunId, taskRunParams, paramLayers);
+  }
+  
   /*
    * Resolve all parameters for a particular set of RunParams
    */
-  public List<RunParam> resolveWorkflowParams(WorkflowRunEntity wfRunEntity) {
-    //TODO: retrieve extended parameter layers from Workflow service if the application property / URL has been provided
+  private void resolveParams(String wfRunId, List<RunParam> runParams, ParamLayers paramLayers) {
     //This model should include an orderedList of the scope layers and then parameters for each layer (similar to a Page object)
     String regex = "(?<=\\$\\().+?(?=\\))";
     Pattern pattern = Pattern.compile(regex);
-    
-    ParamLayers paramLayers = buildParameterLayering(Optional.of(wfRunEntity), Optional.empty());
-    LOGGER.debug("Resolving Parameters...");
-    wfRunEntity.getParams().stream().forEach(p -> {
-      LOGGER.debug("!!! In Check for Param: " + p.getName() + " = " + p.getValue());
+    runParams.stream().forEach(p -> {
+      LOGGER.debug("Resolving Parameters: " + p.getName() + " = " + p.getValue());
       if (p.getValue() instanceof String) {
-        Matcher m = pattern.matcher(p.getValue().toString());
-        while (m.find()) {
-          LOGGER.debug("!!! " + m.group(0));
-        }
-        p.setValue(replaceProperties(p.getValue().toString(), wfRunEntity.getWorkflowRef(), paramLayers));
+        p.setValue(replacePropertiesAlternate(p.getValue().toString(), wfRunId, paramLayers));
       } else if (p.getValue() instanceof List) {
         ArrayList<String> valueList = (ArrayList<String>) p.getValue();
         valueList.forEach(v -> {
-          Matcher m = pattern.matcher(v);
-          while (m.find()) {
-            LOGGER.debug("!!! " + m.group(0));
-          }
-          v = replaceProperties(v, wfRunEntity.getWorkflowRef(), paramLayers);
+          v = replacePropertiesAlternate(v, wfRunId, paramLayers);
         });
       } else if (p.getValue() instanceof Object) {
-        LOGGER.warn("Need to implement");
-        //Implement, potentially using some form of JSON Object Mapper
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+          String objectString = mapper.writeValueAsString(p.getValue());
+          String replacedObjectString = replacePropertiesAlternate(objectString, wfRunId, paramLayers);
+          p.setValue(mapper.readValue(replacedObjectString, Object.class));
+        } catch (JsonProcessingException e) {
+          e.printStackTrace();
+        }
       }
     });
-    return wfRunEntity.getParams();
   }
 
   /*
@@ -107,8 +115,9 @@ public class ParameterManagerImpl implements ParameterManager {
    * 
    * If you only pass it the Workflow Run Entity, it won't add the Task Run Params to the map
    */
-  private ParamLayers buildParameterLayering(Optional<WorkflowRunEntity> wfRunEntity, Optional<TaskRunEntity> taskRunEntity) {
+  private ParamLayers buildParameterLayering(Optional<List<RunParam>> wfRunParams, Optional<List<RunParam>> taskRunParams) {
     ParamLayers parameterLayers = new ParamLayers();
+    //TODO: retrieve extended parameter layers from Workflow service if the application property / URL has been provided
 //    Map<String, String> systemProperties = parameterLayers.getSystemProperties();
 //    Map<String, String> globalProperties = parameterLayers.getGlobalProperties();
 //    Map<String, String> teamProperties = parameterLayers.getTeamProperties();
@@ -122,15 +131,12 @@ public class ParameterManagerImpl implements ParameterManager {
 //    if (flowSettingsService.getConfiguration("features", "teamParameters").getBooleanValue()) {
 //      buildTeamProperties(teamProperties, workflowId);
 //    }
-    if (wfRunEntity.isPresent() || taskRunEntity.isPresent()) {
-      if (!wfRunEntity.isPresent()) {
-        wfRunEntity = workflowRunRepository.findById(taskRunEntity.get().getWorkflowRunRef());
+      if (wfRunParams.isPresent()) {
+        parameterLayers.setWorkflowProperties(ParameterUtil.runParamListToMap(wfRunParams.get()));
       }
-      parameterLayers.setWorkflowProperties(ParameterUtil.runParamListToMap(wfRunEntity.get().getParams()));
-      if (taskRunEntity.isPresent()) {
-        parameterLayers.setTaskInputProperties(ParameterUtil.runParamListToMap(taskRunEntity.get().getParams()));
+      if (taskRunParams.isPresent()) {
+        parameterLayers.setTaskInputProperties(ParameterUtil.runParamListToMap(taskRunParams.get()));
       }
-    }
 
     return parameterLayers;
   }
@@ -314,7 +320,8 @@ public class ParameterManagerImpl implements ParameterManager {
   private String replaceProperties(String value, String wfRunId,
       ParamLayers applicationProperties) {
 
-    Map<String, Object> executionProperties = applicationProperties.getMap(true);
+    Map<String, Object> executionProperties = applicationProperties.getFlatMap();
+    LOGGER.debug(executionProperties.toString());
 
     String regex = "(?<=\\$\\().+?(?=\\))";
     Pattern pattern = Pattern.compile(regex);
@@ -403,67 +410,25 @@ public class ParameterManagerImpl implements ParameterManager {
     String updatedString = StringUtils.replaceEach(value, originalValuesArray, newValuesArray);
     return updatedString;
   }
-//
-//  private String replaceAllParams(String value, String activityId,
-//      ParamLayers applicationProperties) {
-//
-//    String regex = "(?<=\\$\\().+?(?=\\))";
-//    Pattern pattern = Pattern.compile(regex);
-//    Matcher m = pattern.matcher(value);
-//    List<String> originalValues = new LinkedList<>();
-//    List<String> newValues = new LinkedList<>();
-//    while (m.find()) {
-//      String extractedValue = m.group(0);
-//      String replaceValue = null;
-//
-//      int start = m.start() - 2;
-//      int end = m.end() + 1;
-//      String[] components = extractedValue.split("\\.");
-//
-//      if (components.length == 1) {
-//        String allParams = components[0];
-//        if ("allParams".equals(allParams)) {
-//          Map<String, String> properties = applicationProperties.getMap(false);
-//          for (Map.Entry<String, String> entry : properties.entrySet()) {
-//            String originalValue = entry.getValue();
-//            String newValue =
-//                this.replaceValueWithProperty(originalValue, activityId, applicationProperties);
-//            newValue = this.replaceValueWithProperty(newValue, activityId, applicationProperties);
-//            entry.setValue(newValue);
-//          }
-//          replaceValue = this.getEncodedPropertiesForMap(properties);
-//        }
-//      }
-//
-//      if (replaceValue != null) {
-//        String regexStr = value.substring(start, end);
-//        originalValues.add(regexStr);
-//        newValues.add(replaceValue);
-//      }
-//    }
-//
-//    String[] originalValuesArray = originalValues.toArray(new String[originalValues.size()]);
-//    String[] newValuesArray = newValues.toArray(new String[newValues.size()]);
-//    String updatedString = StringUtils.replaceEach(value, originalValuesArray, newValuesArray);
-//    return updatedString;
-//  }
 
-//
-//
-//  private TaskExecutionEntity getTaskExecutionEntity(String activityId, String taskName) {
-//
-//    List<TaskExecutionEntity> tasks = taskService.findTaskActiivtyForActivity(activityId);
-//    for (TaskExecutionEntity task : tasks) {
-//      String entityTaskName = task.getTaskName().toLowerCase().replaceAll("\\s+", "");
-//      String sanataizedTaskName = taskName.toLowerCase().replaceAll("\\s+", "");
-//
-//      if (entityTaskName.equals(sanataizedTaskName)) {
-//        return task;
-//      }
-//    }
-//    return null;
-//  }
+  private String replacePropertiesAlternate(String value, String wfRunId,
+      ParamLayers applicationProperties) {
 
+    Map<String, Object> executionProperties = applicationProperties.getFlatMap();
+    LOGGER.debug(executionProperties.toString());
+    final StringSubstitutor substitutor = new StringSubstitutor(executionProperties, "$(", ")");
+//    substitutor.setEnableUndefinedVariableException(true);
+
+    String replacedString = value;
+    String regex = "(?<=\\$\\().+?(?=\\))";
+    Pattern pattern = Pattern.compile(regex);
+    Matcher m = pattern.matcher(value);
+    while (m.find()) {
+      LOGGER.debug("Pattern Matched: " + m.toString());
+      replacedString = substitutor.replace(value);
+    }
+    return replacedString;
+  }
 
   private String getEncodedPropertiesForMap(Map<String, String> map) {
     Properties properties = new Properties();

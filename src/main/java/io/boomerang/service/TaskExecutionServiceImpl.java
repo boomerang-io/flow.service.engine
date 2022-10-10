@@ -92,6 +92,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   //
   // @Autowired
   // private WorkflowScheduleService scheduleService;
+  
+  @Autowired
+  private ParameterManager paramManager;
 
   @Value("${flow.engine.mode}")
   private String engineMode;
@@ -132,6 +135,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
 
     if (canRunTask) {
+      //Resolve Parameter Substitutions
+      paramManager.resolveTaskRunParams(wfRunEntity.get().getId(), wfRunEntity.get().getParams(), taskExecution.getParams());
+      
       // Update Status and Phase
       updateStatusAndSaveTask(taskExecution, RunStatus.ready, RunPhase.pending, Optional.empty());
 
