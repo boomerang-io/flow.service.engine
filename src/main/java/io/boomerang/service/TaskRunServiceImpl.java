@@ -25,6 +25,7 @@ import io.boomerang.model.TaskRun;
 import io.boomerang.model.TaskRunRequest;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
+import io.boomerang.util.ParameterUtil;
 
 /*
  * Handles CRUD of TaskRuns
@@ -128,7 +129,7 @@ public class TaskRunServiceImpl implements TaskRunService {
       if (optRunRequest.isPresent()) {
         taskRunEntity.putLabels(optRunRequest.get().getLabels());
         taskRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
-        taskRunEntity.putParams(optRunRequest.get().getParams());
+        taskRunEntity.setParams(ParameterUtil.addUniqueParams(taskRunEntity.getParams(), optRunRequest.get().getParams()));
         taskRunRepository.save(taskRunEntity);
       }
       taskExecutionClient.startTask(taskExecutionService, taskRunEntity);

@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.BeanUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 
@@ -15,6 +17,7 @@ import io.boomerang.data.entity.WorkflowRevisionEntity;
  * A number of the Workflow Revision elements are put under metadata
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(Include.NON_EMPTY)
 public class Workflow {
   
   private String id;
@@ -33,15 +36,13 @@ public class Workflow {
   
   private String markdown;
 
-//  private Labels labels;
   private Map<String, String> labels = new HashMap<>();
   
-//  private Annotations annotations;
   private Map<String, Object> annotations = new HashMap<>();
   
   private List<Task> tasks = new LinkedList<>();
 
-  private List<WorkflowParam> params = new LinkedList<>();
+  private List<ParamSpec> params = new LinkedList<>();
   
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
   
@@ -142,11 +143,11 @@ public class Workflow {
     this.tasks = tasks;
   }
 
-  public List<WorkflowParam> getParams() {
+  public List<ParamSpec> getParams() {
     return params;
   }
 
-  public void setParams(List<WorkflowParam> params) {
+  public void setParams(List<ParamSpec> params) {
     this.params = params;
   }
 

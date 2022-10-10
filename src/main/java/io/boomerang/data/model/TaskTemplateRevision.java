@@ -2,7 +2,6 @@ package io.boomerang.data.model;
 
 import java.util.List;
 import io.boomerang.model.ChangeLog;
-import io.boomerang.model.TaskEnvVar;
 import io.boomerang.model.TaskTemplateConfig;
 
 public class TaskTemplateRevision {

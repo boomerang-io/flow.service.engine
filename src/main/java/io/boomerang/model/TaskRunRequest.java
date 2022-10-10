@@ -1,6 +1,8 @@
 package io.boomerang.model;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public class TaskRunRequest {
@@ -9,7 +11,7 @@ public class TaskRunRequest {
 
   private Map<String, Object> annotations = new HashMap<>();
   
-  private Map<String, Object> params;
+  private List<RunParam> params = new LinkedList<>();
   
   private Map<String, String> resources;
   
@@ -31,12 +33,12 @@ public class TaskRunRequest {
     this.annotations = annotations;
   }
 
-  public Map<String, Object> getParams() {
+  public List<RunParam> getParams() {
     return params;
   }
 
-  public void setParams(Map<String, Object> inputs) {
-    this.params = inputs;
+  public void setParams(List<RunParam> params) {
+    this.params = params;
   }
 
   public Map<String, String> getResources() {

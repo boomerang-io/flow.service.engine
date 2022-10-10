@@ -1,10 +1,18 @@
 package io.boomerang.model;
 
-public class WorkflowRunParam {
+public class RunParam {
   
   private String name;
   private Object value;
   
+  protected RunParam() {
+  }
+
+  public RunParam(String name, Object value) {
+    this.name = name;
+    this.value = value;
+  }
+
   public String getName() {
     return name;
   }
