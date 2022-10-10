@@ -20,7 +20,6 @@ import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.error.BoomerangException;
-import io.boomerang.model.RunParam;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
@@ -55,8 +54,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   public void queueRevision(WorkflowRunEntity workflowExecution) {
     LOGGER.debug("[{}] Recieved queue Workflow request.", workflowExecution.getId());
     //Resolve Parameter Substitutions
-    List<RunParam> resolvedParams = paramManager.resolveWorkflowParams(workflowExecution);
-    workflowExecution.setParams(resolvedParams);
+    paramManager.resolveWorkflowRunParams(workflowExecution.getId(), workflowExecution.getParams());
     //TODO: do we move the dagUtility.validateWorkflow() here and validate earlier?
     
     updateStatusAndSaveWorkflow(workflowExecution, RunStatus.ready, RunPhase.pending, Optional.empty());

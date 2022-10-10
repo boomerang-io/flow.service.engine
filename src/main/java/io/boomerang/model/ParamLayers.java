@@ -126,6 +126,39 @@ public class ParamLayers {
     }
   }
 
+  @JsonAnyGetter
+  public Map<String, Object> getFlatMap() {
+
+    Map<String, Object> finalProperties = new TreeMap<>();
+
+    if (this.includeGlobalProperties) {
+      copyFlatProperties(globalProperties, finalProperties, "global");
+    }
+
+    copyFlatProperties(teamProperties, finalProperties, "team");
+    copyFlatProperties(workflowProperties, finalProperties, "workflow");
+    copyFlatProperties(taskInputProperties, finalProperties, "workflow");
+    copyFlatProperties(systemProperties, finalProperties, "system");
+
+    copyFlatProperties( this.getReservedProperties(), finalProperties, null);
+
+
+    return finalProperties;
+  }
+
+  private void copyFlatProperties(Map<String, Object> source, Map<String, Object> target, String prefix) {
+    for (Entry<String, Object> entry : source.entrySet()) {
+      String key = entry.getKey();
+      Object value = entry.getValue();
+      if (value != null) {
+        if (prefix != null) {
+          target.put(prefix + ".params." + key, value);
+        }
+        target.put("params." + key, value);
+      }
+    }
+  }
+
   @Override
   public String toString() {
     ObjectMapper mapper = new ObjectMapper();
