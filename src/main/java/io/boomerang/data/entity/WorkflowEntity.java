@@ -30,7 +30,7 @@ public class WorkflowEntity {
   
   private Map<String, Object> annotations = new HashMap<>();
 
-//private List<WorkflowTrigger> triggers;
+  private List<WorkflowTrigger> triggers;
 
   public String getId() {
     return id;

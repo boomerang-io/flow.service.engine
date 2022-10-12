@@ -4,7 +4,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.boomerang.data.model.TaskTemplateResult;
 import io.boomerang.model.enums.TaskType;
 
@@ -29,6 +32,22 @@ public class Task {
   
   //This is needed as some of our Tasks allow you to define Result Definitions on the fly
   private List<TaskTemplateResult> results;
+  
+  //Optional - the default is that the workspace goes to all Tasks
+  private List<TaskWorkspace> workspaces;
+
+  private Map<String, Object> unknownFields = new HashMap<>();
+
+  @JsonAnyGetter
+  @JsonPropertyOrder(alphabetic = true)
+  public Map<String, Object> otherFields() {
+    return unknownFields;
+  }
+
+  @JsonAnySetter
+  public void setOtherField(String name, Object value) {
+    unknownFields.put(name, value);
+  }
 
   public TaskType getType() {
     return type;
@@ -100,5 +119,13 @@ public class Task {
 
   public void setLabels(Map<String, String> labels) {
     this.labels = labels;
+  }
+
+  public List<TaskWorkspace> getWorkspaces() {
+    return workspaces;
+  }
+
+  public void setWorkspaces(List<TaskWorkspace> workspaces) {
+    this.workspaces = workspaces;
   }
 }

@@ -15,3 +15,5 @@ Read more about Tasks in our [Getting To Know Tasks](https://www.useboomerang.io
 | template | These are the tasks that are executed by a controller and map mostly to a Tekton Task. They are based on the execution of a container with arguments and varaibles to do a task |
 | custom | An extension to Template where by the User provides the details dynamically, they are _not_ configured in the Task Template |
 | system | System Tasks are special Tasks that affect the logic of the Workflow and do not execute inside a container, but instead affect the processing of the DAG. |
+| generic | Generic Tasks are special tasks that do not execute inside a container but are also not processed by the engine. They are specifically made to enable integrators to define and implement functionality that doesn't directly map to a container based executing template or custom task |
+ 

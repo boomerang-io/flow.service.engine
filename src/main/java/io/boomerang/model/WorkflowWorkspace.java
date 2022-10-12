@@ -1,33 +1,16 @@
 package io.boomerang.model;
-import java.util.HashMap;
-import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties
 public class WorkflowWorkspace {
 
   private String name;
 
-  private String id;
+  private String type;
 
-  @JsonProperty("labels")
-  private Map<String, String> labels = new HashMap<>();
+  private boolean optional = false;
   
-  private String size;
-  
-  /*
-   * Leave blank for clusters default to be used
-   */
-  private String className;
-  
-  /*
-   * Supported values: 
-   * - ReadOnlyMany
-   * - ReadWriteMany
-   * - ReadWriteOnce
-   */
-  private String accessMode;
+  private Object spec;
 
   public String getName() {
     return name;
@@ -37,47 +20,27 @@ public class WorkflowWorkspace {
     this.name = name;
   }
 
-  public String getId() {
-    return id;
+  public String getType() {
+    return type;
   }
 
-  public void setId(String id) {
-    this.id = id;
+  public void setType(String type) {
+    this.type = type;
   }
 
-  public Map<String, String> getLabels() {
-    return labels;
+  public boolean isOptional() {
+    return optional;
   }
 
-  public void setLabels(Map<String, String> labels) {
-    this.labels = labels;
+  public void setOptional(boolean optional) {
+    this.optional = optional;
   }
 
-  public void setLabel(String name, String value) {
-    this.labels.put(name, value);
+  public Object getSpec() {
+    return spec;
   }
 
-  public String getSize() {
-    return size;
-  }
-
-  public void setSize(String size) {
-    this.size = size;
-  }
-
-  public String getClassName() {
-    return className;
-  }
-
-  public void setClassName(String className) {
-    this.className = className;
-  }
-
-  public String getAccessMode() {
-    return accessMode;
-  }
-
-  public void setAccessMode(String accessMode) {
-    this.accessMode = accessMode;
+  public void setSpec(Object spec) {
+    this.spec = spec;
   }
 }
