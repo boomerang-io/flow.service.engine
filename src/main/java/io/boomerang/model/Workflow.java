@@ -1,13 +1,16 @@
 package io.boomerang.model;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.BeanUtils;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 
@@ -28,6 +31,8 @@ public class Workflow {
   
   private Integer version = 1;
   
+  private Date creationDate = new Date();
+  
   private String icon;
 
   private String description;
@@ -44,6 +49,9 @@ public class Workflow {
 
   private List<ParamSpec> params = new LinkedList<>();
   
+  //For compatability between different key maintainer(s)
+  @JsonAlias("resources")
+  @JsonProperty("workspaces")
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
   
   public Workflow() {
@@ -85,6 +93,14 @@ public class Workflow {
 
   public void setVersion(Integer version) {
     this.version = version;
+  }
+
+  public Date getCreationDate() {
+    return creationDate;
+  }
+
+  public void setCreationDate(Date creationDate) {
+    this.creationDate = creationDate;
   }
 
   public String getIcon() {

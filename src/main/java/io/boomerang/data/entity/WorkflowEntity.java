@@ -1,12 +1,14 @@
 package io.boomerang.data.entity;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.WorkflowStatus;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -46,6 +48,14 @@ public class WorkflowEntity {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public WorkflowStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(WorkflowStatus status) {
+    this.status = status;
   }
 
   public String getIcon() {
@@ -88,11 +98,11 @@ public class WorkflowEntity {
     this.annotations = annotations;
   }
 
-  public WorkflowStatus getStatus() {
-    return status;
+  public List<WorkflowTrigger> getTriggers() {
+    return triggers;
   }
 
-  public void setStatus(WorkflowStatus status) {
-    this.status = status;
+  public void setTriggers(List<WorkflowTrigger> triggers) {
+    this.triggers = triggers;
   }
 }

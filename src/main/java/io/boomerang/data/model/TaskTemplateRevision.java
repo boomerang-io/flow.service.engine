@@ -9,17 +9,12 @@ public class TaskTemplateRevision {
   private List<String> arguments;
   private ChangeLog changelog;
   private List<String> command;
-  private List<TaskTemplateConfig> config;
+  private List<TaskTemplateConfig> params;
   private List<TaskEnvVar> envs;
-  
   private String image;
-  
   private List<TaskTemplateResult> results;
-
   private String script;
-
   private Integer version;
-
   private String workingDir;
   
   public List<String> getArguments() {
@@ -34,8 +29,8 @@ public class TaskTemplateRevision {
     return command;
   }
 
-  public List<TaskTemplateConfig> getConfig() {
-    return config;
+  public List<TaskTemplateConfig> getParams() {
+    return params;
   }
 
   public List<TaskEnvVar> getEnvs() {
@@ -74,8 +69,8 @@ public class TaskTemplateRevision {
     this.command = command;
   }
 
-  public void setConfig(List<TaskTemplateConfig> config) {
-    this.config = config;
+  public void setParams(List<TaskTemplateConfig> params) {
+    this.params = params;
   }
 
   public void setEnvs(List<TaskEnvVar> envs) {

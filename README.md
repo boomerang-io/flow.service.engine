@@ -6,11 +6,17 @@ _based on Flow's Workflow Service and TektonCD_
 
 This project uses Gradle to compile
 
-### Local MongoDB w Docker
+### 1. Run Local MongoDB w Docker
 
 ```
 docker run --name local-mongo -d mongo:latest
 ```
+### 2. Load Boomerang Flow Data
+
+```
+docker run -e JAVA_OPTS="-Dspring.data.mongodb.uri=mongodb://localhost:27017/boomerang -Dflow.mongo.collection.prefix=flow -Dspring.profiles.active=flow" --network host --platform linux/amd64 boomerangio/flow-loader:latest
+```
+
 
 ## Locks
 
@@ -22,11 +28,21 @@ The implementation in `LockManagerImpl.java` relies on the TTL Index for Retries
 
 The following attempts to list the changes from Workflow Service to Workflow Engine
 
-| Original | Change | Description |
+| Original | Change | Notes |
 | --- | --- | --- |
 | Workflow / Task Activity | Workflow / Task Run | Activity may resonate more with Users however Run is a more known term in the cloud-native industry. It can be still called Activity on the front end. |
 | `workflows_` collection prefix | `workflow_` | The prefix plural is now on the end i.e. `workflow_runs` |
 | `workflows_activities_tasks` | `task_runs` | Better represents what the collection is. |
+
+### Task Template
+
+| Original | Change | Notes |
+| --- | --- | --- |
+| createdDate | creationDate | Matches overarching principles change and standardises element |
+| flowTeamId | - | Removed. Will be taken care of in new relationship tree |
+| scope | - | Removed. Will be taken care of in new relationship tree |
+| type | type | Standardized with the Type used in the Workflow Task. Need to data migrate existing templates |
+
 
 ## Error Handling
 

@@ -1,9 +1,12 @@
 package io.boomerang.data.entity;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -19,19 +22,26 @@ public class TaskTemplateEntity {
 
   @Id
   private String id;
+  private String name;
+  
+  @JsonIgnore
   private Integer currentVersion;
   private String description;
+  private Map<String, String> labels = new HashMap<>();
+  private Map<String, Object> annotations = new HashMap<>();
+  private Date creationDate;
   private Date lastModified;
-  private String name;
   private String category;
   private TaskType type;
+  
+  @JsonIgnore
   private List<TaskTemplateRevision> revisions;
   private TaskTemplateStatus status;
-  private Date createdDate;
   private String icon;
   private boolean verified;
-  private String flowTeamId;
-  private TaskTemplateScope scope;
+  
+  //TODO: change this to a relationship
+  private TaskTemplateScope scope = TaskTemplateScope.global;
 
   public TaskTemplateEntity() {
     // Do nothing
@@ -59,6 +69,22 @@ public class TaskTemplateEntity {
 
   public void setDescription(String description) {
     this.description = description;
+  }
+
+  public Map<String, String> getLabels() {
+    return labels;
+  }
+
+  public void setLabels(Map<String, String> labels) {
+    this.labels = labels;
+  }
+
+  public Map<String, Object> getAnnotations() {
+    return annotations;
+  }
+
+  public void setAnnotations(Map<String, Object> annotations) {
+    this.annotations = annotations;
   }
 
   public Date getLastModified() {
@@ -109,12 +135,12 @@ public class TaskTemplateEntity {
     this.status = status;
   }
 
-  public Date getCreatedDate() {
-    return createdDate;
+  public Date getCreationDate() {
+    return creationDate;
   }
 
-  public void setCreatedDate(Date createdDate) {
-    this.createdDate = createdDate;
+  public void setCreationDate(Date creationDate) {
+    this.creationDate = creationDate;
   }
 
   public String getIcon() {
@@ -131,14 +157,6 @@ public class TaskTemplateEntity {
 
   public void setVerified(boolean verified) {
     this.verified = verified;
-  }
-
-  public String getFlowTeamId() {
-    return flowTeamId;
-  }
-
-  public void setFlowTeamId(String flowTeamId) {
-    this.flowTeamId = flowTeamId;
   }
 
   public TaskTemplateScope getScope() {

@@ -47,11 +47,9 @@ public abstract class AbstractConfigurationProperty {
 
 	private String language;
 	private Boolean disabled;
-  private String defaultValue;
+  private Object defaultValue;
 
-  private String value;
-
-  private List<String> values;
+  private Object value;
 
   private boolean readOnly;
 
@@ -152,36 +150,30 @@ public abstract class AbstractConfigurationProperty {
     this.disabled = disabled;
   }
 
-  public String getValue() {
+  public Object getValue() {
     return value;
   }
 
-  public void setValue(String value) {
+  public void setValue(Object value) {
     this.value = value;
-  }
-
-  public List<String> getValues() {
-    return values;
-  }
-
-  public void setValues(List<String> values) {
-    this.values = values;
   }
 
   @JsonIgnore
   public boolean getBooleanValue() {
     if ("boolean".equals(this.getType())) {
-      return Boolean.parseBoolean(this.getValue());
+      return Boolean.parseBoolean(this.getValue().toString());
     } else {
       throw new IllegalArgumentException("Configuration object is not of type boolean.");
     }
   }
+  
+  //TODO: add extra helper value methods
 
-  public String getDefaultValue() {
+  public Object getDefaultValue() {
     return defaultValue;
   }
 
-  public void setDefaultValue(String defaultValue) {
+  public void setDefaultValue(Object defaultValue) {
     this.defaultValue = defaultValue;
   }
 

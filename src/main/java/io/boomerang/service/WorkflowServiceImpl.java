@@ -105,7 +105,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     WorkflowRevisionEntity wfRevisionEntity = new WorkflowRevisionEntity();
     wfRevisionEntity.setVersion(1);
-    wfRevisionEntity.setChangelog(new ChangeLog("Initial workflow"));
+    wfRevisionEntity.setChangelog(new ChangeLog("Initial Workflow"));
     wfRevisionEntity.setMarkdown(workflow.getMarkdown());
     wfRevisionEntity.setParams(workflow.getParams());
     wfRevisionEntity.setWorkspaces(workflow.getWorkspaces());

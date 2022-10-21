@@ -1,9 +1,19 @@
 package io.boomerang.service;
 
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateEntity;
+import io.boomerang.data.model.TaskTemplateRevision;
 import io.boomerang.data.repository.TaskTemplateRepository;
+import io.boomerang.error.BoomerangError;
+import io.boomerang.error.BoomerangException;
+import io.boomerang.model.ChangeLog;
+import io.boomerang.model.TaskTemplate;
 
 @Service
 public class TaskTemplateServiceImpl implements TaskTemplateService {
@@ -11,25 +21,59 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   @Autowired
   private TaskTemplateRepository taskTemplateRepository;
 
-//  @Autowired
-//  private WorkflowService workflowService;
+  @Override
+  public TaskTemplate get(String id, Optional<Integer> version) {
+    Optional<TaskTemplateEntity> entity = taskTemplateRepository.findById(id);
+    if (entity.isPresent() && entity.get() != null) {
+      TaskTemplate template = new TaskTemplate(entity.get(), version);
+      return template;
+    } 
+    throw new BoomerangException(BoomerangError.TASK_TEMPLATE_REVISION_NOT_FOUND);
+  }
 
   @Override
-  public TaskTemplateEntity getTaskTemplateWithId(String id) {
-    return taskTemplateRepository.findById(id).orElse(null);
+  public ResponseEntity<TaskTemplate> create(TaskTemplate taskTemplate) {
+    TaskTemplateRevision taskTemplateRevision = new TaskTemplateRevision();
+    taskTemplateRevision.setArguments(taskTemplate.getArguments());
+    taskTemplateRevision.setChangelog(new ChangeLog("Initial Task Template"));
+    taskTemplateRevision.setCommand(taskTemplate.getCommand());
+    taskTemplateRevision.setEnvs(taskTemplate.getEnvs());
+    taskTemplateRevision.setImage(taskTemplate.getImage());
+    taskTemplateRevision.setParams(taskTemplate.getParams());
+    taskTemplateRevision.setResults(taskTemplate.getResults());
+    taskTemplateRevision.setScript(taskTemplate.getScript());
+    taskTemplateRevision.setVersion(1);
+    taskTemplateRevision.setWorkingDir(taskTemplate.getWorkingDir());
+    
+    TaskTemplateEntity taskTemplateEntity = new TaskTemplateEntity();
+    taskTemplateEntity.setAnnotations(taskTemplate.getAnnotations());
+    taskTemplateEntity.setCategory(taskTemplate.getCategory());
+    taskTemplateEntity.setCurrentVersion(1);
+    taskTemplateEntity.setDescription(taskTemplate.getDescription());
+    taskTemplateEntity.setIcon(taskTemplate.getIcon());
+    taskTemplateEntity.setLabels(taskTemplate.getLabels());
+    taskTemplateEntity.setLastModified(new Date());
+    taskTemplateEntity.setName(taskTemplate.getName());
+    List<TaskTemplateRevision> taskRemplateRevisions = new LinkedList<>();
+    taskRemplateRevisions.add(taskTemplateRevision);
+    taskTemplateEntity.setRevisions(taskRemplateRevisions);
+    
+    taskTemplateEntity = taskTemplateRepository.save(taskTemplateEntity);
+    taskTemplate.setId(taskTemplateEntity.getId());
+    return ResponseEntity.ok(taskTemplate);
   }
 
 //  @Override
-//  public List<FlowTaskTemplate> getAllTaskTemplates(TaskTemplateScope scope, String teamId) {
+//  public List<FlowTaskTemplate> getAllTaskTemplates(TemplateScope scope, String teamId) {
 //    List<FlowTaskTemplate> templates = new LinkedList<>();
 //
-//    if (scope == TaskTemplateScope.global || scope == null) {
+//    if (scope == TemplateScope.global || scope == null) {
 //      templates = flowTaskTemplateService.getAllGlobalTasks().stream().map(FlowTaskTemplate::new)
 //          .collect(Collectors.toList());
-//    } else if (scope == TaskTemplateScope.team) {
+//    } else if (scope == TemplateScope.team) {
 //      templates = flowTaskTemplateService.getTaskTemplatesforTeamId(teamId).stream()
 //          .map(FlowTaskTemplate::new).collect(Collectors.toList());
-//    } else if (scope == TaskTemplateScope.system) {
+//    } else if (scope == TemplateScope.system) {
 //      templates = flowTaskTemplateService.getAllSystemTasks().stream().map(FlowTaskTemplate::new)
 //          .collect(Collectors.toList());
 //    }
@@ -37,7 +81,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
 //    updateTemplateListUserNames(templates);
 //    return templates;
 //  }
-
+//
 //  private void updateTemplateListUserNames(List<FlowTaskTemplate> templates) {
 //    for (FlowTaskTemplate template : templates) {
 //      for (Revision revision : template.getRevisions()) {
@@ -141,7 +185,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
 //  }
 //
 //  @Override
-//  public FlowTaskTemplate insertTaskTemplateYaml(TektonTask tektonTask, TaskTemplateScope scope,
+//  public FlowTaskTemplate insertTaskTemplateYaml(TektonTask tektonTask, TemplateScope scope,
 //      String teamId) {
 //    FlowTaskTemplateEntity template = TektonConverter.convertTektonTaskToNewFlowTask(tektonTask);
 //    template.setStatus(FlowTaskTemplateStatus.active);

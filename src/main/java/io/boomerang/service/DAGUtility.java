@@ -119,7 +119,7 @@ public class DAGUtility {
                 .filter(r -> r.getVersion().equals(templateVersion)).findFirst();
             if (ttRevision.isPresent()) {
               executionTask.setTemplateResults(ttRevision.get().getResults());
-              ParameterUtil.addUniqueParams(ParameterUtil.ttConfigToRunParam(ttRevision.get().getConfig()), ParameterUtil.paramToRunParam(wfRevisionTask.getParams()));
+              ParameterUtil.addUniqueParams(ParameterUtil.ttConfigToRunParam(ttRevision.get().getParams()), ParameterUtil.paramToRunParam(wfRevisionTask.getParams()));
               executionTask.setParams(null);
             } else {
            // TODO: throw more accurate exception

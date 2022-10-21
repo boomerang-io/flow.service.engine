@@ -1,14 +1,18 @@
 package io.boomerang.service;
 
-import io.boomerang.data.entity.TaskTemplateEntity;
+import java.util.Optional;
+import org.springframework.http.ResponseEntity;
+import io.boomerang.model.TaskTemplate;
 
 public interface TaskTemplateService {
 
-  TaskTemplateEntity getTaskTemplateWithId(String id);
-//
+  TaskTemplate get(String id, Optional<Integer> version);
+
+  ResponseEntity<TaskTemplate> create(TaskTemplate taskTemplate);
+
 //  TektonTask getTaskTemplateYamlWithId(String id);
 //  
-//  List<FlowTaskTemplate> getAllTaskTemplates(TaskTemplateScope scope, String teamId);
+//  List<FlowTaskTemplate> getAllTaskTemplates(TemplateScope scope, String teamId);
 //
 //  FlowTaskTemplate insertTaskTemplate(FlowTaskTemplate flowTaskTemplateEntity);
 //
@@ -20,7 +24,7 @@ public interface TaskTemplateService {
 //
 //  TektonTask getTaskTemplateYamlWithIdAndRevision(String id, Integer revisionNumber);
 //
-//  FlowTaskTemplate insertTaskTemplateYaml(TektonTask tektonTask,TaskTemplateScope scope, String teamId);
+//  FlowTaskTemplate insertTaskTemplateYaml(TektonTask tektonTask,TemplateScope scope, String teamId);
 //
 //  FlowTaskTemplate updateTaskTemplateWithYaml(String id, TektonTask tektonTask);
 //
