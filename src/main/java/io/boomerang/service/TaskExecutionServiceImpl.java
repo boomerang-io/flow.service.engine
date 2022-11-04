@@ -195,24 +195,25 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       taskExecution.setStartTime(new Date());
       updateStatusAndSaveTask(taskExecution, RunStatus.running, RunPhase.running, Optional.empty());
       if (TaskType.decision.equals(taskType)) {
-        taskExecution.setStatus(RunStatus.succeeded);
         processDecision(taskExecution, wfRunId);
+        taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
       } else if (TaskType.template.equals(taskType) || TaskType.script.equals(taskType)) {
-        // Map<String, String> labels = wfRunEntity.get().getLabels();
-        // TODO: how do we submit the tasks
         LOGGER.info("[{}] Execute Template Task", wfRunId);
-        // controllerClient.submitTemplateTask(this, flowClient, task, wfRunId, workflowName,
-        // labels);
-        taskExecution.setStatus(RunStatus.succeeded);
-        this.endTask(taskExecution);
+//        if ("sync".equals(engineMode)) {
+//           Map<String, String> labels = wfRunEntity.get().getLabels();
+//          controllerClient.submitTemplateTask(this, flowClient, task, wfRunId, workflowName,
+//            labels);
+//        }
       } else if (TaskType.custom.equals(taskType)) {
-        // TODO: how do we submit the tasks
         LOGGER.info("[{}] Execute Custom Task", wfRunId);
-        // Map<String, String> labels = wfRunEntity.get().getLabels();
-        // controllerClient.submitCustomTask(this, flowClient, task, wfRunId, workflowName, labels);
-        taskExecution.setStatus(RunStatus.succeeded);
-        this.endTask(taskExecution);
+//      if ("sync".equals(engineMode)) {
+//      Map<String, String> labels = wfRunEntity.get().getLabels();
+//     controllerClient.submitCustomTask(this, flowClient, task, wfRunId, workflowName,
+//       labels);
+//   }
+      } else if (TaskType.generic.equals(taskType)) {
+        LOGGER.info("[{}] Execute Generic Task", wfRunId);
       } else if (TaskType.acquirelock.equals(taskType)) {
         LOGGER.info("[{}] Execute Acquire Lock", wfRunId);
         lockManager.acquireLock(taskExecution, wfRunEntity.get().getId());
