@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.model.TaskTemplate;
-import io.boomerang.model.Workflow;
 import io.boomerang.service.TaskTemplateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,18 +27,18 @@ public class TaskTemplateV1Controller {
   @Autowired
   private TaskTemplateService taskTemplateService;
   
-  @GetMapping(value = "/{taskTemplateId}")
+  @GetMapping(value = "/{name}")
   @Operation(summary = "Retrieve a specific task template. If no version specified, the latest version is returned.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public TaskTemplate getTaskTemplateWithId(
-      @Parameter(name = "taskTemplateId",
-      description = "ID of Task Template",
-      required = true) @PathVariable String taskTemplateId,
+      @Parameter(name = "name",
+      description = "Name of Task Template",
+      required = true) @PathVariable String name,
       @Parameter(name = "version",
-      description = "Workflow Version",
+      description = "Task Template Version",
       required = false) @RequestParam(required = false) Optional<Integer> version) {
-    return taskTemplateService.get(taskTemplateId, version);
+    return taskTemplateService.get(name, version);
   }
 
   @PostMapping(value = "/")

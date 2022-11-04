@@ -1,15 +1,13 @@
 package io.boomerang.data.model;
 
 import java.util.List;
-import io.boomerang.model.ChangeLog;
-import io.boomerang.model.TaskTemplateConfig;
+import io.boomerang.model.ParamSpec;
 
-public class TaskTemplateRevision {
+public class TaskTemplateSpec {
 
   private List<String> arguments;
-  private ChangeLog changelog;
   private List<String> command;
-  private List<TaskTemplateConfig> params;
+  private List<ParamSpec> params;
   private List<TaskEnvVar> envs;
   private String image;
   private List<TaskTemplateResult> results;
@@ -21,15 +19,11 @@ public class TaskTemplateRevision {
     return arguments;
   }
 
-  public ChangeLog getChangelog() {
-    return changelog;
-  }
-
   public List<String> getCommand() {
     return command;
   }
 
-  public List<TaskTemplateConfig> getParams() {
+  public List<ParamSpec> getParams() {
     return params;
   }
 
@@ -61,15 +55,11 @@ public class TaskTemplateRevision {
     this.arguments = arguments;
   }
 
-  public void setChangelog(ChangeLog changelog) {
-    this.changelog = changelog;
-  }
-
   public void setCommand(List<String>  command) {
     this.command = command;
   }
 
-  public void setParams(List<TaskTemplateConfig> params) {
+  public void setParams(List<ParamSpec> params) {
     this.params = params;
   }
 

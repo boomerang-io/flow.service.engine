@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
-import io.boomerang.data.model.TaskTemplateRevision;
 import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.data.repository.WorkflowRepository;
@@ -110,33 +109,35 @@ public class WorkflowServiceImpl implements WorkflowService {
     wfRevisionEntity.setParams(workflow.getParams());
     wfRevisionEntity.setWorkspaces(workflow.getWorkspaces());
     wfRevisionEntity.setTasks(TaskMapper.tasksToListOfRevisionTasks(workflow.getTasks()));
-    
-    //Check Task Names are unique
-    List<String> filteredNames = wfRevisionEntity.getTasks().stream().map(t -> t.getName()).collect(Collectors.toList());
-    List<String> uniqueFilteredNames = filteredNames.stream().distinct().collect(Collectors.toList());
+
+    // Check Task Names are unique
+    List<String> filteredNames =
+        wfRevisionEntity.getTasks().stream().map(t -> t.getName()).collect(Collectors.toList());
+    List<String> uniqueFilteredNames =
+        filteredNames.stream().distinct().collect(Collectors.toList());
     LOGGER.debug("Name sizes: {} -> {}", filteredNames, uniqueFilteredNames);
-    
-    //Check Task Template references are valid
+
+    // Check Task Template references are valid
     for (final WorkflowRevisionTask wfRevisionTask : wfRevisionEntity.getTasks()) {
       if (!TaskType.start.equals(wfRevisionTask.getType())
           && !TaskType.end.equals(wfRevisionTask.getType())) {
 
-        String templateId = wfRevisionTask.getTemplateRef();
-        Optional<TaskTemplateEntity> taskTemplate = taskTemplateRepository.findById(templateId);
-
-        //TODO: separate into a shared method with DAGUtility ~line100
-        if (taskTemplate.isPresent() && taskTemplate.get().getRevisions() != null) {
-          // Set template version to specified or default to currentVersion
-          Integer templateVersion =
-              wfRevisionTask.getTemplateVersion() != null ? wfRevisionTask.getTemplateVersion()
-                  : taskTemplate.get().getCurrentVersion();
-          Optional<TaskTemplateRevision> revision = taskTemplate.get().getRevisions().stream()
-              .parallel().filter(r -> r.getVersion().equals(templateVersion)).findFirst();
-          if (!revision.isPresent()) {
-            throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_VERSION, templateId, templateVersion);
+        //Should separate into a shared utility with DAGUtility:115
+        String templateRef = wfRevisionTask.getTemplateRef();
+        Optional<TaskTemplateEntity> taskTemplate;
+        if (wfRevisionTask.getTemplateVersion() != null) {
+          taskTemplate = taskTemplateRepository.findByNameAndVersion(templateRef,
+              wfRevisionTask.getTemplateVersion());
+          if (taskTemplate.isEmpty()) {
+            throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
+                wfRevisionTask.getTemplateVersion());
           }
         } else {
-          throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateId);
+          taskTemplate = taskTemplateRepository.findByNameAndLatestVersion(templateRef);
+          if (taskTemplate.isEmpty()) {
+            throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
+                "latest");
+          }
         }
       }
     }

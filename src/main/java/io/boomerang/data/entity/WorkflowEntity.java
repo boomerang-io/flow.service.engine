@@ -8,8 +8,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.WorkflowStatus;
+import io.boomerang.model.WorkflowTrigger;
+import io.boomerang.model.enums.WorkflowScope;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
@@ -33,6 +34,8 @@ public class WorkflowEntity {
   private Map<String, Object> annotations = new HashMap<>();
 
   private List<WorkflowTrigger> triggers;
+
+  private WorkflowScope scope;
 
   public String getId() {
     return id;
@@ -104,5 +107,13 @@ public class WorkflowEntity {
 
   public void setTriggers(List<WorkflowTrigger> triggers) {
     this.triggers = triggers;
+  }
+
+  public WorkflowScope getScope() {
+    return scope;
+  }
+
+  public void setScope(WorkflowScope scope) {
+    this.scope = scope;
   }
 }

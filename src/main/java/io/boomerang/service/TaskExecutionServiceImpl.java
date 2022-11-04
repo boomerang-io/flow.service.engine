@@ -22,7 +22,6 @@ import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
@@ -207,7 +206,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         // labels);
         taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
-      } else if (TaskType.customtask.equals(taskType)) {
+      } else if (TaskType.custom.equals(taskType)) {
         // TODO: how do we submit the tasks
         LOGGER.info("[{}] Execute Custom Task", wfRunId);
         // Map<String, String> labels = wfRunEntity.get().getLabels();

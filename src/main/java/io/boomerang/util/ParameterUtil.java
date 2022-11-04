@@ -9,7 +9,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import io.boomerang.model.ParamSpec;
 import io.boomerang.model.RunParam;
-import io.boomerang.model.TaskTemplateConfig;
 
 public class ParameterUtil {
   
@@ -32,11 +31,12 @@ public class ParameterUtil {
    * @param the new parameter to add
    * @return the parameter list
    */
-  public static List<RunParam> ttConfigToRunParam(List<TaskTemplateConfig> configList) {
-    return configList.stream().map(p -> new RunParam(p.getKey(), p.getDefaultValue()))
-        .collect(Collectors.toList());
-  }
-  
+  @Deprecated
+//  public static List<RunParam> ttConfigToRunParam(List<TaskTemplateConfig> configList) {
+//    return configList.stream().map(p -> new RunParam(p.getKey(), p.getDefaultValue()))
+//        .collect(Collectors.toList());
+//  }
+//  
   /*
    * Add a parameter to an existing Run Parameter list
    * 

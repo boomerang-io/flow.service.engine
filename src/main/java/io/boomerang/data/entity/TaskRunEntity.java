@@ -73,15 +73,15 @@ public class TaskRunEntity {
 
   private String workflowRunRef;
 
+  @JsonIgnore
+  private List<RunResult> workflowResults;
+
   @Override
   public String toString() {
     return "TaskRunEntity [id=" + id + ", type=" + type + ", name=" + name + ", labels=" + labels
         + ", annotations=" + annotations + ", creationDate=" + creationDate + ", startTime="
         + startTime + ", params=" + params + ", status=" + status + ", phase=" + phase + "]";
   }
-
-  @JsonIgnore
-  private List<RunResult> workflowResults;
 
   public String getId() {
     return id;

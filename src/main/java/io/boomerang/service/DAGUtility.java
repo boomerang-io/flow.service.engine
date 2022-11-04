@@ -23,10 +23,11 @@ import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.TaskTemplateEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.data.model.TaskTemplateRevision;
 import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.TaskTemplateRepository;
+import io.boomerang.error.BoomerangError;
+import io.boomerang.error.BoomerangException;
 import io.boomerang.model.TaskDependency;
 import io.boomerang.model.enums.ExecutionCondition;
 import io.boomerang.model.enums.RunPhase;
@@ -65,7 +66,8 @@ public class DAGUtility {
     final List<Pair<String, String>> edgeList = new LinkedList<>();
     for (final TaskRunEntity task : tasks) {
       for (final TaskDependency dep : task.getDependencies()) {
-        String depTaskRefAsId = tasks.stream().filter(t -> t.getName().equals(dep.getTaskRef())).findFirst().get().getId();
+        String depTaskRefAsId = tasks.stream().filter(t -> t.getName().equals(dep.getTaskRef()))
+            .findFirst().get().getId();
         final Pair<String, String> pair = Pair.of(depTaskRefAsId, task.getId());
         edgeList.add(pair);
       }
@@ -73,7 +75,8 @@ public class DAGUtility {
     return GraphProcessor.createGraph(vertices, edgeList);
   }
 
-  //TODO: determine a better way to handle the start and end task without saving them as a TaskRunEntity
+  // TODO: determine a better way to handle the start and end task without saving them as a
+  // TaskRunEntity
   public List<TaskRunEntity> createTaskList(WorkflowRevisionEntity wfRevisionEntity,
       String wfRunId) {
     final List<TaskRunEntity> taskList = new LinkedList<>();
@@ -104,34 +107,34 @@ public class DAGUtility {
 
         if (TaskType.script.equals(wfRevisionTask.getType())
             || TaskType.template.equals(wfRevisionTask.getType())
-            || TaskType.customtask.equals(wfRevisionTask.getType())) {
+            || TaskType.custom.equals(wfRevisionTask.getType())) {
 
-          String templateId = wfRevisionTask.getTemplateRef();
-          executionTask.setTemplateRef(templateId);
-          Optional<TaskTemplateEntity> taskTemplate = taskTemplateRepository.findById(templateId);
-
-          if (taskTemplate.isPresent() && taskTemplate.get().getRevisions() != null) {
-            // Set template version to specified or default to currentVersion
-            Integer templateVersion =
-                wfRevisionTask.getTemplateVersion() != null ? wfRevisionTask.getTemplateVersion()
-                    : taskTemplate.get().getCurrentVersion();
-            Optional<TaskTemplateRevision> ttRevision = taskTemplate.get().getRevisions().stream().parallel()
-                .filter(r -> r.getVersion().equals(templateVersion)).findFirst();
-            if (ttRevision.isPresent()) {
-              executionTask.setTemplateResults(ttRevision.get().getResults());
-              ParameterUtil.addUniqueParams(ParameterUtil.ttConfigToRunParam(ttRevision.get().getParams()), ParameterUtil.paramToRunParam(wfRevisionTask.getParams()));
-              executionTask.setParams(null);
-            } else {
-           // TODO: throw more accurate exception
-              throw new IllegalArgumentException("Invalid task template version selected: " + templateId + " @ " + templateVersion);
+          String templateRef = wfRevisionTask.getTemplateRef();
+          executionTask.setTemplateRef(templateRef);
+          Optional<TaskTemplateEntity> taskTemplate;
+          if (wfRevisionTask.getTemplateVersion() != null) {
+            taskTemplate = taskTemplateRepository.findByNameAndVersion(templateRef,
+                wfRevisionTask.getTemplateVersion());
+            if (taskTemplate.isEmpty()) {
+              throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
+                  wfRevisionTask.getTemplateVersion());
             }
           } else {
-            // TODO: throw more accurate exception
-            throw new IllegalArgumentException("Invalid task template selected: " + templateId);
+            taskTemplate = taskTemplateRepository.findByNameAndLatestVersion(templateRef);
+            if (taskTemplate.isEmpty()) {
+              throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
+                  "latest");
+            }
           }
-        } 
+          executionTask.setTemplateResults(taskTemplate.get().getSpec().getResults());
+          ParameterUtil.addUniqueParams(
+              ParameterUtil.paramToRunParam(taskTemplate.get().getSpec().getParams()),
+              ParameterUtil.paramToRunParam(wfRevisionTask.getParams()));
+          executionTask.setParams(null);
+        }
         taskRunRepository.save(executionTask);
-        LOGGER.info("[{}] TaskRunEntity ({}) created for: {}", wfRunId, executionTask.getId(), executionTask.getName());
+        LOGGER.info("[{}] TaskRunEntity ({}) created for: {}", wfRunId, executionTask.getId(),
+            executionTask.getName());
         taskList.add(executionTask);
       }
     }
@@ -148,7 +151,7 @@ public class DAGUtility {
         dijkstraAlg.getPaths(start.getId());
     return (pathFromStart.getPath(current.getId()) != null);
   }
-  
+
   public TaskRunEntity getTaskByType(List<TaskRunEntity> tasks, TaskType type) {
     return tasks.stream().filter(tsk -> type.equals(tsk.getType())).findAny().orElse(null);
   }
@@ -171,8 +174,7 @@ public class DAGUtility {
           if (RunPhase.completed.equals(taskRunPhase)) {
             if (TaskType.decision.equals(currentTask.getType())) {
               String decisionValue = taskRunEntity.get().getDecisionValue();
-              processDecision(graph, tasks, decisionValue, currentTask.getId(),
-                  currentTask);
+              processDecision(graph, tasks, decisionValue, currentTask.getId(), currentTask);
             } else {
               currentTask.setStatus(taskRunEntity.get().getStatus());
               this.updateTaskInGraph(graph, tasks, currentTask);
@@ -213,7 +215,8 @@ public class DAGUtility {
       TaskRunEntity destTask =
           tasksToRun.stream().filter(t -> t.getId().equals(destination)).findFirst().orElse(null);
       if (destTask != null) {
-        Optional<TaskDependency> optionalDependency = getOptionalDependency(currentTask.getName(), destTask);
+        Optional<TaskDependency> optionalDependency =
+            getOptionalDependency(currentTask.getName(), destTask);
         if (optionalDependency.isPresent()) {
           TaskDependency dependency = optionalDependency.get();
           String linkValue = dependency.getDecisionCondition();
@@ -236,7 +239,8 @@ public class DAGUtility {
           } else {
             defaultNodes.add(node);
           }
-          LOGGER.debug("[{}] Matched: {}, Decision Value: {}, Condition: {}", currentVert, matched, value, linkValue);
+          LOGGER.debug("[{}] Matched: {}, Decision Value: {}, Condition: {}", currentVert, matched,
+              value, linkValue);
         }
       }
     }
@@ -259,7 +263,8 @@ public class DAGUtility {
       TaskRunEntity destTask =
           tasksToRun.stream().filter(t -> t.getId().equals(destination)).findFirst().orElse(null);
       if (destTask != null) {
-        Optional<TaskDependency> optionalDependency = getOptionalDependency(currentTask.getName(), destTask);
+        Optional<TaskDependency> optionalDependency =
+            getOptionalDependency(currentTask.getName(), destTask);
         if (optionalDependency.isPresent()) {
           TaskDependency dependency = optionalDependency.get();
           ExecutionCondition condition = dependency.getExecutionCondition();
@@ -300,8 +305,9 @@ public class DAGUtility {
 
   public List<TaskRunEntity> getTasksDependants(List<TaskRunEntity> tasks,
       TaskRunEntity currentTask) {
-    return tasks.stream().filter(t -> t.getDependencies().stream()
-        .anyMatch(d -> d.getTaskRef().equals(currentTask.getName())))
+    return tasks.stream()
+        .filter(t -> t.getDependencies().stream()
+            .anyMatch(d -> d.getTaskRef().equals(currentTask.getName())))
         .collect(Collectors.toList());
   }
 }

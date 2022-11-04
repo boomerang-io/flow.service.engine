@@ -1,6 +1,5 @@
 package io.boomerang.data.entity;
 
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import org.springframework.data.annotation.Id;
@@ -28,8 +27,6 @@ public class WorkflowRevisionEntity {
   private Integer version;
 
   private String workflowRef;
-  
-  private Date creationDate = new Date();
 
   private List<WorkflowRevisionTask> tasks = new LinkedList<>();
 
@@ -66,14 +63,6 @@ public class WorkflowRevisionEntity {
 
   public void setWorkflowRef(String workflowId) {
     this.workflowRef = workflowId;
-  }
-
-  public Date getCreationDate() {
-    return creationDate;
-  }
-
-  public void setCreationDate(Date creationDate) {
-    this.creationDate = creationDate;
   }
 
   public List<WorkflowRevisionTask> getTasks() {

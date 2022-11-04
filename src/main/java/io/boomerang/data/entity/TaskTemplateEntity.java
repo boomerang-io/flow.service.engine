@@ -10,8 +10,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.data.model.TaskTemplateRevision;
+import io.boomerang.data.model.TaskTemplateSpec;
 import io.boomerang.data.model.TaskTemplateStatus;
+import io.boomerang.model.ChangeLog;
+import io.boomerang.model.TaskTemplateConfig;
 import io.boomerang.model.enums.TaskTemplateScope;
 import io.boomerang.model.enums.TaskType;
 
@@ -23,20 +25,21 @@ public class TaskTemplateEntity {
   @Id
   private String id;
   private String name;
-  
-  @JsonIgnore
-  private Integer currentVersion;
   private String description;
   private Map<String, String> labels = new HashMap<>();
   private Map<String, Object> annotations = new HashMap<>();
+  
+  @JsonIgnore
+  private Integer version;
   private Date creationDate;
-  private Date lastModified;
+  private ChangeLog changelog;
   private String category;
   private TaskType type;
   
   @JsonIgnore
-  private List<TaskTemplateRevision> revisions;
+  private TaskTemplateSpec spec;
   private TaskTemplateStatus status;
+  private List<TaskTemplateConfig> config;
   private String icon;
   private boolean verified;
   
@@ -55,12 +58,12 @@ public class TaskTemplateEntity {
     this.id = id;
   }
 
-  public Integer getCurrentVersion() {
-    return currentVersion;
+  public Integer getVersion() {
+    return version;
   }
 
-  public void setCurrentVersion(Integer currentVersion) {
-    this.currentVersion = currentVersion;
+  public void setVersion(Integer version) {
+    this.version = version;
   }
 
   public String getDescription() {
@@ -87,14 +90,6 @@ public class TaskTemplateEntity {
     this.annotations = annotations;
   }
 
-  public Date getLastModified() {
-    return lastModified;
-  }
-
-  public void setLastModified(Date lastModified) {
-    this.lastModified = lastModified;
-  }
-
   public String getName() {
     return name;
   }
@@ -119,12 +114,12 @@ public class TaskTemplateEntity {
     this.type = type;
   }
 
-  public List<TaskTemplateRevision> getRevisions() {
-    return revisions;
+  public TaskTemplateSpec getSpec() {
+    return spec;
   }
 
-  public void setRevisions(List<TaskTemplateRevision> revisions) {
-    this.revisions = revisions;
+  public void setSpec(TaskTemplateSpec spec) {
+    this.spec = spec;
   }
 
   public TaskTemplateStatus getStatus() {
@@ -141,6 +136,14 @@ public class TaskTemplateEntity {
 
   public void setCreationDate(Date creationDate) {
     this.creationDate = creationDate;
+  }
+
+  public ChangeLog getChangelog() {
+    return changelog;
+  }
+
+  public void setChangelog(ChangeLog changelog) {
+    this.changelog = changelog;
   }
 
   public String getIcon() {
@@ -165,5 +168,13 @@ public class TaskTemplateEntity {
 
   public void setScope(TaskTemplateScope scope) {
     this.scope = scope;
+  }
+
+  public List<TaskTemplateConfig> getConfig() {
+    return config;
+  }
+
+  public void setConfig(List<TaskTemplateConfig> config) {
+    this.config = config;
   }
 }
