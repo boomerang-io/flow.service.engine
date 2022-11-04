@@ -1,5 +1,6 @@
 package io.boomerang.data.entity;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,25 +17,18 @@ import io.boomerang.model.enums.WorkflowScope;
 @JsonInclude(Include.NON_NULL)
 @Document(collection = "#{@mongoConfiguration.fullCollectionName('workflows')}")
 public class WorkflowEntity {
+  
   @Id
   private String id;
-
   private String name;
-  
   private WorkflowStatus status = WorkflowStatus.active;
-  
+  private Date creationDate = new Date();
   private String icon;
-
   private String description;
-
   private String shortDescription;
-
   private Map<String, String> labels = new HashMap<>();
-  
   private Map<String, Object> annotations = new HashMap<>();
-
   private List<WorkflowTrigger> triggers;
-
   private WorkflowScope scope;
 
   public String getId() {
@@ -59,6 +53,14 @@ public class WorkflowEntity {
 
   public void setStatus(WorkflowStatus status) {
     this.status = status;
+  }
+
+  public Date getCreationDate() {
+    return creationDate;
+  }
+
+  public void setCreationDate(Date creationDate) {
+    this.creationDate = creationDate;
   }
 
   public String getIcon() {

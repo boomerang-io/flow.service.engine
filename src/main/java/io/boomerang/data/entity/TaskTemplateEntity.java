@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -28,22 +27,16 @@ public class TaskTemplateEntity {
   private String description;
   private Map<String, String> labels = new HashMap<>();
   private Map<String, Object> annotations = new HashMap<>();
-  
-  @JsonIgnore
   private Integer version;
-  private Date creationDate;
+  private Date creationDate = new Date();
   private ChangeLog changelog;
   private String category;
   private TaskType type;
-  
-  @JsonIgnore
   private TaskTemplateSpec spec;
   private TaskTemplateStatus status;
   private List<TaskTemplateConfig> config;
   private String icon;
   private boolean verified;
-  
-  //TODO: change this to a relationship
   private TaskTemplateScope scope = TaskTemplateScope.global;
 
   public TaskTemplateEntity() {
