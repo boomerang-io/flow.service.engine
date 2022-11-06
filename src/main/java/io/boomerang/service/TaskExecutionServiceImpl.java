@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import com.github.alturkovic.lock.Lock;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
@@ -24,6 +23,8 @@ import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
+import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
@@ -55,9 +56,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
   @Autowired
   private DAGUtility dagUtility;
-
-  @Autowired
-  private Lock lock;
   //
   // @Autowired
   // private ApprovalService approvalService;
@@ -70,13 +68,16 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   private LockManager lockManager;
 
   @Autowired
-  private TaskExecutionClient flowClient;
+  private TaskExecutionClient taskExecutionClient;
 
   @Autowired
   private WorkflowRunRepository workflowRunRepository;
 
   @Autowired
   private WorkflowRepository workflowRepository;
+
+  @Autowired
+  private WorkflowRunService workflowRunService;
 
   @Autowired
   private WorkflowRevisionRepository workflowRevisionRepository;
@@ -221,7 +222,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         this.endTask(taskExecution);
       } else if (TaskType.runworkflow.equals(taskType)) {
         LOGGER.info("TODO - Run Workflow");
-        // this.runWorkflow(taskExecution, wfRunEntity.get());
+         this.runWorkflow(taskExecution, wfRunEntity.get());
+         this.endTask(taskExecution);
       } else if (TaskType.runscheduledworkflow.equals(taskType)) {
         LOGGER.info("TODO - Run Scheduled Workflow");
         // this.runScheduledWorkflow(taskExecution, wfRunEntity.get(), workflowName);
@@ -409,34 +411,42 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     taskRunRepository.save(taskExecution);
   }
 
-  // private void runWorkflow(Task task, ActivityEntity activity) {
-  //
-  // if (task.getInputs() != null) {
-  // RequestFlowExecution request = new RequestFlowExecution();
-  // request.setWorkflowId(task.getInputs().get("workflowId"));
-  // Map<String, String> properties = new HashMap<>();
-  // for (Map.Entry<String, String> entry : task.getInputs().entrySet()) {
-  // if (!"workflowId".equals(entry.getKey())) {
-  // properties.put(entry.getKey(), entry.getValue());
-  // }
-  // }
-  //
-  // request.setProperties(properties);
-  // String workflowActivityId = flowClient.submitWebhookEvent(request);
-  // if (workflowActivityId != null) {
-  // TaskExecutionEntity taskExecution = taskActivityService.findById(task.getTaskActivityId());
-  // taskExecution.setRunWorkflowActivityId(workflowActivityId);
-  // taskExecution.setRunWorkflowId(request.getWorkflowId());
-  // taskActivityService.save(taskExecution);
-  // }
-  // }
-  //
-  // InternalTaskResponse response = new InternalTaskResponse();
-  // response.setActivityId(task.getTaskActivityId());
-  // response.setStatus(TaskStatus.completed);
-  // this.endTask(response);
-  // }
-  //
+  private void runWorkflow(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {
+     if (taskExecution.getParams() != null) {
+       //TODO: need to add the ability to set Trigger
+       Optional<WorkflowRunRequest> wfRunRequest = Optional.of(new WorkflowRunRequest());
+       
+       String workflowId = null;
+       List<RunParam> wfRunParamsRequest = new LinkedList<>();
+       for (RunParam param : taskExecution.getParams()) {
+         if ("workflowId".equals(param.getName())) {
+           workflowId = (String) param.getValue();
+         } else {
+           wfRunParamsRequest.add(param);
+         }
+       }
+       wfRunRequest.get().setParams(wfRunParamsRequest);
+       if (workflowId != null) {
+         try {
+           WorkflowRun wfRunResponse =
+               workflowRunService.submit(workflowId, wfRunRequest).getBody();
+           List<RunResult> wfRunResultResponse = new LinkedList<>();
+           RunResult runResult = new RunResult();
+           runResult.setName("workflowRunRef");
+           runResult.setValue(wfRunResponse.getId());
+           taskExecution.setResults(wfRunResultResponse);
+           taskExecution.setStatus(RunStatus.succeeded);
+         } catch (Exception e) {
+           taskExecution.setStatus(RunStatus.failed);
+         }
+         taskRunRepository.save(taskExecution);
+         return;
+       }
+     }
+     taskExecution.setStatus(RunStatus.failed);
+     taskRunRepository.save(taskExecution);
+   }
+
   // private void runScheduledWorkflow(Task task, ActivityEntity activity, String workflowName) {
   // InternalTaskResponse response = new InternalTaskResponse();
   // response.setActivityId(task.getTaskActivityId());
@@ -664,7 +674,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         if (!taskRunEntity.isPresent()) {
           LOGGER.error("Reached node which should not be executed.");
         } else {
-          flowClient.queueTask(this, next);
+          taskExecutionClient.queueTask(this, next);
         }
       }
     }
