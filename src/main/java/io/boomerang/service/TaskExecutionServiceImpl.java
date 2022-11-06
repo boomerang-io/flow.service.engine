@@ -4,20 +4,15 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.retry.backoff.FixedBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import com.github.alturkovic.lock.Lock;
-import com.github.alturkovic.lock.exception.LockNotAvailableException;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
@@ -237,7 +232,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         this.endTask(taskExecution);
       } else if (TaskType.setwfproperty.equals(taskType)) {
         LOGGER.info("TODO - Save Workflow Property");
-        // saveWorkflowProperty(taskExecution, wfRunEntity.get());
+        saveWorkflowProperty(taskExecution, wfRunEntity.get());
         taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
       } else if (TaskType.approval.equals(taskType)) {
@@ -300,7 +295,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       return;
     }
     List<String> keys = new LinkedList<>();
-    keys.add(taskRunId);
+    keys.add(wfRunEntity.get().getId());
 
     // Update TaskRun with current TaskExecution status
     LOGGER.info("[{}] Marking Task as {}.", taskRunId, taskExecution.getStatus());
@@ -317,16 +312,26 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     LOGGER.debug("[{}] Finished all previous tasks? {}", taskRunId, finishedAllDependencies);
 
     LOGGER.debug("[{}] Attempting to get lock", taskRunId);
-    String tokenId = getLock(taskRunId, keys, 105000);
+    String tokenId = lockManager.acquireWorkflowLock(keys);
     LOGGER.debug("[{}] Obtained lock", taskRunId);
+    
+    //TODO: have to add back in the approval verification
 
     // Refresh wfRunEntity and Execute Next Task
     wfRunEntity = this.workflowRunRepository.findById(taskExecution.getWorkflowRunRef());
     executeNextStep(wfRunEntity.get(), tasks, taskExecution, finishedAllDependencies);
     
-    lock.release(keys, "locks", tokenId);
+    lockManager.releaseWorkflowLock(keys, tokenId);
     LOGGER.debug("[{}] Released lock", taskRunId);
   }
+
+  // private void updatePendingAprovalStatus(ActivityEntity workflowActivity) {
+  // long count = approvalService.getApprovalCountForActivity(workflowActivity.getId(),
+  // ApprovalStatus.submitted);
+  // boolean existingApprovals = (count > 0);
+  // workflowActivity.setAwaitingApproval(existingApprovals);
+  // this.activityService.saveWorkflowActivity(workflowActivity);
+  // }
 
   @Override
   public List<String> updateTaskRunForTopic(String workflowRunId, String topic) {
@@ -574,64 +579,30 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   //// this.activityService.saveWorkflowActivity(activity);
   //// }
   ////
-  //// private void saveWorkflowProperty(Task task, ActivityEntity activity,
-  //// TaskExecutionEntity taskEntity) {
-  //// if (taskEntity.getOutputProperties() == null) {
-  //// taskEntity.setOutputProperties(new LinkedList<>());
-  //// }
-  ////
-  //// String input = task.getInputs().get("value");
-  //// String output = task.getInputs().get("output");
-  ////
-  //// List<KeyValuePair> outputProperties = taskEntity.getOutputProperties();
-  ////
-  //// KeyValuePair outputProperty = new KeyValuePair();
-  //// outputProperty.setKey(output);
-  ////
-  //// ControllerRequestProperties requestProperties = propertyManager
-  //// .buildRequestPropertyLayering(task, activity.getId(), activity.getWorkflowId());
-  //// String outputValue =
-  //// propertyManager.replaceValueWithProperty(input, activity.getId(), requestProperties);
-  ////
-  //// outputProperty.setValue(outputValue);
-  //// outputProperties.add(outputProperty);
-  //// taskEntity.setOutputProperties(outputProperties);
-  //// taskActivityService.save(taskEntity);
-  ////
-  //// }
-  //
+  
+  //TODO: parameter layering
+  private void saveWorkflowProperty(TaskRunEntity taskRunEntity, WorkflowRunEntity wfRunEntity) {
+    String input = (String) taskRunEntity.getParams().stream().filter(p -> "value".equals(p.getName())).findFirst().get().getValue();
+    String output = (String) taskRunEntity.getParams().stream().filter(p -> "output".equals(p.getName())).findFirst().get().getValue();
 
-  // private void updatePendingAprovalStatus(ActivityEntity workflowActivity) {
-  // long count = approvalService.getApprovalCountForActivity(workflowActivity.getId(),
-  // ApprovalStatus.submitted);
-  // boolean existingApprovals = (count > 0);
-  // workflowActivity.setAwaitingApproval(existingApprovals);
-  // this.activityService.saveWorkflowActivity(workflowActivity);
-  // }
+//    ControllerRequestProperties requestProperties = propertyManager
+//        .buildRequestPropertyLayering(task, activity.getId(), activity.getWorkflowId());
+//    String outputValue =
+//        propertyManager.replaceValueWithProperty(input, activity.getId(), requestProperties);
 
-
-  private String getLock(String storeId, List<String> keys, long timeout) {
-    RetryTemplate retryTemplate = getRetryTemplate();
-    return retryTemplate.execute(ctx -> {
-      final String token = lock.acquire(keys, "flow_task_locks", timeout);
-      if (!StringUtils.isEmpty(token)) {
-        throw new LockNotAvailableException(
-            String.format("Lock not available for keys: %s in store %s", keys, storeId));
-      }
-      return token;
-    });
-  }
-
-  private RetryTemplate getRetryTemplate() {
-    RetryTemplate retryTemplate = new RetryTemplate();
-    FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
-    fixedBackOffPolicy.setBackOffPeriod(2000l);
-    retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
-
-    SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
-    retryPolicy.setMaxAttempts(100);
-    retryTemplate.setRetryPolicy(retryPolicy);
-    return retryTemplate;
+    List<String> keys = new LinkedList<>();
+    keys.add(wfRunEntity.getId());
+    String tokenId = lockManager.acquireWorkflowLock(keys);  
+    
+    List<RunResult> wfResults = wfRunEntity.getResults();
+    RunResult wfResult = new RunResult();
+    wfResult.setName(output);
+    wfResult.setValue(input);
+    wfResults.add(wfResult);
+    wfRunEntity.setResults(wfResults);
+    workflowRunRepository.save(wfRunEntity);
+    
+    lockManager.releaseWorkflowLock(keys, tokenId);
   }
 
   private void finishWorkflow(WorkflowRunEntity wfRunEntity, List<TaskRunEntity> tasks) {
@@ -663,13 +634,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     long duration = new Date().getTime() - wfRunEntity.getStartTime().getTime();
     wfRunEntity.setDuration(duration);
-
-    List<TaskRunEntity> taskRuns = taskRunRepository.findByWorkflowRunRef(wfRunEntity.getId());
-    for (TaskRunEntity tr : taskRuns) {
-      if (tr.getWorkflowResults() != null) {
-        wfRunEntity.getResults().addAll(tr.getWorkflowResults());
-      }
-    }
 
     this.workflowRunRepository.save(wfRunEntity);
     LOGGER.info("[{}] Completed Workflow with status: {}.", wfRunEntity.getId(), wfRunEntity.getStatus());

@@ -13,6 +13,7 @@ import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
+import com.github.alturkovic.lock.Lock;
 import com.github.alturkovic.lock.exception.LockNotAvailableException;
 import com.github.alturkovic.lock.mongo.impl.SimpleMongoLock;
 import com.github.alturkovic.lock.retry.RetriableLock;
@@ -29,11 +30,50 @@ public class LockManagerImpl implements LockManager {
 
   @Autowired
   private MongoConfiguration mongoConfiguration;
+  
+  @Autowired
+  private Lock lock;
 
 //  @Autowired
 //  private PropertyManager propertyManager;
 
   private static final Logger LOGGER = LogManager.getLogger(LockManagerImpl.class);
+  
+  @Override
+  public String acquireWorkflowLock(List<String> keys) {
+    String storeId = mongoConfiguration.fullCollectionName("task_locks");
+    long timeout = 105000;
+    
+    RetryTemplate retryTemplate = getWorkflowRetryTemplate();
+    return retryTemplate.execute(ctx -> {
+      final String token = lock.acquire(keys, storeId, timeout);
+      if (!StringUtils.isEmpty(token)) {
+        throw new LockNotAvailableException(
+            String.format("Lock not available for keys: %s in store %s", keys, storeId));
+      }
+      return token;
+    });
+  }
+  
+  @Override
+  public void releaseWorkflowLock(List<String> keys, String tokenId) {
+    String storeId = mongoConfiguration.fullCollectionName("task_locks");
+    lock.release(keys, storeId, tokenId);
+  }
+
+  //TODO: determine if we can combine with other getRetryTemplate 
+  //or convert into retriable lock
+  private RetryTemplate getWorkflowRetryTemplate() {
+    RetryTemplate retryTemplate = new RetryTemplate();
+    FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
+    fixedBackOffPolicy.setBackOffPeriod(2000l);
+    retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
+
+    SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+    retryPolicy.setMaxAttempts(100);
+    retryTemplate.setRetryPolicy(retryPolicy);
+    return retryTemplate;
+  }
 
   @Override
   public void acquireLock(TaskRunEntity taskExecution, String wfRunId) {
@@ -66,14 +106,13 @@ public class LockManagerImpl implements LockManager {
        *   This is created by the Loader, if you do not use the loader, you will need to create manually.
        */
       if (key != null) {
-        //SimpleMongoLock requires a supplier, however we don't want the value to change at a future assign time.
+        //SimpleMongoLock requires a supplier, we don't want the value to change at a future assign time.
         final String finalKey = key;
         Supplier<String> supplier = () -> finalKey;
         SimpleMongoLock mongoLock = new SimpleMongoLock(supplier, this.mongoTemplate);
         RetryTemplate retryTemplate = getRetryTemplate();
         RetriableLock retryLock = new RetriableLock(mongoLock, retryTemplate);
-        //This name has to match the Locks index in the Loader
-        String storeId = mongoConfiguration.fullCollectionName("tasks_locks");
+        String storeId = mongoConfiguration.fullCollectionName("task_locks");
         final List<String> keys = new LinkedList<>();
         keys.add(key);
 
@@ -132,7 +171,7 @@ public class LockManagerImpl implements LockManager {
         Supplier<String> supplier = () -> finalKey;
 //        FlowMongoLock mongoLock = new FlowMongoLock(supplier, this.mongoTemplate);
         SimpleMongoLock mongoLock = new SimpleMongoLock(supplier, this.mongoTemplate);
-        String storeId = mongoConfiguration.fullCollectionName("tasks_locks");
+        String storeId = mongoConfiguration.fullCollectionName("task_locks");
         final List<String> keys = new LinkedList<>();
         keys.add(key);
         mongoLock.release(keys, storeId, key);
