@@ -33,6 +33,7 @@ import io.boomerang.model.WorkflowConfig;
 import io.boomerang.model.WorkflowStatus;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
+import io.boomerang.util.ParameterUtil;
 import io.boomerang.util.TaskMapper;
 
 /*

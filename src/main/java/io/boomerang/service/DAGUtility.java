@@ -102,7 +102,7 @@ public class DAGUtility {
         executionTask.setType(wfRevisionTask.getType());
         executionTask.setCreationDate(new Date());
         executionTask.setTemplateVersion(wfRevisionTask.getTemplateVersion());
-        executionTask.setParams(ParameterUtil.paramToRunParam(wfRevisionTask.getParams()));
+        executionTask.setParams(ParameterUtil.paramSpecToRunParam(wfRevisionTask.getParams()));
         executionTask.setLabels(wfRevisionTask.getLabels());
         executionTask.setAnnotations(wfRevisionTask.getAnnotations());
         executionTask.setDependencies(wfRevisionTask.getDependencies());
@@ -133,8 +133,8 @@ public class DAGUtility {
           }
           executionTask.setTemplateResults(taskTemplate.get().getSpec().getResults());
           ParameterUtil.addUniqueParams(
-              ParameterUtil.paramToRunParam(taskTemplate.get().getSpec().getParams()),
-              ParameterUtil.paramToRunParam(wfRevisionTask.getParams()));
+              ParameterUtil.paramSpecToRunParam(taskTemplate.get().getSpec().getParams()),
+              ParameterUtil.paramSpecToRunParam(wfRevisionTask.getParams()));
           executionTask.setParams(null);
         }
         taskRunRepository.save(executionTask);

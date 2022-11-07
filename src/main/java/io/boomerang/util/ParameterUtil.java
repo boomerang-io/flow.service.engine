@@ -19,7 +19,7 @@ public class ParameterUtil {
    * @param the new parameter to add
    * @return the parameter list
    */
-  public static List<RunParam> paramToRunParam(List<ParamSpec> parameterList) {
+  public static List<RunParam> paramSpecToRunParam(List<ParamSpec> parameterList) {
     return parameterList.stream().map(p -> new RunParam(p.getName(), p.getDefaultValue()))
         .collect(Collectors.toList());
   }
@@ -51,6 +51,41 @@ public class ParameterUtil {
   public static List<RunParam> addUniqueParams(List<RunParam> origParameterList, List<RunParam> newParameterList) {
     newParameterList.stream().forEach(p -> {
       addUniqueParam(origParameterList, p);
+    });
+    return origParameterList;
+  }
+
+  /*
+   * Add a parameter to an existing Run Parameter list
+   * 
+   * @param the parameter list
+   * @param the new parameter spec to add
+   * @return the parameter list
+   */
+  public static List<ParamSpec> addUniqueParamSpec(List<ParamSpec> parameterList, ParamSpec param) {
+    if (parameterList.stream().noneMatch(p -> param.getName().equals(p.getName()))) {
+      parameterList.add(param);
+    } else {
+      parameterList.stream().filter(p -> param.getName().equals(p.getName())).findFirst().ifPresent(p -> {
+        p.setDefaultValue(param.getDefaultValue());
+        p.setDescription(param.getDescription());
+        p.setType(param.getType());
+      });
+    }
+    return parameterList;
+  }
+  
+  /*
+   * Add a ParamSpec Parameter List to an existing ParamSpec Parameter list
+   * ensuring unique names
+   * 
+   * @param the parameter list
+   * @param the new parameter to add
+   * @return the parameter list
+   */
+  public static List<ParamSpec> addUniqueParamSpecs(List<ParamSpec> origParameterList, List<ParamSpec> newParameterList) {
+    newParameterList.stream().forEach(p -> {
+      addUniqueParamSpec(origParameterList, p);
     });
     return origParameterList;
   }
