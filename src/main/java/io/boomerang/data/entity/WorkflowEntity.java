@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import io.boomerang.model.WorkflowConfig;
 import io.boomerang.model.WorkflowStatus;
 import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.enums.WorkflowScope;

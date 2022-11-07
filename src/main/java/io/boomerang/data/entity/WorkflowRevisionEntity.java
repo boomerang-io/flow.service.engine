@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.ParamSpec;
+import io.boomerang.model.WorkflowConfig;
 import io.boomerang.model.WorkflowWorkspace;
 
 /*
@@ -37,6 +38,8 @@ public class WorkflowRevisionEntity {
   private List<ParamSpec> params;
   
   private List<WorkflowWorkspace> workspaces;
+  
+  private List<WorkflowConfig> config;
   
   //TODO: merge into the DAG
 //  private RestConfig config;
@@ -111,5 +114,13 @@ public class WorkflowRevisionEntity {
 
   public void setWorkspaces(List<WorkflowWorkspace> workspaces) {
     this.workspaces = workspaces;
+  }
+
+  public List<WorkflowConfig> getConfig() {
+    return config;
+  }
+
+  public void setConfig(List<WorkflowConfig> config) {
+    this.config = config;
   } 
 }

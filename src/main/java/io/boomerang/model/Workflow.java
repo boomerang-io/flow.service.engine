@@ -7,10 +7,13 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.BeanUtils;
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 
@@ -53,6 +56,19 @@ public class Workflow {
   @JsonAlias("resources")
   @JsonProperty("workspaces")
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
+
+  private Map<String, Object> unknownFields = new HashMap<>();
+
+  @JsonAnyGetter
+  @JsonPropertyOrder(alphabetic = true)
+  public Map<String, Object> otherFields() {
+    return unknownFields;
+  }
+
+  @JsonAnySetter
+  public void setOtherField(String name, Object value) {
+    unknownFields.put(name, value);
+  }
   
   public Workflow() {
     

@@ -5,7 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class TaskRunRequest {
+public class TaskRunStartRequest {
 
   private Map<String, String> labels = new HashMap<>();
 

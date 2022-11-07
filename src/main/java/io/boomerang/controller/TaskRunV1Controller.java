@@ -20,7 +20,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.model.TaskRun;
-import io.boomerang.model.TaskRunRequest;
+import io.boomerang.model.TaskRunEndRequest;
+import io.boomerang.model.TaskRunStartRequest;
 import io.boomerang.service.TaskRunService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -79,7 +80,7 @@ public class TaskRunV1Controller {
       @Parameter(name = "taskRunId",
       description = "ID of Task Run to Start",
       required = true) @PathVariable(required = true) String taskRunId,
-      @RequestBody Optional<TaskRunRequest> taskRunRequest) {
+      @RequestBody Optional<TaskRunStartRequest> taskRunRequest) {
     return taskRunService.start(taskRunId, taskRunRequest);
   }
 
@@ -90,8 +91,9 @@ public class TaskRunV1Controller {
   public ResponseEntity<TaskRun> endTaskRun(
       @Parameter(name = "taskRunId",
       description = "ID of Task Run to End",
-      required = true) @PathVariable(required = true) String taskRunId) {
-    return taskRunService.end(taskRunId);
+      required = true) @PathVariable(required = true) String taskRunId,
+      @RequestBody Optional<TaskRunEndRequest> taskRunRequest) {
+    return taskRunService.end(taskRunId, taskRunRequest);
   }
 
   //TODO implement

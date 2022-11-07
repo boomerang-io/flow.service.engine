@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -66,10 +67,14 @@ public class DAGUtility {
     final List<Pair<String, String>> edgeList = new LinkedList<>();
     for (final TaskRunEntity task : tasks) {
       for (final TaskDependency dep : task.getDependencies()) {
-        String depTaskRefAsId = tasks.stream().filter(t -> t.getName().equals(dep.getTaskRef()))
-            .findFirst().get().getId();
-        final Pair<String, String> pair = Pair.of(depTaskRefAsId, task.getId());
-        edgeList.add(pair);
+        try {
+          String depTaskRefAsId = tasks.stream().filter(t -> t.getName().equals(dep.getTaskRef()))
+              .findFirst().get().getId();
+          final Pair<String, String> pair = Pair.of(depTaskRefAsId, task.getId());
+          edgeList.add(pair);
+        } catch (NoSuchElementException ex) {
+          throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_DEPENDENCY, dep.getTaskRef());
+        }
       }
     }
     return GraphProcessor.createGraph(vertices, edgeList);

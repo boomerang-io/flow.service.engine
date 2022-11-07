@@ -72,9 +72,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   private LockManager lockManager;
 
   @Autowired
-  private TaskExecutionClient taskExecutionClient;
-
-  @Autowired
   private WorkflowRunRepository workflowRunRepository;
 
   @Autowired
@@ -325,24 +322,24 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     LOGGER.debug("[{}] Attempting to get lock", taskRunId);
     String tokenId = lockManager.acquireWorkflowLock(keys);
     LOGGER.debug("[{}] Obtained lock", taskRunId);
-    
-    //TODO: have to add back in the approval verification
+    //Refresh wfRunEntity and update approval status
+    wfRunEntity = workflowRunRepository.findById(taskExecution.getWorkflowRunRef());
+    updatePendingAprovalStatus(wfRunEntity.get());
 
-    // Refresh wfRunEntity and Execute Next Task
-    wfRunEntity = this.workflowRunRepository.findById(taskExecution.getWorkflowRunRef());
+    // Execute Next Task
     executeNextStep(wfRunEntity.get(), tasks, taskExecution, finishedAllDependencies);
     
     lockManager.releaseWorkflowLock(keys, tokenId);
     LOGGER.debug("[{}] Released lock", taskRunId);
   }
 
-  // private void updatePendingAprovalStatus(ActivityEntity workflowActivity) {
-  // long count = approvalService.getApprovalCountForActivity(workflowActivity.getId(),
-  // ApprovalStatus.submitted);
-  // boolean existingApprovals = (count > 0);
-  // workflowActivity.setAwaitingApproval(existingApprovals);
-  // this.activityService.saveWorkflowActivity(workflowActivity);
-  // }
+  private void updatePendingAprovalStatus(WorkflowRunEntity wfRunEntity) {
+    long count = actionRepository.countByWorkflowRunRefAndStatus(wfRunEntity.getId(),
+        ActionStatus.submitted);
+    boolean existingApprovals = (count > 0);
+    wfRunEntity.setAwaitingApproval(existingApprovals);
+    this.workflowRunRepository.save(wfRunEntity);
+  }
 
   @Override
   public List<String> updateTaskRunForTopic(String workflowRunId, String topic) {
@@ -681,7 +678,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         if (!taskRunEntity.isPresent()) {
           LOGGER.error("Reached node which should not be executed.");
         } else {
-          taskExecutionClient.queueTask(this, next);
+          this.queueTask(next);
         }
       }
     }
