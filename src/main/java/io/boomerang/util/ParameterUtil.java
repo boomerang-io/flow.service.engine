@@ -23,20 +23,7 @@ public class ParameterUtil {
     return parameterList.stream().map(p -> new RunParam(p.getName(), p.getDefaultValue()))
         .collect(Collectors.toList());
   }
-  
-  /*
-   * Add a parameter to an existing Run Parameter list
-   * 
-   * @param the parameter list
-   * @param the new parameter to add
-   * @return the parameter list
-   */
-  @Deprecated
-//  public static List<RunParam> ttConfigToRunParam(List<TaskTemplateConfig> configList) {
-//    return configList.stream().map(p -> new RunParam(p.getKey(), p.getDefaultValue()))
-//        .collect(Collectors.toList());
-//  }
-//  
+
   /*
    * Add a parameter to an existing Run Parameter list
    * 
@@ -129,5 +116,21 @@ public class ParameterUtil {
       value = param.get().getValue();
     }
     return value;
+  }  
+  
+  /*
+   * Remove the entry for the matching name in Run Parameter list
+   * 
+   * @param the parameter list
+   * @param the name of the parameter
+   * @return the reduced list
+   */
+  public static List<RunParam> removeEntry(List<RunParam> parameterList, String name) {
+    List<RunParam> reducedParamList = new LinkedList<>();
+    reducedParamList = parameterList
+    .stream()
+    .filter(p -> !name.equals(p.getName()))
+    .collect(Collectors.toList());
+    return reducedParamList;
   }
 }

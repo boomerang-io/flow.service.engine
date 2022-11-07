@@ -12,10 +12,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import io.boomerang.data.entity.ActionEntity;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
+import io.boomerang.data.repository.ActionRepository;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
@@ -25,6 +27,8 @@ import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunRequest;
+import io.boomerang.model.enums.ActionStatus;
+import io.boomerang.model.enums.ActionType;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
@@ -84,6 +88,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
   @Autowired
   private TaskRunRepository taskRunRepository;
+
+  @Autowired
+  private ActionRepository actionRepository;
   //
   // @Autowired
   // private WorkflowScheduleService scheduleService;
@@ -191,6 +198,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       taskExecution.setStartTime(new Date());
       updateStatusAndSaveTask(taskExecution, RunStatus.running, RunPhase.running, Optional.empty());
       if (TaskType.decision.equals(taskType)) {
+        LOGGER.info("[{}] Execute Decision Task", wfRunId);
         processDecision(taskExecution, wfRunId);
         taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
@@ -210,6 +218,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 //   }
       } else if (TaskType.generic.equals(taskType)) {
         LOGGER.info("[{}] Execute Generic Task", wfRunId);
+        //TODO resolve any params
       } else if (TaskType.acquirelock.equals(taskType)) {
         LOGGER.info("[{}] Execute Acquire Lock", wfRunId);
         lockManager.acquireLock(taskExecution, wfRunEntity.get().getId());
@@ -221,7 +230,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
       } else if (TaskType.runworkflow.equals(taskType)) {
-        LOGGER.info("TODO - Run Workflow");
+        LOGGER.info("[{}] Execute Run Workflow Task", wfRunId);
          this.runWorkflow(taskExecution, wfRunEntity.get());
          this.endTask(taskExecution);
       } else if (TaskType.runscheduledworkflow.equals(taskType)) {
@@ -233,16 +242,16 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
       } else if (TaskType.setwfproperty.equals(taskType)) {
-        LOGGER.info("TODO - Save Workflow Property");
+        LOGGER.info("[{}] Execute Set Workflow Result Parameter Task", wfRunId);
         saveWorkflowProperty(taskExecution, wfRunEntity.get());
         taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
       } else if (TaskType.approval.equals(taskType)) {
-        LOGGER.info("TODO - Create Approval");
-        // createApprovalNotification(taskExecution, task, activity, workflow, ManualType.approval);
+        LOGGER.info("[{}] Execute Approval Action Task", wfRunId);
+        createActionTask(taskExecution, wfRunEntity.get(), ActionType.approval);
       } else if (TaskType.manual.equals(taskType)) {
-        LOGGER.info("TODO - Create Manual Action");
-        // createApprovalNotification(taskExecution, task, activity, workflow, ManualType.task);
+        LOGGER.info("[{}] Execute Manual Action Task", wfRunId);
+        createActionTask(taskExecution, wfRunEntity.get(), ActionType.manual);
       } else if (TaskType.eventwait.equals(taskType)) {
         LOGGER.info("TODO - Wait for Event");
         // createWaitForEventTask(taskExecution);
@@ -416,15 +425,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
        //TODO: need to add the ability to set Trigger
        Optional<WorkflowRunRequest> wfRunRequest = Optional.of(new WorkflowRunRequest());
        
-       String workflowId = null;
-       List<RunParam> wfRunParamsRequest = new LinkedList<>();
-       for (RunParam param : taskExecution.getParams()) {
-         if ("workflowId".equals(param.getName())) {
-           workflowId = (String) param.getValue();
-         } else {
-           wfRunParamsRequest.add(param);
-         }
-       }
+       String workflowId = ParameterUtil.getValue(taskExecution.getParams(), "workflowId").toString();
+       List<RunParam> wfRunParamsRequest = ParameterUtil.removeEntry(taskExecution.getParams(), "workflowId");
        wfRunRequest.get().setParams(wfRunParamsRequest);
        if (workflowId != null) {
          try {
@@ -557,38 +559,43 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   // }
   // }
 
-  //// private void createApprovalNotification(TaskExecutionEntity taskExecution, Task task,
-  //// ActivityEntity activity, WorkflowEntity workflow, ManualType type) {
-  //// taskExecution.setFlowTaskStatus(TaskStatus.waiting);
-  //// taskExecution = taskActivityService.save(taskExecution);
-  //// ApprovalEntity approval = new ApprovalEntity();
-  //// approval.setTaskActivityId(taskExecution.getId());
-  //// approval.setActivityId(activity.getId());
-  //// approval.setWorkflowId(workflow.getId());
-  //// approval.setTeamId(workflow.getFlowTeamId());
-  //// approval.setStatus(ApprovalStatus.submitted);
-  //// approval.setType(type);
-  //// approval.setCreationDate(new Date());
-  //// approval.setNumberOfApprovers(1);
-  ////
-  //// if (ManualType.approval == type) {
-  //// if (task.getInputs() != null) {
-  //// String approverGroupId = task.getInputs().get("approverGroupId");
-  //// String numberOfApprovers = task.getInputs().get("numberOfApprovers");
-  ////
-  //// if (approverGroupId != null && !approverGroupId.isBlank()) {
-  //// approval.setApproverGroupId(approverGroupId);
-  //// }
-  //// if (numberOfApprovers != null && !numberOfApprovers.isBlank()) {
-  //// approval.setNumberOfApprovers(Integer.valueOf(numberOfApprovers));
-  //// }
-  //// }
-  //// }
-  //// approvalService.save(approval);
-  //// activity.setAwaitingApproval(true);
-  //// this.activityService.saveWorkflowActivity(activity);
-  //// }
-  ////
+  private void createActionTask(TaskRunEntity taskExecution,
+      WorkflowRunEntity wfRunEntity, ActionType type) {
+    ActionEntity actionEntity = new ActionEntity();
+    actionEntity.setTaskRunRef(taskExecution.getId());
+    actionEntity.setWorkflowRunRef(wfRunEntity.getId());
+    actionEntity.setWorkflowRef(wfRunEntity.getWorkflowRef());
+    actionEntity.setStatus(ActionStatus.submitted);
+    actionEntity.setType(type);
+    actionEntity.setCreationDate(new Date());
+    actionEntity.setNumberOfApprovers(1);
+
+    if (type.equals(ActionType.approval)) {
+      if (taskExecution.getParams() != null) {
+        if (ParameterUtil.containsName(taskExecution.getParams(), "approverGroupId")) {
+          String approverGroupId =
+              (String) ParameterUtil.getValue(taskExecution.getParams(), "approverGroupId");
+          if (approverGroupId != null && !approverGroupId.isBlank()) {
+            actionEntity.setApproverGroupRef(approverGroupId);
+          }
+        }
+
+        if (ParameterUtil.containsName(taskExecution.getParams(), "numberOfApprovers")) {
+          String numberOfApprovers =
+              (String) ParameterUtil.getValue(taskExecution.getParams(), "numberOfApprovers");
+          if (numberOfApprovers != null && !numberOfApprovers.isBlank()) {
+            actionEntity.setNumberOfApprovers(Integer.valueOf(numberOfApprovers));
+          }
+        }
+      }
+    }
+    actionRepository.save(actionEntity);
+    taskExecution.setStatus(RunStatus.waiting);
+    taskExecution = taskRunRepository.save(taskExecution);
+    wfRunEntity.setAwaitingApproval(true);
+    this.workflowRunRepository.save(wfRunEntity);
+  }
+  
   
   //TODO: parameter layering
   private void saveWorkflowProperty(TaskRunEntity taskRunEntity, WorkflowRunEntity wfRunEntity) {
@@ -719,16 +726,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
     return true;
   }
-
-  // private Task getTask(TaskExecutionEntity taskActivity) {
-  // ActivityEntity activity =
-  // activityService.findWorkflowActivtyById(taskActivity.getActivityId());
-  // RevisionEntity revision =
-  // workflowVersionService.getWorkflowlWithId(activity.getWorkflowRevisionid());
-  // List<Task> tasks = createTaskList(revision, activity);
-  // String taskId = taskActivity.getTaskId();
-  // return tasks.stream().filter(tsk -> taskId.equals(tsk.getTaskId())).findAny().orElse(null);
-  // }
 
   private void updateStatusAndSaveTask(TaskRunEntity taskExecution, RunStatus status,
       RunPhase phase, Optional<String> message, Object... messageArgs) {

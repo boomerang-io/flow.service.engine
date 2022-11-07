@@ -43,6 +43,8 @@ public class WorkflowRunEntity   {
 
   private String statusMessage;
   
+  private boolean isAwaitingApproval;
+  
 //  private ErrorResponse error;
 
   private String workflowRef;
@@ -151,6 +153,14 @@ public class WorkflowRunEntity   {
 
   public void setStatusMessage(String statusMessage) {
     this.statusMessage = statusMessage;
+  }
+
+  public boolean isAwaitingApproval() {
+    return isAwaitingApproval;
+  }
+
+  public void setAwaitingApproval(boolean isAwaitingApproval) {
+    this.isAwaitingApproval = isAwaitingApproval;
   }
 
   public String getWorkflowRef() {
