@@ -129,7 +129,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
     List<TaskRunEntity> tasks =
-        dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get().getId());
+        dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get());
     boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
     LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
 
@@ -179,16 +179,16 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       return;
     }
 
-    String wfRunId = wfRunEntity.get().getId();
-    // Ensure Task is valid as part of Graph
+        // Ensure Task is valid as part of Graph
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
-    List<TaskRunEntity> tasks = dagUtility.createTaskList(wfRevisionEntity.get(), wfRunId);
+    List<TaskRunEntity> tasks = dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get());
     boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
     LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
 
     // Execute based on TaskType
     TaskType taskType = taskExecution.getType();
+    String wfRunId = wfRunEntity.get().getId();
     LOGGER.debug("[{}] Examining task type: {}", taskExecutionId, taskType);
     if (canRunTask) {
       // Set up task
@@ -315,7 +315,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
     List<TaskRunEntity> tasks =
-        dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get().getId());
+        dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get());
     boolean finishedAllDependencies = this.finishedAll(wfRunEntity.get(), tasks, taskExecution);
     LOGGER.debug("[{}] Finished all previous tasks? {}", taskRunId, finishedAllDependencies);
 

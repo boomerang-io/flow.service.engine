@@ -9,6 +9,12 @@ public class ParamSpec {
   private String description;
   private Object defaultValue;
   
+  @Override
+  public String toString() {
+    return "ParamSpec [name=" + name + ", type=" + type + ", description=" + description
+        + ", defaultValue=" + defaultValue + "]";
+  }
+
   public String getName() {
     return name;
   }

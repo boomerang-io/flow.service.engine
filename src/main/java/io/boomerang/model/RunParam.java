@@ -13,6 +13,11 @@ public class RunParam {
     this.value = value;
   }
 
+  @Override
+  public String toString() {
+    return "RunParam [name=" + name + ", value=" + value + "]";
+  }
+
   public String getName() {
     return name;
   }
