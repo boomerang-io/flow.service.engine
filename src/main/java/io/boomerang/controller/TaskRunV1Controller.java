@@ -20,7 +20,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.model.TaskRun;
-import io.boomerang.model.TaskRunRequest;
+import io.boomerang.model.TaskRunEndRequest;
+import io.boomerang.model.TaskRunStartRequest;
 import io.boomerang.service.TaskRunService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -57,11 +58,11 @@ public class TaskRunV1Controller {
       description = "Comma separated list of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
       required = false) @RequestParam(required = false) Optional<List<String>> labels,
       @Parameter(name = "status",
-      description = "Comma separated list of statuses to filter for. Defaults to all.", example = "succeeded,skipped",
-      required = false) @RequestParam(required = false)  Optional<List<String>> status,
+      description = "Comma separated list of statuses to filter for. Defaults to 'ready'.", example = "succeeded,skipped",
+      required = false) @RequestParam(defaultValue = "ready", required = false)  Optional<List<String>> status,
       @Parameter(name = "phase",
-      description = "Comma separated list of phases to filter for. Defaults to all.", example = "completed,finalized",
-      required = false) @RequestParam(required = false)  Optional<List<String>> phase,
+      description = "Comma separated list of phases to filter for. Defaults to 'pending'.", example = "completed,finalized",
+      required = false) @RequestParam(defaultValue = "pending", required = false)  Optional<List<String>> phase,
       @Parameter(name = "limit", description = "Result Size", example = "10",
           required = true) @RequestParam(defaultValue = "10") int limit,
       @Parameter(name = "page", description = "Page Number", example = "0",
@@ -79,7 +80,7 @@ public class TaskRunV1Controller {
       @Parameter(name = "taskRunId",
       description = "ID of Task Run to Start",
       required = true) @PathVariable(required = true) String taskRunId,
-      @RequestBody Optional<TaskRunRequest> taskRunRequest) {
+      @RequestBody Optional<TaskRunStartRequest> taskRunRequest) {
     return taskRunService.start(taskRunId, taskRunRequest);
   }
 
@@ -90,8 +91,9 @@ public class TaskRunV1Controller {
   public ResponseEntity<TaskRun> endTaskRun(
       @Parameter(name = "taskRunId",
       description = "ID of Task Run to End",
-      required = true) @PathVariable(required = true) String taskRunId) {
-    return taskRunService.end(taskRunId);
+      required = true) @PathVariable(required = true) String taskRunId,
+      @RequestBody Optional<TaskRunEndRequest> taskRunRequest) {
+    return taskRunService.end(taskRunId, taskRunRequest);
   }
 
   //TODO implement

@@ -73,9 +73,6 @@ public class TaskRunEntity {
 
   private String workflowRunRef;
 
-  @JsonIgnore
-  private List<RunResult> workflowResults;
-
   @Override
   public String toString() {
     return "TaskRunEntity [id=" + id + ", type=" + type + ", name=" + name + ", labels=" + labels
@@ -265,13 +262,5 @@ public class TaskRunEntity {
 
   public void setWorkflowRevisionRef(String workflowRevisionRef) {
     this.workflowRevisionRef = workflowRevisionRef;
-  }
-
-  public List<RunResult> getWorkflowResults() {
-    return workflowResults;
-  }
-
-  public void setWorkflowResults(List<RunResult> workflowResults) {
-    this.workflowResults = workflowResults;
   }
 }

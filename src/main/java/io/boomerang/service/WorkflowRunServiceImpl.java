@@ -162,7 +162,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       wfRunEntity.setCreationDate(new Date());
       wfRunEntity.setStatus(RunStatus.notstarted);
       wfRunEntity.putLabels(workflow.getLabels());
-      wfRunEntity.setParams(ParameterUtil.paramToRunParam(revision.getParams()));
+      wfRunEntity.setParams(ParameterUtil.paramSpecToRunParam(revision.getParams()));
 
       // Add values from Run Request if Present
       if (optRunRequest.isPresent()) {

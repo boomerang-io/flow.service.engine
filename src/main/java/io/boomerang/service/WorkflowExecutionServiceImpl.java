@@ -78,7 +78,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         this.workflowRevisionRepository.findById(workflowExecution.getWorkflowRevisionRef());
     if (optWorkflowRevisionEntity.isPresent()) {
       WorkflowRevisionEntity wfRevisionEntity = optWorkflowRevisionEntity.get();
-      final List<TaskRunEntity> tasks = dagUtility.createTaskList(wfRevisionEntity, workflowExecution.getId());
+      final List<TaskRunEntity> tasks = dagUtility.createTaskList(wfRevisionEntity, workflowExecution);
       LOGGER.info("[{}] Found {} tasks: {}", workflowExecution.getId(), tasks.size(), tasks.toString());
       final TaskRunEntity start = dagUtility.getTaskByType(tasks, TaskType.start);
       final TaskRunEntity end = dagUtility.getTaskByType(tasks, TaskType.end);

@@ -19,24 +19,11 @@ public class ParameterUtil {
    * @param the new parameter to add
    * @return the parameter list
    */
-  public static List<RunParam> paramToRunParam(List<ParamSpec> parameterList) {
+  public static List<RunParam> paramSpecToRunParam(List<ParamSpec> parameterList) {
     return parameterList.stream().map(p -> new RunParam(p.getName(), p.getDefaultValue()))
         .collect(Collectors.toList());
   }
-  
-  /*
-   * Add a parameter to an existing Run Parameter list
-   * 
-   * @param the parameter list
-   * @param the new parameter to add
-   * @return the parameter list
-   */
-  @Deprecated
-//  public static List<RunParam> ttConfigToRunParam(List<TaskTemplateConfig> configList) {
-//    return configList.stream().map(p -> new RunParam(p.getKey(), p.getDefaultValue()))
-//        .collect(Collectors.toList());
-//  }
-//  
+
   /*
    * Add a parameter to an existing Run Parameter list
    * 
@@ -64,6 +51,41 @@ public class ParameterUtil {
   public static List<RunParam> addUniqueParams(List<RunParam> origParameterList, List<RunParam> newParameterList) {
     newParameterList.stream().forEach(p -> {
       addUniqueParam(origParameterList, p);
+    });
+    return origParameterList;
+  }
+
+  /*
+   * Add a parameter to an existing Run Parameter list
+   * 
+   * @param the parameter list
+   * @param the new parameter spec to add
+   * @return the parameter list
+   */
+  public static List<ParamSpec> addUniqueParamSpec(List<ParamSpec> parameterList, ParamSpec param) {
+    if (parameterList.stream().noneMatch(p -> param.getName().equals(p.getName()))) {
+      parameterList.add(param);
+    } else {
+      parameterList.stream().filter(p -> param.getName().equals(p.getName())).findFirst().ifPresent(p -> {
+        p.setDefaultValue(param.getDefaultValue());
+        p.setDescription(param.getDescription());
+        p.setType(param.getType());
+      });
+    }
+    return parameterList;
+  }
+  
+  /*
+   * Add a ParamSpec Parameter List to an existing ParamSpec Parameter list
+   * ensuring unique names
+   * 
+   * @param the parameter list
+   * @param the new parameter to add
+   * @return the parameter list
+   */
+  public static List<ParamSpec> addUniqueParamSpecs(List<ParamSpec> origParameterList, List<ParamSpec> newParameterList) {
+    newParameterList.stream().forEach(p -> {
+      addUniqueParamSpec(origParameterList, p);
     });
     return origParameterList;
   }
@@ -129,5 +151,21 @@ public class ParameterUtil {
       value = param.get().getValue();
     }
     return value;
+  }  
+  
+  /*
+   * Remove the entry for the matching name in Run Parameter list
+   * 
+   * @param the parameter list
+   * @param the name of the parameter
+   * @return the reduced list
+   */
+  public static List<RunParam> removeEntry(List<RunParam> parameterList, String name) {
+    List<RunParam> reducedParamList = new LinkedList<>();
+    reducedParamList = parameterList
+    .stream()
+    .filter(p -> !name.equals(p.getName()))
+    .collect(Collectors.toList());
+    return reducedParamList;
   }
 }

@@ -29,9 +29,11 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.Workflow;
+import io.boomerang.model.WorkflowConfig;
 import io.boomerang.model.WorkflowStatus;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
+import io.boomerang.util.ParameterUtil;
 import io.boomerang.util.TaskMapper;
 
 /*
@@ -109,6 +111,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     wfRevisionEntity.setParams(workflow.getParams());
     wfRevisionEntity.setWorkspaces(workflow.getWorkspaces());
     wfRevisionEntity.setTasks(TaskMapper.tasksToListOfRevisionTasks(workflow.getTasks()));
+    //TODO: do this better
+    wfRevisionEntity.setConfig((List<WorkflowConfig>) workflow.otherFields().get("config"));
 
     // Check Task Names are unique
     List<String> filteredNames =

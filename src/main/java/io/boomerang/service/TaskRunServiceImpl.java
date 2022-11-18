@@ -9,6 +9,7 @@ import org.apache.commons.lang3.EnumUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -22,7 +23,8 @@ import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.TaskRun;
-import io.boomerang.model.TaskRunRequest;
+import io.boomerang.model.TaskRunEndRequest;
+import io.boomerang.model.TaskRunStartRequest;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.util.ParameterUtil;
@@ -34,9 +36,11 @@ import io.boomerang.util.ParameterUtil;
 public class TaskRunServiceImpl implements TaskRunService {
   private static final Logger LOGGER = LogManager.getLogger();
 
+  @Lazy
   @Autowired
   private TaskExecutionClient taskExecutionClient;
 
+  @Lazy
   @Autowired
   private TaskExecutionService taskExecutionService;
 
@@ -118,7 +122,7 @@ public class TaskRunServiceImpl implements TaskRunService {
   }
 
   @Override
-  public ResponseEntity<TaskRun> start(String taskRunId, Optional<TaskRunRequest> optRunRequest) {
+  public ResponseEntity<TaskRun> start(String taskRunId, Optional<TaskRunStartRequest> optRunRequest) {
     if (taskRunId == null || taskRunId.isBlank()) {
       throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_REF);
     }
@@ -142,12 +146,20 @@ public class TaskRunServiceImpl implements TaskRunService {
   }
 
   @Override
-  public ResponseEntity<TaskRun> end(String taskRunId) {
+  public ResponseEntity<TaskRun> end(String taskRunId, Optional<TaskRunEndRequest> optRunRequest) {
     if (taskRunId == null || taskRunId.isBlank()) {
       throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_REF);
     }
     Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
     if (optTaskRunEntity.isPresent()) {
+      TaskRunEntity taskRunEntity = optTaskRunEntity.get();
+      // Add values from Run Request
+      if (optRunRequest.isPresent()) {
+        taskRunEntity.putLabels(optRunRequest.get().getLabels());
+        taskRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
+        taskRunEntity.setResults(optRunRequest.get().getResults());
+        taskRunRepository.save(taskRunEntity);
+      }
       taskExecutionClient.endTask(taskExecutionService, optTaskRunEntity.get());
       TaskRun taskRun = new TaskRun(optTaskRunEntity.get());
       return ResponseEntity.ok(taskRun);
