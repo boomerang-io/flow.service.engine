@@ -2,47 +2,60 @@
 
 _based on Flow's Workflow Service and TektonCD_
 
-## Development
+## v3 to v4 Change Log
 
-This project uses Gradle to compile
+There has been an entire code base refactor from v3 to v4 for the engine. We suggest you read the following information to understand the full breadth of changes
 
-### 1. Run Local MongoDB w Docker
+- [Model changes and v3 to v4 model comparison](https://github.com/boomerang-io/roadmap/issues/368)
+- [Distributed async architecture change](https://github.com/boomerang-io/architecture/tree/feat-v4)
+
+## Pre-Requisites
+
+This service connects to MongoDB and requires Task Templates and indexes loaded through the Flow Loader. You can run these locally, or alternatively connect to a remote MongoDB service.
+
+### Run Local MongoDB w Docker
 
 ```
 docker run --name local-mongo -d mongo:latest
 ```
-### 2. Load Boomerang Flow Data
+
+### Load Boomerang Flow Data
 
 ```
 docker run -e JAVA_OPTS="-Dspring.data.mongodb.uri=mongodb://localhost:27017/boomerang -Dflow.mongo.collection.prefix=flow -Dspring.profiles.active=flow" --network host --platform linux/amd64 boomerangio/flow-loader:latest
 ```
 
+## Development
 
-## Locks
+This project uses Gradle to compile
+
+### Build JAR
+
+```
+gradle build
+```
+
+### Build Docker Locally
+
+```
+docker buildx build --platform=linux/amd64 -t flow-engine:latest .
+```
+
+> Note: these commands have been validated on an M1 Mac
+
+### Running the Docker Container
+
+```
+docker run -e JAVA_OPTS="-Dspring.data.mongodb.uri=mongodb://localhost:27017/boomerang -Dflow.mongo.collection.prefix=flow -Dspring.profiles.active=flow" --platform=linux/amd64 flow-engine:latest 
+```
+
+## Dependencies
+
+### Locks
 
 For distributed locking, we use this [distributed lock](https://github.com/alturkovic/distributed-lock) project with the Mongo implementation.
 
 The implementation in `LockManagerImpl.java` relies on the TTL Index for Retries having been added via the `flow.loader`.
-
-## Change Log
-
-The following attempts to list the changes from Workflow Service to Workflow Engine
-
-| Original | Change | Notes |
-| --- | --- | --- |
-| Workflow / Task Activity | Workflow / Task Run | Activity may resonate more with Users however Run is a more known term in the cloud-native industry. It can be still called Activity on the front end. |
-| `workflows_` collection prefix | `workflow_` | The prefix plural is now on the end i.e. `workflow_runs` |
-| `workflows_activities_tasks` | `task_runs` | Better represents what the collection is. |
-
-### Task Template
-
-| Original | Change | Notes |
-| --- | --- | --- |
-| createdDate | creationDate | Matches overarching principles change and standardises element |
-| flowTeamId | - | Removed. Will be taken care of in new relationship tree |
-| scope | - | Removed. Will be taken care of in new relationship tree |
-| type | type | Standardized with the Type used in the Workflow Task. Need to data migrate existing templates |
-
 
 ## Error Handling
 
