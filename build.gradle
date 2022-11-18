@@ -5,14 +5,13 @@ plugins {
 }
 
 group = 'io.boomerang'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.1'
 sourceCompatibility = '18'
 
 jar {
-	archiveFileName='service-engine.jar'
     manifest {
         attributes(
-                'Main-Class': 'io.boomerang.Application'
+                'Main-Class': 'io.boomerang.Application',
         )
     }
 }
