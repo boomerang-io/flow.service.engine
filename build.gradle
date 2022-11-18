@@ -1,6 +1,6 @@
 plugins {
-	id 'org.springframework.boot' version '2.7.2'
-	id 'io.spring.dependency-management' version '1.0.12.RELEASE'
+	id 'org.springframework.boot' version '2.7.5'
+	id 'io.spring.dependency-management' version '1.0.15.RELEASE'
 	id 'java'
 }
 
@@ -10,6 +10,11 @@ sourceCompatibility = '18'
 
 jar {
 	archiveFileName='service-engine.jar'
+    manifest {
+        attributes(
+                'Main-Class': 'io.boomerang.Application'
+        )
+    }
 }
 
 repositories {
@@ -35,8 +40,8 @@ dependencies {
 	implementation 'io.cloudevents:cloudevents-json-jackson:2.3.0'
 	implementation 'org.jgrapht:jgrapht-io:1.2.0'
 	implementation 'org.jgrapht:jgrapht-ext:1.5.1'
-	implementation 'org.springdoc:springdoc-openapi-webmvc-core:1.6.11'
-	implementation 'org.springdoc:springdoc-openapi-ui:1.6.11'
+	implementation 'org.springdoc:springdoc-openapi-webmvc-core:1.6.12'
+	implementation 'org.springdoc:springdoc-openapi-ui:1.6.12'
 	implementation 'com.github.alturkovic.distributed-lock:distributed-lock-mongo:1.4.3'
 	implementation 'org.apache.logging.log4j:log4j-web:2.17.1'
 	implementation 'org.apache.commons:commons-text:1.10.0'

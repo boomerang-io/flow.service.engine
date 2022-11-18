@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:18-jre-alpine
 ARG BMRG_TAG
 ENV JAVA_OPTS=""
 ENV BMRG_HOME=/opt/boomerang
