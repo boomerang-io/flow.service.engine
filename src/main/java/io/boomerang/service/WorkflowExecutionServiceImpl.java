@@ -12,6 +12,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskRunEntity;
@@ -39,6 +40,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   private DAGUtility dagUtility;
   
   @Autowired
+  @Lazy
   private TaskExecutionService taskService;
   
   @Autowired
