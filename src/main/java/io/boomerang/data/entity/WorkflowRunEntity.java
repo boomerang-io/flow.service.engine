@@ -10,8 +10,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.model.RunResult;
+import io.boomerang.model.RunError;
 import io.boomerang.model.RunParam;
+import io.boomerang.model.RunResult;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 
@@ -23,7 +24,7 @@ public class WorkflowRunEntity   {
   @Id
   private String id;
 
-  private String initiatedByRef;
+//  private String initiatedByRef;
 
   private Map<String, String> labels = new HashMap<>();
 
@@ -45,7 +46,7 @@ public class WorkflowRunEntity   {
   
   private boolean isAwaitingApproval;
   
-//  private ErrorResponse error;
+  private RunError error;
 
   private String workflowRef;
 
@@ -115,14 +116,6 @@ public class WorkflowRunEntity   {
     this.id = id;
   }
 
-  public String getInitiatedByRef() {
-    return initiatedByRef;
-  }
-
-  public void setInitiatedByRef(String initiatedByRef) {
-    this.initiatedByRef = initiatedByRef;
-  }
-
   public RunStatus getStatus() {
     return status;
   }
@@ -161,6 +154,14 @@ public class WorkflowRunEntity   {
 
   public void setAwaitingApproval(boolean isAwaitingApproval) {
     this.isAwaitingApproval = isAwaitingApproval;
+  }
+
+  public RunError getError() {
+    return error;
+  }
+
+  public void setError(RunError error) {
+    this.error = error;
   }
 
   public String getWorkflowRef() {

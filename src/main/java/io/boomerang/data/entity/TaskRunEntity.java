@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.boomerang.data.model.TaskTemplateResult;
+import io.boomerang.model.RunError;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
@@ -49,7 +50,7 @@ public class TaskRunEntity {
 
   private String statusMessage;
   
-//private ErrorResponse error;
+  private RunError error;
 
   @JsonIgnore
   private boolean preApproved;
@@ -190,6 +191,14 @@ public class TaskRunEntity {
 
   public void setStatusMessage(String statusMessage) {
     this.statusMessage = statusMessage;
+  }
+
+  public RunError getError() {
+    return error;
+  }
+
+  public void setError(RunError error) {
+    this.error = error;
   }
 
   public boolean isPreApproved() {
