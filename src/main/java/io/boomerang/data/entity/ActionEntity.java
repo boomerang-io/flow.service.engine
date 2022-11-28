@@ -16,7 +16,7 @@ import io.boomerang.model.enums.ActionType;
  * Shared with the Workflow Service
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Document(collection = "#{@mongoConfiguration.fullCollectionName('workflow_actions')}")
+@Document(collection = "#{@mongoConfiguration.fullCollectionName('actions')}")
 public class ActionEntity {
 
   @Id
