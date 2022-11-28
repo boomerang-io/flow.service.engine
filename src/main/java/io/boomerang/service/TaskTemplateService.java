@@ -1,7 +1,11 @@
 package io.boomerang.service;
 
+import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import io.boomerang.data.entity.TaskTemplateEntity;
 import io.boomerang.model.TaskTemplate;
 
 public interface TaskTemplateService {
@@ -9,6 +13,9 @@ public interface TaskTemplateService {
   TaskTemplate get(String id, Optional<Integer> version);
 
   ResponseEntity<TaskTemplate> create(TaskTemplate taskTemplate);
+
+  Page<TaskTemplateEntity> query(Pageable pageable, Optional<List<String>> labels,
+      Optional<List<String>> status);
 
 //  TektonTask getTaskTemplateYamlWithId(String id);
 //  

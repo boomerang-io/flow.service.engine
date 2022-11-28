@@ -1,10 +1,24 @@
 package io.boomerang.service;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateEntity;
+import io.boomerang.data.model.TaskTemplateStatus;
 import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
@@ -12,9 +26,13 @@ import io.boomerang.model.TaskTemplate;
 
 @Service
 public class TaskTemplateServiceImpl implements TaskTemplateService {
+  private static final Logger LOGGER = LogManager.getLogger();
 
   @Autowired
   private TaskTemplateRepository taskTemplateRepository;
+
+  @Autowired
+  private MongoTemplate mongoTemplate;
 
   @Override
   public TaskTemplate get(String name, Optional<Integer> version) {
@@ -69,6 +87,52 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     // taskTemplateEntity = taskTemplateRepository.save(taskTemplateEntity);
     // taskTemplate.setId(taskTemplateEntity.getId());
     return ResponseEntity.ok(taskTemplate);
+  }
+
+  @Override
+  public Page<TaskTemplateEntity> query(Pageable pageable, Optional<List<String>> labels,
+      Optional<List<String>> status) {
+      List<Criteria> criteriaList = new ArrayList<>();
+
+      if (labels.isPresent()) {
+        labels.get().stream().forEach(l -> {
+          String decodedLabel = "";
+          try {
+            decodedLabel = URLDecoder.decode(l, "UTF-8");
+          } catch (UnsupportedEncodingException e) {
+            throw new BoomerangException(e, BoomerangError.QUERY_INVALID_FILTERS, "labels");
+          }
+          LOGGER.debug(decodedLabel.toString());
+          String[] label = decodedLabel.split("[=]+");
+          Criteria labelsCriteria =
+              Criteria.where("labels." + label[0].replace(".", "#")).is(label[1]);
+          criteriaList.add(labelsCriteria);
+        });
+      }
+
+      if (status.isPresent()) {
+        if (status.get().stream()
+            .allMatch(q -> EnumUtils.isValidEnumIgnoreCase(TaskTemplateStatus.class, q))) {
+          Criteria criteria = Criteria.where("status").in(status.get());
+          criteriaList.add(criteria);
+        } else {
+          throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "status");
+        }
+      }
+
+      Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);
+      Criteria allCriteria = new Criteria();
+      if (criteriaArray.length > 0) {
+        allCriteria.andOperator(criteriaArray);
+      }
+      Query query = new Query(allCriteria);
+      query.with(pageable);
+
+      Page<TaskTemplateEntity> pages = PageableExecutionUtils.getPage(
+          mongoTemplate.find(query.with(pageable), TaskTemplateEntity.class), pageable,
+          () -> mongoTemplate.count(query, TaskTemplateEntity.class));
+
+      return pages;
   }
 
   // @Override
