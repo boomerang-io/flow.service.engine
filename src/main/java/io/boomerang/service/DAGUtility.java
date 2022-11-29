@@ -139,10 +139,10 @@ public class DAGUtility {
             LOGGER.debug("[{}] Revision Task Params: {}", wfRunEntity.getId(), wfRevisionTask.getParams().toString());
             executionTask.setParams(ParameterUtil.addUniqueParams(
                 ParameterUtil.paramSpecToRunParam(taskTemplate.get().getSpec().getParams()),
-                ParameterUtil.paramSpecToRunParam(wfRevisionTask.getParams())));
+                wfRevisionTask.getParams()));
           } else {
             LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(), wfRevisionTask.getParams().toString());
-            executionTask.setParams(ParameterUtil.paramSpecToRunParam(wfRevisionTask.getParams()));
+            executionTask.setParams(wfRevisionTask.getParams());
           }
           LOGGER.debug("[{}] Task Run Params: {}", wfRunEntity.getId(), executionTask.getParams());
         }
