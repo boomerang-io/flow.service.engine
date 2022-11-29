@@ -120,6 +120,9 @@ public class WorkflowServiceImpl implements WorkflowService {
     List<String> uniqueFilteredNames =
         filteredNames.stream().distinct().collect(Collectors.toList());
     LOGGER.debug("Name sizes: {} -> {}", filteredNames, uniqueFilteredNames);
+    if (filteredNames.size() != uniqueFilteredNames.size()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_NON_UNIQUE_TASK_NAME);
+    }
 
     // Check Task Template references are valid
     for (final WorkflowRevisionTask wfRevisionTask : wfRevisionEntity.getTasks()) {

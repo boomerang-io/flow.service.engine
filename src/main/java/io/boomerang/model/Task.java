@@ -26,7 +26,8 @@ public class Task {
   
   private Map<String, Object> annotations = new HashMap<>();
   
-  private List<ParamSpec> params = new LinkedList<>();
+  //Uses RunParam as the ParamSpec comes from the TaskTemplate
+  private List<RunParam> params = new LinkedList<>();
   
   private List<TaskDependency> dependencies;
   
@@ -81,11 +82,11 @@ public class Task {
     this.templateVersion = templateVersion;
   }
 
-  public List<ParamSpec> getParams() {
+  public List<RunParam> getParams() {
     return params;
   }
 
-  public void setParams(List<ParamSpec> params) {
+  public void setParams(List<RunParam> params) {
     this.params = params;
   }
 
