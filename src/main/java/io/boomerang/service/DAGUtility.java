@@ -103,7 +103,6 @@ public class DAGUtility {
         executionTask.setType(wfRevisionTask.getType());
         executionTask.setCreationDate(new Date());
         executionTask.setTemplateVersion(wfRevisionTask.getTemplateVersion());
-        executionTask.setLabels(wfRevisionTask.getLabels());
         executionTask.setAnnotations(wfRevisionTask.getAnnotations());
         executionTask.setDependencies(wfRevisionTask.getDependencies());
         executionTask.setWorkflowRef(wfRevisionEntity.getWorkflowRef());
@@ -132,6 +131,8 @@ public class DAGUtility {
           }
           LOGGER.debug("[{}] Found Task Template: {} ({})", wfRunEntity.getId(), taskTemplate.get().getName(), taskTemplate.get().getId());
           executionTask.setTemplateResults(taskTemplate.get().getSpec().getResults());
+          executionTask.getLabels().putAll(wfRevisionTask.getLabels());
+          executionTask.getLabels().putAll(taskTemplate.get().getLabels());
 
           //Set Task RunParams
           if (taskTemplate.get().getSpec().getParams() != null && !taskTemplate.get().getSpec().getParams().isEmpty()) {
