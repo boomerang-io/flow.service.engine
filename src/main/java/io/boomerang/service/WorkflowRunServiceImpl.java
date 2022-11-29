@@ -155,14 +155,15 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     final Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity =
         this.workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflow.getId());
     if (optWorkflowRevisionEntity.isPresent()) {
-      WorkflowRevisionEntity revision = optWorkflowRevisionEntity.get();
+      WorkflowRevisionEntity wfRevision = optWorkflowRevisionEntity.get();
       final WorkflowRunEntity wfRunEntity = new WorkflowRunEntity();
-      wfRunEntity.setWorkflowRevisionRef(revision.getId());
-      wfRunEntity.setWorkflowRef(revision.getWorkflowRef());
+      wfRunEntity.setWorkflowRevisionRef(wfRevision.getId());
+      wfRunEntity.setWorkflowRef(wfRevision.getWorkflowRef());
       wfRunEntity.setCreationDate(new Date());
       wfRunEntity.setStatus(RunStatus.notstarted);
       wfRunEntity.putLabels(workflow.getLabels());
-      wfRunEntity.setParams(ParameterUtil.paramSpecToRunParam(revision.getParams()));
+      wfRunEntity.setParams(ParameterUtil.paramSpecToRunParam(wfRevision.getParams()));
+      wfRunEntity.setWorkspaces(wfRevision.getWorkspaces());
 
       // Add values from Run Request if Present
       if (optRunRequest.isPresent()) {
@@ -170,6 +171,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         wfRunEntity.putLabels(optRunRequest.get().getLabels());
         wfRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
         wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(), optRunRequest.get().getParams()));
+        wfRunEntity.getWorkspaces().addAll(optRunRequest.get().getWorkspaces());
       }
 
       // TODO: add trigger and set initiatedBy
@@ -179,8 +181,6 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       // activity.setInitiatedById(userEntity.getId());
       // }
 
-      // TODO: add resources
-      // workflowRun.setResources(null);
       workflowRunRepository.save(wfRunEntity);
 
       // TODO: Check if Workflow is active and triggers enabled
@@ -213,6 +213,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         wfRunEntity.putLabels(optRunRequest.get().getLabels());
         wfRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
         wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(), optRunRequest.get().getParams()));
+        wfRunEntity.getWorkspaces().addAll(optRunRequest.get().getWorkspaces());
         workflowRunRepository.save(wfRunEntity);
       }
 

@@ -35,6 +35,7 @@ public class Task {
   private List<TaskTemplateResult> results;
   
   //Optional - the default is that the workspace goes to all Tasks
+  //Not supported by all integrations
   private List<TaskWorkspace> workspaces;
 
   private Map<String, Object> unknownFields = new HashMap<>();

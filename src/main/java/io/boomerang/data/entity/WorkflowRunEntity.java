@@ -7,12 +7,15 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.model.RunError;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
+import io.boomerang.model.WorkflowWorkspace;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 
@@ -58,7 +61,7 @@ public class WorkflowRunEntity   {
 
   private List<RunResult> results = new LinkedList<>();
   
-//private List<Resources> resources;
+  private List<WorkflowWorkspace> workspaces = new LinkedList<>();
 
   public Map<String, String> getLabels() {
     return labels;
@@ -202,6 +205,14 @@ public class WorkflowRunEntity   {
 
   public void setResults(List<RunResult> results) {
     this.results = results;
+  }
+
+  public List<WorkflowWorkspace> getWorkspaces() {
+    return workspaces;
+  }
+
+  public void setWorkspaces(List<WorkflowWorkspace> workspaces) {
+    this.workspaces = workspaces;
   }
   
 }

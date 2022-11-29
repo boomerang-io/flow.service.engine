@@ -53,8 +53,8 @@ public class Workflow {
   private List<ParamSpec> params = new LinkedList<>();
   
   //For compatability between different key maintainer(s)
-  @JsonAlias("resources")
   @JsonProperty("workspaces")
+  @JsonAlias("resources")
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
 
   private Map<String, Object> unknownFields = new HashMap<>();
