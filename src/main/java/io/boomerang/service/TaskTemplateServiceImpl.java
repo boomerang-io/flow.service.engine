@@ -3,6 +3,7 @@ package io.boomerang.service;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.EnumUtils;
@@ -22,6 +23,7 @@ import io.boomerang.data.model.TaskTemplateStatus;
 import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
+import io.boomerang.model.ChangeLog;
 import io.boomerang.model.TaskTemplate;
 
 @Service
@@ -54,36 +56,17 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
 
   @Override
   public ResponseEntity<TaskTemplate> create(TaskTemplate taskTemplate) {
+    
+    //TODO additional checks for mandatory fields
+    if (taskTemplateRepository.findByNameAndLatestVersion(taskTemplate.getName()).isPresent()) {
+      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_ALREADY_EXISTS, taskTemplate.getName());
+    }
+    
+    taskTemplate.setVersion(1);
+    taskTemplate.setChangelog(new ChangeLog("Initial Task Template"));
+    taskTemplate.setCreationDate(new Date());
     taskTemplateRepository.save(taskTemplate);
-
-    //
-    //
-    //
-    // TaskTemplateSpec taskTemplateSpec = new TaskTemplateSpec();
-    // taskTemplateSpec.setArguments(taskTemplate.getArguments());
-    // taskTemplateSpec.setChangelog(new ChangeLog("Initial Task Template"));
-    // taskTemplateSpec.setCommand(taskTemplate.getCommand());
-    // taskTemplateSpec.setEnvs(taskTemplate.getEnvs());
-    // taskTemplateSpec.setImage(taskTemplate.getImage());
-    // taskTemplateSpec.setParams(taskTemplate.getParams());
-    // taskTemplateSpec.setResults(taskTemplate.getResults());
-    // taskTemplateSpec.setScript(taskTemplate.getScript());
-    // taskTemplateSpec.setVersion(1);
-    // taskTemplateSpec.setWorkingDir(taskTemplate.getWorkingDir());
-    //
-    // TaskTemplateEntity taskTemplateEntity = new TaskTemplateEntity();
-    // taskTemplateEntity.setAnnotations(taskTemplate.getAnnotations());
-    // taskTemplateEntity.setCategory(taskTemplate.getCategory());
-    // taskTemplateEntity.setCurrentVersion(1);
-    // taskTemplateEntity.setDescription(taskTemplate.getDescription());
-    // taskTemplateEntity.setIcon(taskTemplate.getIcon());
-    // taskTemplateEntity.setLabels(taskTemplate.getLabels());
-    // taskTemplateEntity.setLastModified(new Date());
-    // taskTemplateEntity.setName(taskTemplate.getName());
-    // List<TaskTemplateSpec> taskRemplateRevisions = new LinkedList<>();
-    // taskRemplateRevisions.add(taskTemplateSpec);
-    // taskTemplateEntity.setRevisions(taskRemplateRevisions);
-    //
+    
     // taskTemplateEntity = taskTemplateRepository.save(taskTemplateEntity);
     // taskTemplate.setId(taskTemplateEntity.getId());
     return ResponseEntity.ok(taskTemplate);
