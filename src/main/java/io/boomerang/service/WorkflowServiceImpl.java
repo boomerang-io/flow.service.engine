@@ -111,7 +111,6 @@ public class WorkflowServiceImpl implements WorkflowService {
     wfRevisionEntity.setParams(workflow.getParams());
     wfRevisionEntity.setWorkspaces(workflow.getWorkspaces());
     wfRevisionEntity.setTasks(TaskMapper.tasksToListOfRevisionTasks(workflow.getTasks()));
-    //TODO: do this better
     wfRevisionEntity.setConfig((List<WorkflowConfig>) workflow.otherFields().get("config"));
 
     // Check Task Names are unique

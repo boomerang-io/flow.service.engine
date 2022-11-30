@@ -24,6 +24,7 @@ public class TaskTemplateEntity {
   @Id
   private String id;
   private String name;
+  private String displayName;
   private String description;
   private Map<String, String> labels = new HashMap<>();
   private Map<String, Object> annotations = new HashMap<>();
@@ -169,5 +170,13 @@ public class TaskTemplateEntity {
 
   public void setConfig(List<TaskTemplateConfig> config) {
     this.config = config;
+  }
+
+  public String getDisplayName() {
+    return displayName;
+  }
+
+  public void setDisplayName(String displayName) {
+    this.displayName = displayName;
   }
 }

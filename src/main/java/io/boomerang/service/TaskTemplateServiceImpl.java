@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,11 +58,18 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
 
   @Override
   public ResponseEntity<TaskTemplate> create(TaskTemplate taskTemplate) {
+    //Name Check
+    String regex = "^([0-9a-z\\-]+)$";
+    if (!taskTemplate.getName().matches(regex)) {
+      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, taskTemplate.getName());
+    }
     
-    //TODO additional checks for mandatory fields
+    //Unique Name Check
     if (taskTemplateRepository.findByNameAndLatestVersion(taskTemplate.getName()).isPresent()) {
       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_ALREADY_EXISTS, taskTemplate.getName());
     }
+    
+    //TODO additional checks for mandatory fields
     
     taskTemplate.setVersion(1);
     taskTemplate.setChangelog(new ChangeLog("Initial Task Template"));

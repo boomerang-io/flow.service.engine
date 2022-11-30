@@ -50,7 +50,8 @@ public class TaskTemplateV1Controller {
   }
 
   @PostMapping(value = "/")
-  @Operation(summary = "Create a new Task Template")
+  @Operation(summary = "Create a new Task Template",
+            description = "On Create the name needs to be unique and must only contain alphanumeric and - characeters.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<TaskTemplate> createWorkflow(@RequestBody TaskTemplate taskTemplate) {

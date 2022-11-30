@@ -56,6 +56,8 @@ public class Workflow {
   @JsonProperty("workspaces")
   @JsonAlias("resources")
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
+  
+  private List<WorkflowConfig> config;
 
   private Map<String, Object> unknownFields = new HashMap<>();
 
@@ -189,5 +191,13 @@ public class Workflow {
 
   public void setWorkspaces(List<WorkflowWorkspace> workspaces) {
     this.workspaces = workspaces;
+  }
+
+  public List<WorkflowConfig> getConfig() {
+    return config;
+  }
+
+  public void setConfig(List<WorkflowConfig> config) {
+    this.config = config;
   } 
 }

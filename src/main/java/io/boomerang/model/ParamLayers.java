@@ -3,6 +3,8 @@ package io.boomerang.model;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.util.TreeMap;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -13,6 +15,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ParamLayers {
+  private static final Logger LOGGER = LogManager.getLogger();
 
   private boolean includeGlobalProperties = true;
 
@@ -94,7 +97,7 @@ public class ParamLayers {
 
     copyProperties(teamProperties, finalProperties, "team", includeScope);
     copyProperties(workflowProperties, finalProperties, "workflow", includeScope);
-    copyProperties(taskInputProperties, finalProperties, "workflow", includeScope);
+    copyProperties(taskInputProperties, finalProperties, null, includeScope);
     copyProperties(systemProperties, finalProperties, "system", includeScope);
 
     copyProperties( this.getReservedProperties(), finalProperties, null, false);
@@ -115,6 +118,7 @@ public class ParamLayers {
   private void copyProperties(Map<String, Object> source, Map<String, Object> target, String prefix,
       boolean inludeScope) {
     for (Entry<String, Object> entry : source.entrySet()) {
+      LOGGER.debug("Parameter: " + entry.toString());
       String key = entry.getKey();
       Object value = entry.getValue();
       if (value != null) {
@@ -137,7 +141,7 @@ public class ParamLayers {
 
     copyFlatProperties(teamProperties, finalProperties, "team");
     copyFlatProperties(workflowProperties, finalProperties, "workflow");
-    copyFlatProperties(taskInputProperties, finalProperties, "workflow");
+    copyFlatProperties(taskInputProperties, finalProperties, null);
     copyFlatProperties(systemProperties, finalProperties, "system");
 
     copyFlatProperties( this.getReservedProperties(), finalProperties, null);
@@ -148,6 +152,7 @@ public class ParamLayers {
 
   private void copyFlatProperties(Map<String, Object> source, Map<String, Object> target, String prefix) {
     for (Entry<String, Object> entry : source.entrySet()) {
+      LOGGER.debug("Parameter: " + entry.toString());
       String key = entry.getKey();
       Object value = entry.getValue();
       if (value != null) {
