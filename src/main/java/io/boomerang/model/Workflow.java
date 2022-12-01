@@ -6,7 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.BeanUtils;
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -16,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
+import io.boomerang.util.TaskMapper;
 
 /*
  * Workflow Model joining Workflow Entity and Workflow Revision Entity
@@ -52,9 +52,7 @@ public class Workflow {
 
   private List<ParamSpec> params = new LinkedList<>();
   
-  //For compatability between different key maintainer(s)
   @JsonProperty("workspaces")
-  @JsonAlias("resources")
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
   
   private List<WorkflowConfig> config;
@@ -79,6 +77,8 @@ public class Workflow {
   public Workflow(WorkflowEntity wfEntity, WorkflowRevisionEntity wfRevisionEntity) {
     BeanUtils.copyProperties(wfEntity, this);
     BeanUtils.copyProperties(wfRevisionEntity, this, "tasks");
+    this.setTasks(TaskMapper.revisionTasksToListOfTasks(wfRevisionEntity.getTasks()));
+    
   }
 
   public String getId() {

@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,6 +29,10 @@ import io.boomerang.model.TaskTemplate;
 @Service
 public class TaskTemplateServiceImpl implements TaskTemplateService {
   private static final Logger LOGGER = LogManager.getLogger();
+  
+  private static final String CHANGELOG_INITIAL = "Initial Task Template";
+  
+  private static final String CHANGELOG_UPDATE = "Updated Task Template";
 
   @Autowired
   private TaskTemplateRepository taskTemplateRepository;
@@ -69,16 +71,60 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_ALREADY_EXISTS, taskTemplate.getName());
     }
     
+    //Set Display Name if not provided
+    if (taskTemplate.getDisplayName() == null || taskTemplate.getDisplayName().isBlank()) {
+      taskTemplate.setDisplayName(taskTemplate.getName());
+    }
+    
     //TODO additional checks for mandatory fields
+    //I.e. if TaskTemplate is of type template, then it must include xyz
     
     taskTemplate.setVersion(1);
-    taskTemplate.setChangelog(new ChangeLog("Initial Task Template"));
+    taskTemplate.setChangelog(new ChangeLog(CHANGELOG_INITIAL));
     taskTemplate.setCreationDate(new Date());
     taskTemplateRepository.save(taskTemplate);
     
     // taskTemplateEntity = taskTemplateRepository.save(taskTemplateEntity);
     // taskTemplate.setId(taskTemplateEntity.getId());
     return ResponseEntity.ok(taskTemplate);
+  }
+  
+  //TODO: handle more of the apply i.e. if original has element, and new does not, keep the original element.
+  @Override
+  public ResponseEntity<TaskTemplate> apply(TaskTemplate taskTemplate, boolean replace) {
+    //Name Check
+    String regex = "^([0-9a-z\\-]+)$";
+    if (!taskTemplate.getName().matches(regex)) {
+      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, taskTemplate.getName());
+    }
+    
+    //Does it already exist?
+    Optional<TaskTemplateEntity> taskTemplateEntity = taskTemplateRepository.findByNameAndLatestVersion(taskTemplate.getName());
+    if (!taskTemplateEntity.isPresent()) {
+      return this.create(taskTemplate);
+    }
+    
+    if (!taskTemplateEntity.get().getScope().equals(taskTemplate.getScope())) {
+      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_SCOPE_CHANGE, taskTemplateEntity.get().getScope(), taskTemplate.getScope());
+    }
+    
+    //Override version, creation date, and check ChangeLog
+    if (replace) {
+      taskTemplate.setId(taskTemplateEntity.get().getId());
+      if (taskTemplate.getChangelog() == null || taskTemplate.getChangelog().getReason() != null) {
+        taskTemplate.setChangelog(new ChangeLog(taskTemplateEntity.get().getVersion().equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE));
+      }
+    } else {
+      taskTemplate.setId(null);
+      taskTemplate.setVersion(taskTemplateEntity.get().getVersion() + 1);
+      if (taskTemplate.getChangelog() == null || taskTemplate.getChangelog().getReason() != null) {
+        taskTemplate.setChangelog(new ChangeLog(CHANGELOG_UPDATE));
+      }
+    }
+    taskTemplate.setCreationDate(new Date());
+    TaskTemplateEntity savedEntity = taskTemplateRepository.save(taskTemplate);
+    TaskTemplate savedTemplate = new TaskTemplate(savedEntity);
+    return ResponseEntity.ok(savedTemplate);
   }
 
   @Override

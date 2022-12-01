@@ -16,6 +16,8 @@ public interface WorkflowService {
 
   Page<WorkflowEntity> query(Pageable pageable, Optional<List<String>> labels,
       Optional<List<String>> status);
+
+  ResponseEntity<Workflow> apply(Workflow workflow, Boolean replace);
 //
 //  WorkflowSummary updateWorkflow(WorkflowSummary summary);
 //

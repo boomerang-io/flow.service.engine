@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -48,15 +49,6 @@ public class TaskTemplateV1Controller {
       required = false) @RequestParam(required = false) Optional<Integer> version) {
     return taskTemplateService.get(name, version);
   }
-
-  @PostMapping(value = "/")
-  @Operation(summary = "Create a new Task Template",
-            description = "On Create the name needs to be unique and must only contain alphanumeric and - characeters.")
-  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
-      @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<TaskTemplate> createWorkflow(@RequestBody TaskTemplate taskTemplate) {
-    return taskTemplateService.create(taskTemplate);
-  }
   
   @GetMapping(value = "/query")
   @Operation(summary = "Search for Task Templates")
@@ -76,5 +68,26 @@ public class TaskTemplateV1Controller {
     final Sort sort = Sort.by(new Order(Direction.ASC, "creationDate"));
     final Pageable pageable = PageRequest.of(page, limit, sort);
     return taskTemplateService.query(pageable, labels, status);
+  }
+
+  @PostMapping(value = "/")
+  @Operation(summary = "Create a new Task Template",
+            description = "The name needs to be unique and must only contain alphanumeric and - characeters.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public ResponseEntity<TaskTemplate> createTaskTemplate(@RequestBody TaskTemplate taskTemplate) {
+    return taskTemplateService.create(taskTemplate);
+  }
+
+  @PutMapping(value = "/")
+  @Operation(summary = "Update, or create new, Task Template",
+            description = "The name must only contain alphanumeric and - characeters. If the name exists, apply will create a new version.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public ResponseEntity<TaskTemplate> applyTaskTemplate(@RequestBody TaskTemplate taskTemplate,
+      @Parameter(name = "replace",
+      description = "Replace existing version",
+      required = false) @RequestParam(required = false, defaultValue = "false") Boolean replace) {
+    return taskTemplateService.apply(taskTemplate, replace);
   }
 }

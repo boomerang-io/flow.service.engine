@@ -17,6 +17,8 @@ public interface TaskTemplateService {
   Page<TaskTemplateEntity> query(Pageable pageable, Optional<List<String>> labels,
       Optional<List<String>> status);
 
+  ResponseEntity<TaskTemplate> apply(TaskTemplate taskTemplate, boolean replace);
+
 //  TektonTask getTaskTemplateYamlWithId(String id);
 //  
 //  List<FlowTaskTemplate> getAllTaskTemplates(TemplateScope scope, String teamId);

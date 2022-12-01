@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -79,13 +80,15 @@ public class WorkflowV1Controller {
     return workflowService.create(workflow);
   }
 
-  //TODO
-  @PostMapping(value = "/{workflowId}")
-  @Operation(summary = "Update a workflow and create a new workflow revision")
+  @PutMapping(value = "/")
+  @Operation(summary = "Update, or create new, Workflow")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<Workflow> createWorkflowRevision(@RequestBody Workflow workflow) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public ResponseEntity<Workflow> applyWorkflow(@RequestBody Workflow workflow,
+      @Parameter(name = "replace",
+      description = "Replace existing version",
+      required = false) @RequestParam(required = false, defaultValue = "false") Boolean replace) {
+    return workflowService.apply(workflow, replace);
   }
 
   //TODO

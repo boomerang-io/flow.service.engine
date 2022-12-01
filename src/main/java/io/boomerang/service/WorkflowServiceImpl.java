@@ -29,11 +29,9 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.Workflow;
-import io.boomerang.model.WorkflowConfig;
 import io.boomerang.model.WorkflowStatus;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
-import io.boomerang.util.ParameterUtil;
 import io.boomerang.util.TaskMapper;
 
 /*
@@ -42,6 +40,10 @@ import io.boomerang.util.TaskMapper;
 @Service
 public class WorkflowServiceImpl implements WorkflowService {
   private static final Logger LOGGER = LogManager.getLogger();
+  
+  private static final String CHANGELOG_INITIAL = "Initial Workflow";
+  
+  private static final String CHANGELOG_UPDATE = "Updated Workflow";
 
   @Autowired
   private WorkflowRepository workflowRepository;
@@ -90,71 +92,6 @@ public class WorkflowServiceImpl implements WorkflowService {
     return ResponseEntity.ok(workflow);
   }
 
-  /*
-   * Adds a new Workflow as WorkflowEntity and WorkflowRevisionEntity
-   */
-  @Override
-  public ResponseEntity<Workflow> create(Workflow workflow) {
-    WorkflowEntity wfEntity = new WorkflowEntity();
-    wfEntity.setName(workflow.getName());
-    wfEntity.setIcon(workflow.getIcon());
-    wfEntity.setShortDescription(workflow.getShortDescription());
-    wfEntity.setDescription(workflow.getDescription());
-    wfEntity.setLabels(workflow.getLabels());
-    wfEntity.setAnnotations(workflow.getAnnotations());
-    wfEntity.setStatus(WorkflowStatus.active);
-
-    WorkflowRevisionEntity wfRevisionEntity = new WorkflowRevisionEntity();
-    wfRevisionEntity.setVersion(1);
-    wfRevisionEntity.setChangelog(new ChangeLog("Initial Workflow"));
-    wfRevisionEntity.setMarkdown(workflow.getMarkdown());
-    wfRevisionEntity.setParams(workflow.getParams());
-    wfRevisionEntity.setWorkspaces(workflow.getWorkspaces());
-    wfRevisionEntity.setTasks(TaskMapper.tasksToListOfRevisionTasks(workflow.getTasks()));
-    wfRevisionEntity.setConfig((List<WorkflowConfig>) workflow.otherFields().get("config"));
-
-    // Check Task Names are unique
-    List<String> filteredNames =
-        wfRevisionEntity.getTasks().stream().map(t -> t.getName()).collect(Collectors.toList());
-    List<String> uniqueFilteredNames =
-        filteredNames.stream().distinct().collect(Collectors.toList());
-    LOGGER.debug("Name sizes: {} -> {}", filteredNames, uniqueFilteredNames);
-    if (filteredNames.size() != uniqueFilteredNames.size()) {
-      throw new BoomerangException(BoomerangError.WORKFLOW_NON_UNIQUE_TASK_NAME);
-    }
-
-    // Check Task Template references are valid
-    for (final WorkflowRevisionTask wfRevisionTask : wfRevisionEntity.getTasks()) {
-      if (!TaskType.start.equals(wfRevisionTask.getType())
-          && !TaskType.end.equals(wfRevisionTask.getType())) {
-
-        //Should separate into a shared utility with DAGUtility:115
-        String templateRef = wfRevisionTask.getTemplateRef();
-        Optional<TaskTemplateEntity> taskTemplate;
-        if (wfRevisionTask.getTemplateVersion() != null) {
-          taskTemplate = taskTemplateRepository.findByNameAndVersion(templateRef,
-              wfRevisionTask.getTemplateVersion());
-          if (taskTemplate.isEmpty()) {
-            throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
-                wfRevisionTask.getTemplateVersion());
-          }
-        } else {
-          taskTemplate = taskTemplateRepository.findByNameAndLatestVersion(templateRef);
-          if (taskTemplate.isEmpty()) {
-            throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
-                "latest");
-          }
-        }
-      }
-    }
-    wfEntity = workflowRepository.save(wfEntity);
-    workflow.setId(wfEntity.getId());
-    wfRevisionEntity.setWorkflowRef(wfEntity.getId());
-    workflowRevisionRepository.save(wfRevisionEntity);
-
-    return ResponseEntity.ok(workflow);
-  }
-
   @Override
   public Page<WorkflowEntity> query(Pageable pageable, Optional<List<String>> queryLabels,
       Optional<List<String>> queryStatus) {
@@ -199,5 +136,131 @@ public class WorkflowServiceImpl implements WorkflowService {
         () -> mongoTemplate.count(query, WorkflowEntity.class));
 
     return pages;
+  }
+
+  /*
+   * Adds a new Workflow as WorkflowEntity and WorkflowRevisionEntity
+   */
+  @Override
+  public ResponseEntity<Workflow> create(Workflow workflow) {
+    WorkflowEntity wfEntity = new WorkflowEntity();
+    wfEntity.setName(workflow.getName());
+    wfEntity.setIcon(workflow.getIcon());
+    wfEntity.setShortDescription(workflow.getShortDescription());
+    wfEntity.setDescription(workflow.getDescription());
+    wfEntity.setLabels(workflow.getLabels());
+    wfEntity.setAnnotations(workflow.getAnnotations());
+    wfEntity.setStatus(WorkflowStatus.active);
+
+    WorkflowRevisionEntity wfRevisionEntity = createWorkflowRevisionEntity(workflow, 1);
+    wfEntity = workflowRepository.save(wfEntity);
+    workflow.setId(wfEntity.getId());
+    wfRevisionEntity.setWorkflowRef(wfEntity.getId());
+    workflowRevisionRepository.save(wfRevisionEntity);
+    //TODO: figure out a better approach to rollback
+
+    return ResponseEntity.ok(workflow);
+  }
+
+  private WorkflowRevisionEntity createWorkflowRevisionEntity(Workflow workflow, Integer version) {
+    WorkflowRevisionEntity wfRevisionEntity = new WorkflowRevisionEntity();
+    wfRevisionEntity.setVersion(version);
+    wfRevisionEntity.setChangelog(new ChangeLog(version.equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE));
+    wfRevisionEntity.setMarkdown(workflow.getMarkdown());
+    wfRevisionEntity.setParams(workflow.getParams());
+    wfRevisionEntity.setWorkspaces(workflow.getWorkspaces());
+    wfRevisionEntity.setTasks(TaskMapper.tasksToListOfRevisionTasks(workflow.getTasks()));
+    wfRevisionEntity.setConfig(workflow.getConfig());
+
+    // Check Task Names are unique
+    List<String> filteredNames =
+        wfRevisionEntity.getTasks().stream().map(t -> t.getName()).collect(Collectors.toList());
+    List<String> uniqueFilteredNames =
+        filteredNames.stream().distinct().collect(Collectors.toList());
+    LOGGER.debug("Name sizes: {} -> {}", filteredNames, uniqueFilteredNames);
+    if (filteredNames.size() != uniqueFilteredNames.size()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_NON_UNIQUE_TASK_NAME);
+    }
+
+    // Check Task Template references are valid
+    for (final WorkflowRevisionTask wfRevisionTask : wfRevisionEntity.getTasks()) {
+      if (!TaskType.start.equals(wfRevisionTask.getType())
+          && !TaskType.end.equals(wfRevisionTask.getType())) {
+
+        //Should separate into a shared utility with DAGUtility:115
+        String templateRef = wfRevisionTask.getTemplateRef();
+        Optional<TaskTemplateEntity> taskTemplate;
+        if (wfRevisionTask.getTemplateVersion() != null) {
+          taskTemplate = taskTemplateRepository.findByNameAndVersion(templateRef,
+              wfRevisionTask.getTemplateVersion());
+          if (taskTemplate.isEmpty()) {
+            throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
+                wfRevisionTask.getTemplateVersion());
+          }
+        } else {
+          taskTemplate = taskTemplateRepository.findByNameAndLatestVersion(templateRef);
+          if (taskTemplate.isEmpty()) {
+            throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
+                "latest");
+          }
+        }
+      }
+    }
+    return wfRevisionEntity;
+  }
+
+  //TODO: handle more of the apply i.e. if original has element, and new does not, keep the original element.
+  @Override
+  public ResponseEntity<Workflow> apply(Workflow workflow, Boolean replace) {
+    if (workflow.getId() == null || workflow.getId().isBlank() || workflowRepository.findById(workflow.getId()).isEmpty()) {
+      return this.create(workflow);
+    }
+    
+    //Update the Workflow Entity with new details
+    WorkflowEntity workflowEntity = workflowRepository.findById(workflow.getId()).get();
+    if (workflow.getName()!= null && !workflow.getName().isBlank()) {
+      workflowEntity.setName(workflow.getName());
+    }
+    if (workflow.getStatus()!= null) {
+      workflowEntity.setStatus(workflow.getStatus());
+    }
+    if (workflow.getDescription()!= null && !workflow.getDescription().isBlank()) {
+      workflowEntity.setDescription(workflow.getDescription());
+    }
+    if (workflow.getShortDescription()!= null && !workflow.getShortDescription().isBlank()) {
+      workflowEntity.setShortDescription(workflow.getShortDescription());
+    }
+    if (workflow.getLabels()!= null && !workflow.getLabels().isEmpty()) {
+      if (replace) {
+        workflowEntity.setLabels(workflow.getLabels());
+      } else {
+        workflowEntity.getLabels().putAll(workflow.getLabels());
+      }
+    }
+    if (workflow.getAnnotations()!= null && !workflow.getAnnotations().isEmpty()) {
+      if (replace) {
+        workflowEntity.setAnnotations(workflow.getAnnotations());
+      } else {
+        workflowEntity.getAnnotations().putAll(workflow.getAnnotations());
+      }
+    }
+    workflowRepository.save(workflowEntity);
+    
+    //TODO, the creation of new better to include fields available on the old that aren't available on the new.
+    WorkflowRevisionEntity workflowRevisionEntity = workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflow.getId()).get();
+    Integer version = workflowRevisionEntity.getVersion();
+    WorkflowRevisionEntity newWorkflowRevisionEntity = null;
+    if (!replace) {
+      version++;
+    }
+    newWorkflowRevisionEntity = createWorkflowRevisionEntity(workflow, version);
+    if (replace) {
+      newWorkflowRevisionEntity.setId(workflowRevisionEntity.getId());
+    }
+    newWorkflowRevisionEntity.setWorkflowRef(workflowRevisionEntity.getWorkflowRef());
+    
+    workflowRevisionRepository.save(newWorkflowRevisionEntity);
+    
+    return ResponseEntity.ok(new Workflow(workflowEntity, newWorkflowRevisionEntity));
   }
 }
