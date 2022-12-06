@@ -16,7 +16,7 @@ public interface WorkflowRunService {
   Page<WorkflowRunEntity> query(Pageable pageable, Optional<List<String>> labels,
       Optional<List<String>> status, Optional<List<String>> phase);
 
-  ResponseEntity<WorkflowRun> submit(String workflowId, Optional<WorkflowRunRequest> runRequest);
+  ResponseEntity<WorkflowRun> submit(String workflowId, Optional<Integer> version, boolean start, Optional<WorkflowRunRequest> runRequest);
 
   ResponseEntity<WorkflowRun> start(String workflowRunId, Optional<WorkflowRunRequest> runRequest);
 

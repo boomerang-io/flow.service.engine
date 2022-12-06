@@ -83,8 +83,14 @@ public class WorkflowRunV1Controller {
       @Parameter(name = "workflowId",
       description = "ID of Workflow to Request a Run for",
       required = true) @PathVariable(required = true) String workflowId,
+      @Parameter(name = "version",
+      description = "Workflow Version",
+      required = false) @RequestParam(required = false) Optional<Integer> version,
+      @Parameter(name = "start",
+      description = "Start the Workflow Run immediately after submission",
+      required = false) @RequestParam(required = false, defaultValue = "false") boolean start,
       @RequestBody Optional<WorkflowRunRequest> runRequest) {
-    return workflowRunService.submit(workflowId, runRequest);
+    return workflowRunService.submit(workflowId, version, start, runRequest);
   }
 
   @PutMapping(value = "/run/{workflowRunId}/start")

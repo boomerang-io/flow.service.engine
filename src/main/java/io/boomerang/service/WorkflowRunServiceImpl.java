@@ -139,7 +139,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   }
 
   @Override
-  public ResponseEntity<WorkflowRun> submit(String workflowId,
+  public ResponseEntity<WorkflowRun> submit(String workflowId, Optional<Integer> version, boolean start,
       Optional<WorkflowRunRequest> optRunRequest) {
     if (workflowId == null || workflowId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
@@ -151,9 +151,18 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     } else {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
-
-    final Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity =
-        this.workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflow.getId());
+    
+    Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity;
+    if (version.isPresent()) {
+      optWorkflowRevisionEntity =
+          workflowRevisionRepository.findByWorkflowRefAndVersion(workflowId, version.get());
+      if (!optWorkflowRevisionEntity.isPresent()) {
+        throw new BoomerangException(BoomerangError.WORKFLOW_REVISION_NOT_FOUND);
+      }
+    } else {
+      optWorkflowRevisionEntity =
+          workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflowId);
+    }
     if (optWorkflowRevisionEntity.isPresent()) {
       WorkflowRevisionEntity wfRevision = optWorkflowRevisionEntity.get();
       final WorkflowRunEntity wfRunEntity = new WorkflowRunEntity();
@@ -189,9 +198,13 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
       workflowExecutionClient.queueRevision(workflowExecutionService, wfRunEntity);
 
-      final WorkflowRun response = new WorkflowRun(wfRunEntity);
-      response.setTasks(getTaskRuns(wfRunEntity.getId()));
-      return ResponseEntity.ok(response);
+      if (start) {
+        return this.start(wfRunEntity.getId(), Optional.empty());
+      } else {
+        final WorkflowRun response = new WorkflowRun(wfRunEntity);
+        response.setTasks(getTaskRuns(wfRunEntity.getId()));
+        return ResponseEntity.ok(response);
+      }
     } else {
       throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REQ);
     }

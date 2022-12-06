@@ -12,7 +12,7 @@ public interface WorkflowService {
 
   ResponseEntity<Workflow> get(String workflowId, Optional<Integer> version);
 
-  ResponseEntity<Workflow> create(Workflow workflow);
+  ResponseEntity<Workflow> create(Workflow workflow, boolean useId);
 
   Page<WorkflowEntity> query(Pageable pageable, Optional<List<String>> labels,
       Optional<List<String>> status);

@@ -30,6 +30,7 @@ import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowStatus;
+import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.util.TaskMapper;
@@ -142,8 +143,11 @@ public class WorkflowServiceImpl implements WorkflowService {
    * Adds a new Workflow as WorkflowEntity and WorkflowRevisionEntity
    */
   @Override
-  public ResponseEntity<Workflow> create(Workflow workflow) {
+  public ResponseEntity<Workflow> create(Workflow workflow, boolean useId) {
     WorkflowEntity wfEntity = new WorkflowEntity();
+    if (useId) {
+      wfEntity.setId(workflow.getId());
+    }
     wfEntity.setName(workflow.getName());
     wfEntity.setIcon(workflow.getIcon());
     wfEntity.setShortDescription(workflow.getShortDescription());
@@ -151,6 +155,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     wfEntity.setLabels(workflow.getLabels());
     wfEntity.setAnnotations(workflow.getAnnotations());
     wfEntity.setStatus(WorkflowStatus.active);
+    wfEntity.setTriggers(workflow.getTriggers() != null ? workflow.getTriggers() : new WorkflowTrigger());
 
     WorkflowRevisionEntity wfRevisionEntity = createWorkflowRevisionEntity(workflow, 1);
     wfEntity = workflowRepository.save(wfEntity);
@@ -213,7 +218,7 @@ public class WorkflowServiceImpl implements WorkflowService {
   @Override
   public ResponseEntity<Workflow> apply(Workflow workflow, Boolean replace) {
     if (workflow.getId() == null || workflow.getId().isBlank() || workflowRepository.findById(workflow.getId()).isEmpty()) {
-      return this.create(workflow);
+        return this.create(workflow, replace);
     }
     
     //Update the Workflow Entity with new details
@@ -243,6 +248,9 @@ public class WorkflowServiceImpl implements WorkflowService {
       } else {
         workflowEntity.getAnnotations().putAll(workflow.getAnnotations());
       }
+    }
+    if (workflow.getTriggers() != null) {
+      workflowEntity.setAnnotations(null);
     }
     workflowRepository.save(workflowEntity);
     

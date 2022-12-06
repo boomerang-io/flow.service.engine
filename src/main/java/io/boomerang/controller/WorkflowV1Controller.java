@@ -77,17 +77,17 @@ public class WorkflowV1Controller {
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<Workflow> createWorkflow(@RequestBody Workflow workflow) {
-    return workflowService.create(workflow);
+    return workflowService.create(workflow, false);
   }
 
   @PutMapping(value = "/")
-  @Operation(summary = "Update, or create new, Workflow")
+  @Operation(summary = "Update, replace, or create new, Workflow")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<Workflow> applyWorkflow(@RequestBody Workflow workflow,
       @Parameter(name = "replace",
       description = "Replace existing version",
-      required = false) @RequestParam(required = false, defaultValue = "false") Boolean replace) {
+      required = false) @RequestParam(required = false, defaultValue = "false") boolean replace) {
     return workflowService.apply(workflow, replace);
   }
 

@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
@@ -48,11 +47,17 @@ public class Workflow {
   
   private Map<String, Object> annotations = new HashMap<>();
   
+  private boolean upgradesAvailable = false;
+
+  //TODO: need to adjust the triggers model
+  private WorkflowTrigger triggers;
+  
+  private List<WorkflowToken> tokens;
+  
   private List<Task> tasks = new LinkedList<>();
 
   private List<ParamSpec> params = new LinkedList<>();
   
-  @JsonProperty("workspaces")
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
   
   private List<WorkflowConfig> config;
@@ -199,5 +204,29 @@ public class Workflow {
 
   public void setConfig(List<WorkflowConfig> config) {
     this.config = config;
+  }
+
+  public WorkflowTrigger getTriggers() {
+    return triggers;
+  }
+
+  public void setTriggers(WorkflowTrigger triggers) {
+    this.triggers = triggers;
+  }
+
+  public List<WorkflowToken> getTokens() {
+    return tokens;
+  }
+
+  public void setTokens(List<WorkflowToken> tokens) {
+    this.tokens = tokens;
+  }
+
+  public boolean isUpgradesAvailable() {
+    return upgradesAvailable;
+  }
+
+  public void setUpgradesAvailable(boolean upgradesAvailable) {
+    this.upgradesAvailable = upgradesAvailable;
   } 
 }

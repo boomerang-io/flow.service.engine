@@ -428,7 +428,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
        if (workflowId != null) {
          try {
            WorkflowRun wfRunResponse =
-               workflowRunService.submit(workflowId, wfRunRequest).getBody();
+               workflowRunService.submit(workflowId, Optional.empty(), false, wfRunRequest).getBody();
            List<RunResult> wfRunResultResponse = new LinkedList<>();
            RunResult runResult = new RunResult();
            runResult.setName("workflowRunRef");

@@ -80,14 +80,14 @@ public class TaskTemplateV1Controller {
   }
 
   @PutMapping(value = "/")
-  @Operation(summary = "Update, or create new, Task Template",
+  @Operation(summary = "Update, replace, or create new, Task Template",
             description = "The name must only contain alphanumeric and - characeters. If the name exists, apply will create a new version.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<TaskTemplate> applyTaskTemplate(@RequestBody TaskTemplate taskTemplate,
       @Parameter(name = "replace",
       description = "Replace existing version",
-      required = false) @RequestParam(required = false, defaultValue = "false") Boolean replace) {
+      required = false) @RequestParam(required = false, defaultValue = "false") boolean replace) {
     return taskTemplateService.apply(taskTemplate, replace);
   }
 }

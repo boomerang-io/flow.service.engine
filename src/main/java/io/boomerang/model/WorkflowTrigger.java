@@ -10,7 +10,7 @@ public class WorkflowTrigger {
   public WorkflowTrigger() {
     webhook = new TriggerEvent();
     custom = new TriggerEvent();
-    manual = new TriggerEvent();
+    manual = new Trigger();
     scheduler = new TriggerScheduler();
     
     manual.setEnable(Boolean.TRUE);

@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class WorkflowRunRequest {
 
@@ -15,9 +13,6 @@ public class WorkflowRunRequest {
   
   private List<RunParam> params = new LinkedList<>();
   
-  //For compatability between different key maintainer(s)
-  @JsonProperty("workspaces")
-  @JsonAlias("resources")
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
 
   public Map<String, String> getLabels() {
