@@ -58,13 +58,13 @@ public class WorkflowRunV1Controller {
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public Page<WorkflowRunEntity> queryWorkflowRuns(
       @Parameter(name = "labels",
-      description = "Comma separated list of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
+      description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
       required = false) @RequestParam(required = false) Optional<List<String>> labels,
       @Parameter(name = "status",
-      description = "Comma separated list of statuses to filter for. Defaults to all.", example = "succeeded,skipped",
+      description = "List of statuses to filter for. Defaults to all.", example = "succeeded,skipped",
       required = false) @RequestParam(required = false)  Optional<List<String>> status,
       @Parameter(name = "phase",
-      description = "Comma separated list of phases to filter for. Defaults to all.", example = "completed,finalized",
+      description = "List of phases to filter for. Defaults to all.", example = "completed,finalized",
       required = false) @RequestParam(required = false)  Optional<List<String>> phase,
       @Parameter(name = "limit", description = "Result Size", example = "10",
           required = true) @RequestParam(defaultValue = "10") int limit,

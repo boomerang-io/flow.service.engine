@@ -56,10 +56,10 @@ public class TaskTemplateV1Controller {
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public Page<TaskTemplateEntity> queryTaskTemplates(
       @Parameter(name = "labels",
-      description = "Comma separated list of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
+      description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
       required = false) @RequestParam(required = false) Optional<List<String>> labels,
       @Parameter(name = "status",
-      description = "Comma separated list of statuses to filter for.", example = "inactive",
+      description = "List of statuses to filter for.", example = "inactive",
       required = false) @RequestParam(required = false, defaultValue = "active")  Optional<List<String>> status,
       @Parameter(name = "limit", description = "Result Size", example = "10",
           required = true) @RequestParam(defaultValue = "10") int limit,
