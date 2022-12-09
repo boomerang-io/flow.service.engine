@@ -81,7 +81,7 @@ public class Workflow {
 
   public Workflow(WorkflowEntity wfEntity, WorkflowRevisionEntity wfRevisionEntity) {
     BeanUtils.copyProperties(wfEntity, this);
-    BeanUtils.copyProperties(wfRevisionEntity, this, "tasks");
+    BeanUtils.copyProperties(wfRevisionEntity, this, "id", "tasks");
     this.setTasks(TaskMapper.revisionTasksToListOfTasks(wfRevisionEntity.getTasks()));
     
   }

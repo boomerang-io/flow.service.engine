@@ -159,6 +159,8 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       if (!optWorkflowRevisionEntity.isPresent()) {
         throw new BoomerangException(BoomerangError.WORKFLOW_REVISION_NOT_FOUND);
       }
+
+      LOGGER.debug("Workflow Revision: " + optWorkflowRevisionEntity.get().toString());
     } else {
       optWorkflowRevisionEntity =
           workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflowId);

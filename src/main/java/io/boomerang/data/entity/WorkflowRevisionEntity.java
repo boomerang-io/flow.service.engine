@@ -41,8 +41,12 @@ public class WorkflowRevisionEntity {
   
   private List<WorkflowConfig> config;
   
-  //TODO: merge into the DAG
-//  private RestConfig config;
+  @Override
+  public String toString() {
+    return "WorkflowRevisionEntity [id=" + id + ", version=" + version + ", workflowRef="
+        + workflowRef + ", tasks=" + tasks + ", changelog=" + changelog + ", markdown=" + markdown
+        + ", params=" + params + ", workspaces=" + workspaces + ", config=" + config + "]";
+  }
 
   public String getId() {
     return id;
