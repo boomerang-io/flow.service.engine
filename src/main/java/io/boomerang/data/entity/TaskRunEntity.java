@@ -169,6 +169,10 @@ public class TaskRunEntity {
     this.results = results;
   }
 
+  public void addResult(RunResult result) {
+    this.results.add(result);
+  }
+
   public RunStatus getStatus() {
     return status;
   }

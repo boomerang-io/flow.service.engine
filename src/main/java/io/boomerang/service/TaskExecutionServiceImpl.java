@@ -218,12 +218,16 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         //TODO resolve any params
       } else if (TaskType.acquirelock.equals(taskType)) {
         LOGGER.info("[{}] Execute Acquire Lock", wfRunId);
-        lockManager.acquireLock(taskExecution, wfRunEntity.get().getId());
-        taskExecution.setStatus(RunStatus.succeeded);
+        String token = lockManager.acquireTaskLock(taskExecution, wfRunEntity.get().getId());
+        if (token != null) {
+          taskExecution.setStatus(RunStatus.succeeded);
+        } else {
+          taskExecution.setStatus(RunStatus.failed);
+        }
         this.endTask(taskExecution);
       } else if (TaskType.releaselock.equals(taskType)) {
         LOGGER.info("[{}] Execute Release Lock", wfRunId);
-        lockManager.releaseLock(taskExecution, wfRunEntity.get().getId());
+        lockManager.releaseTaskLock(taskExecution, wfRunEntity.get().getId());
         taskExecution.setStatus(RunStatus.succeeded);
         this.endTask(taskExecution);
       } else if (TaskType.runworkflow.equals(taskType)) {
