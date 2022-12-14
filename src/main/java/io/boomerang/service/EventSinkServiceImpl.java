@@ -35,11 +35,14 @@ public class EventSinkServiceImpl implements EventSinkService {
 
   protected static final String LABEL_KEY_INITIATOR_CONTEXT = "initiatorContext";
 
-  @Value("${flow.events.sink.url}")
-  private String sinkUrl;
+  @Value("${flow.events.sink.urls}")
+  private String sinkUrls;
+
+  @Value("${flow.events.sink.enabled}")
+  private boolean sinkEnabled;
 
   @Autowired
-//  @Qualifier("internalRestTemplate")
+  // @Qualifier("internalRestTemplate")
   public RestTemplate restTemplate;
 
   @Override
@@ -111,8 +114,7 @@ public class EventSinkServiceImpl implements EventSinkService {
 
       try {
         // Create status update CloudEvent
-        WorkflowRunStatusEvent statusEvent =
-            EventFactory.buildStatusUpdateEvent(workflowRunEntity);
+        WorkflowRunStatusEvent statusEvent = EventFactory.buildStatusUpdateEvent(workflowRunEntity);
 
         httpSink(statusEvent.toCloudEvent());
         isSuccess = Boolean.TRUE;
@@ -126,21 +128,24 @@ public class EventSinkServiceImpl implements EventSinkService {
   }
 
   public void httpSink(CloudEvent cloudEvent) {
-    final HttpHeaders headers = new HttpHeaders();
-    headers.add("Content-Type", "application/cloudevents+json");
-    
-    byte[]serialized = EventFormatProvider
-        .getInstance()
-        .resolveFormat(JsonFormat.CONTENT_TYPE)
-        .serialize(cloudEvent);
+    if (sinkEnabled && sinkUrls != null && !sinkUrls.isEmpty()) {
+      final HttpHeaders headers = new HttpHeaders();
+      headers.add("Content-Type", "application/cloudevents+json");
 
-    final HttpEntity<byte[]> req = new HttpEntity<>(serialized, headers);
+      byte[] serialized = EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE)
+          .serialize(cloudEvent);
 
-    ResponseEntity<String> responseEntity =
-        restTemplate.exchange(sinkUrl, HttpMethod.POST, req, String.class);
+      final HttpEntity<byte[]> req = new HttpEntity<>(serialized, headers);
 
-    LOGGER.debug("httpSink() - Status Code: " + responseEntity.getStatusCode());
-    LOGGER.debug("httpSink() - Body: " + responseEntity.getBody().toString());
+      String[] sinkUrlList = sinkUrls.split(",");
+      for (String sinkUrl : sinkUrlList) {
+        LOGGER.debug("httpSink() - URL: " + sinkUrl);
+        ResponseEntity<String> responseEntity =
+            restTemplate.exchange(sinkUrl, HttpMethod.POST, req, String.class);
+        LOGGER.debug("httpSink() - Status Code: " + responseEntity.getStatusCode());
+        LOGGER.debug("httpSink() - Body: " + responseEntity.getBody().toString());
+      }
+    }
   }
 
 }
