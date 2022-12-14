@@ -1,7 +1,5 @@
 package io.boomerang.util;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.function.Supplier;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;

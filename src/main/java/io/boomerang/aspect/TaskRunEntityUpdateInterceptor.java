@@ -1,0 +1,60 @@
+package io.boomerang.aspect;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import io.boomerang.data.entity.TaskRunEntity;
+import io.boomerang.data.repository.TaskRunRepository;
+import io.boomerang.service.EventSinkService;
+
+@Aspect
+@Component
+public class TaskRunEntityUpdateInterceptor {
+  private static final Logger LOGGER = LogManager.getLogger();
+
+  @Autowired
+  TaskRunRepository taskRunRepository;
+
+//  @Autowired
+//  private EventingService eventingService;
+  
+  @Autowired
+  EventSinkService eventSinkService;
+
+  @Before("execution(* io.boomerang.data.repository.TaskRunRepository.save(..))"
+      + " && args(entityToBeSaved)")
+  public void beforeSaveInvoked(JoinPoint thisJoinPoint, Object entityToBeSaved) {
+
+    LOGGER.info("Intercepted save action on entity {} from {}", entityToBeSaved,
+        thisJoinPoint.getSignature().getDeclaringTypeName());
+
+    if (entityToBeSaved instanceof TaskRunEntity) {
+      taskRunEntityToBeUpdated((TaskRunEntity) entityToBeSaved);
+    }
+  }
+
+  private void taskRunEntityToBeUpdated(TaskRunEntity newEntity) {
+
+    // Check if activity and workflow IDs are not empty
+    if (StringUtils.isNotBlank(newEntity.getWorkflowRunRef())
+        && StringUtils.isNotBlank(newEntity.getId())) {
+
+      // Retrieve old entity and compare the statuses
+      taskRunRepository.findById(newEntity.getId()).ifPresent(oldEntity -> {
+        if (oldEntity.getStatus() != newEntity.getStatus()) {
+
+          // Status has changed, publish status update CloudEvent
+//          eventingService.publishStatusCloudEvent(newActivityEntity);
+          eventSinkService.publishStatusCloudEvent(newEntity);
+          
+          LOGGER.info("TaskRun Status has changed (from: " + newEntity.getStatus() + ", to: " + newEntity.getStatus() + "), publish status update CloudEvent...");
+        }
+      });
+    }
+  }
+}
