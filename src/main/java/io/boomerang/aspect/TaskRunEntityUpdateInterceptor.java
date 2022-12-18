@@ -46,13 +46,14 @@ public class TaskRunEntityUpdateInterceptor {
 
       // Retrieve old entity and compare the statuses
       taskRunRepository.findById(newEntity.getId()).ifPresent(oldEntity -> {
-        if (oldEntity.getStatus() != newEntity.getStatus()) {
+        if (oldEntity.getStatus() != newEntity.getStatus() || oldEntity.getPhase() != newEntity.getPhase()) {
 
           // Status has changed, publish status update CloudEvent
 //          eventingService.publishStatusCloudEvent(newActivityEntity);
+          //TODO: separate out phase and status events
           eventSinkService.publishStatusCloudEvent(newEntity);
           
-          LOGGER.info("TaskRun Status has changed (from: " + newEntity.getStatus() + ", to: " + newEntity.getStatus() + "), publish status update CloudEvent...");
+          LOGGER.info("TaskRun Status / Phase has changed [Status: " + oldEntity.getStatus() + ", Phase: " + oldEntity.getPhase() + "] -> [Status: " + newEntity.getStatus() + ", Phase: " + newEntity.getPhase() + "].");
         }
       });
     }

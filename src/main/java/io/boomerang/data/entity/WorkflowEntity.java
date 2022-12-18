@@ -31,7 +31,7 @@ public class WorkflowEntity {
   private Map<String, Object> annotations = new HashMap<>();
   private WorkflowTrigger triggers;
   private List<WorkflowToken> tokens;
-  private WorkflowScope scope;
+  private WorkflowScope scope = WorkflowScope.system;
 
   public String getId() {
     return id;

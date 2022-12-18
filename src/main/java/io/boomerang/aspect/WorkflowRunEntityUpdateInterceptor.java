@@ -46,13 +46,14 @@ public class WorkflowRunEntityUpdateInterceptor {
 
       // Retrieve old entity and compare the statuses
       workflowRunRepository.findById(newEntity.getId()).ifPresent(oldEntity -> {
-        if (oldEntity.getStatus() != newEntity.getStatus()) {
+        if (oldEntity.getStatus() != newEntity.getStatus() || oldEntity.getPhase() != newEntity.getPhase()) {
 
           // Status has changed, publish status update CloudEvent
 //          eventingService.publishStatusCloudEvent(newActivityEntity);
+          //TODO: separate out phase and status events
           eventSinkService.publishStatusCloudEvent(newEntity);
 
-          LOGGER.info("WorkflowRun Status has changed (from: " + oldEntity.getStatus() + ", to: " + newEntity.getStatus() + "), publish status update CloudEvent...");
+          LOGGER.info("WorkflowRun Status / Phase has changed [Status: " + oldEntity.getStatus() + ", Phase: " + oldEntity.getPhase() + "] -> [Status: " + newEntity.getStatus() + ", Phase: " + newEntity.getPhase() + "].");
         }
       });
     }
