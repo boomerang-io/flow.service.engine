@@ -75,28 +75,28 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   }
 
   @Override
-  public CompletableFuture<Boolean> startRevision(WorkflowRunEntity workflowExecution) {
+  public CompletableFuture<Boolean> startRevision(WorkflowRunEntity wfRunEntity) {
     final Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity =
-        this.workflowRevisionRepository.findById(workflowExecution.getWorkflowRevisionRef());
+        this.workflowRevisionRepository.findById(wfRunEntity.getWorkflowRevisionRef());
     if (optWorkflowRevisionEntity.isPresent()) {
       WorkflowRevisionEntity wfRevisionEntity = optWorkflowRevisionEntity.get();
-      final List<TaskRunEntity> tasks = dagUtility.createTaskList(wfRevisionEntity, workflowExecution);
-      LOGGER.info("[{}] Found {} tasks: {}", workflowExecution.getId(), tasks.size(), tasks.toString());
+      final List<TaskRunEntity> tasks = dagUtility.createTaskList(wfRevisionEntity, wfRunEntity);
+      LOGGER.info("[{}] Found {} tasks: {}", wfRunEntity.getId(), tasks.size(), tasks.toString());
       final TaskRunEntity start = dagUtility.getTaskByType(tasks, TaskType.start);
       final TaskRunEntity end = dagUtility.getTaskByType(tasks, TaskType.end);
       final Graph<String, DefaultEdge> graph = dagUtility.createGraph(tasks);
-      if (dagUtility.validateWorkflow(workflowExecution, tasks)) {
+      if (dagUtility.validateWorkflow(wfRunEntity, tasks)) {
         //Set Workflow to Running (Status and Phase). From this point, the duration needs to be calculated.
-        workflowExecution.setStartTime(new Date());
-        updateStatusAndSaveWorkflow(workflowExecution, RunStatus.running, RunPhase.running, Optional.empty());
+        wfRunEntity.setStartTime(new Date());
+        updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.running, RunPhase.running, Optional.empty());
         return CompletableFuture
-            .supplyAsync(executeWorkflowAsync(workflowExecution.getId(), start, end, graph, tasks));
+            .supplyAsync(executeWorkflowAsync(wfRunEntity.getId(), start, end, graph, tasks));
       }
-      updateStatusAndSaveWorkflow(workflowExecution, RunStatus.invalid, RunPhase.running, Optional.of("Failed to run workflow: incomplete, or invalid, workflow"));
-      throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION", "[{0}] Failed to run workflow: incomplete, or invalid, workflow", HttpStatus.INTERNAL_SERVER_ERROR, workflowExecution.getId());
+      updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.invalid, RunPhase.running, Optional.of("Failed to run workflow: incomplete, or invalid, workflow"));
+      throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION", "[{0}] Failed to run workflow: incomplete, or invalid, workflow", HttpStatus.INTERNAL_SERVER_ERROR, wfRunEntity.getId());
     }
-    updateStatusAndSaveWorkflow(workflowExecution, RunStatus.invalid, RunPhase.running, Optional.of("Failed to run workflow: incomplete, or invalid, workflow revision: {}"), workflowExecution.getWorkflowRevisionRef());
-    throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION", "[{0}] Failed to run workflow: incomplete, or invalid, workflow revision: {1}", HttpStatus.INTERNAL_SERVER_ERROR, workflowExecution.getId(), workflowExecution.getWorkflowRevisionRef());
+    updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.invalid, RunPhase.running, Optional.of("Failed to run workflow: incomplete, or invalid, workflow revision: {}"), wfRunEntity.getWorkflowRevisionRef());
+    throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION", "[{0}] Failed to run workflow: incomplete, or invalid, workflow revision: {1}", HttpStatus.INTERNAL_SERVER_ERROR, wfRunEntity.getId(), wfRunEntity.getWorkflowRevisionRef());
   }
 
   @Override

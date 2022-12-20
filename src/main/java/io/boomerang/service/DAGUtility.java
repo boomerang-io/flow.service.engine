@@ -131,8 +131,11 @@ public class DAGUtility {
           }
           LOGGER.debug("[{}] Found Task Template: {} ({})", wfRunEntity.getId(), taskTemplate.get().getName(), taskTemplate.get().getId());
           executionTask.setTemplateResults(taskTemplate.get().getSpec().getResults());
-          executionTask.getLabels().putAll(wfRevisionTask.getLabels());
+          // Stack the labels based on label propagation
+          // Task Template -> Workflow Task -> Run 
           executionTask.getLabels().putAll(taskTemplate.get().getLabels());
+          executionTask.getLabels().putAll(wfRevisionTask.getLabels());
+          executionTask.getLabels().putAll(wfRunEntity.getLabels());
 
           //Set Task RunParams
           if (taskTemplate.get().getSpec().getParams() != null && !taskTemplate.get().getSpec().getParams().isEmpty()) {
