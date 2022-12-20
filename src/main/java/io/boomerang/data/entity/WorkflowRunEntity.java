@@ -25,8 +25,6 @@ public class WorkflowRunEntity   {
   @Id
   private String id;
 
-//  private String initiatedByRef;
-
   private Map<String, String> labels = new HashMap<>();
 
   private Map<String, Object> annotations = new HashMap<>();
@@ -54,6 +52,8 @@ public class WorkflowRunEntity   {
   private String workflowRevisionRef;
 
   private String trigger;
+
+  private String initiatedByRef;
   
   private List<RunParam> params = new LinkedList<>();
 
@@ -187,6 +187,14 @@ public class WorkflowRunEntity   {
 
   public void setTrigger(String trigger) {
     this.trigger = trigger;
+  }
+
+  public String getInitiatedByRef() {
+    return initiatedByRef;
+  }
+
+  public void setInitiatedByRef(String initiatedByRef) {
+    this.initiatedByRef = initiatedByRef;
   }
 
   public List<RunParam> getParams() {

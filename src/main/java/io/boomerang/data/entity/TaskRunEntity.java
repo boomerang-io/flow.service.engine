@@ -9,7 +9,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.boomerang.data.model.TaskTemplateResult;
+import io.boomerang.model.ResultSpec;
 import io.boomerang.model.RunError;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
@@ -66,7 +66,7 @@ public class TaskRunEntity {
   private Integer templateVersion;
 
   @JsonIgnore
-  private List<TaskTemplateResult> templateResults;
+  private List<ResultSpec> templateResults;
 
   private String workflowRef;
 
@@ -245,11 +245,11 @@ public class TaskRunEntity {
     this.templateVersion = templateVersion;
   }
 
-  public List<TaskTemplateResult> getTemplateResults() {
+  public List<ResultSpec> getTemplateResults() {
     return templateResults;
   }
 
-  public void setTemplateResults(List<TaskTemplateResult> templateResults) {
+  public void setTemplateResults(List<ResultSpec> templateResults) {
     this.templateResults = templateResults;
   }
 

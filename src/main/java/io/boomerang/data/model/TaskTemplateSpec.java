@@ -2,6 +2,7 @@ package io.boomerang.data.model;
 
 import java.util.List;
 import io.boomerang.model.ParamSpec;
+import io.boomerang.model.ResultSpec;
 
 public class TaskTemplateSpec {
 
@@ -10,7 +11,7 @@ public class TaskTemplateSpec {
   private List<ParamSpec> params;
   private List<TaskEnvVar> envs;
   private String image;
-  private List<TaskTemplateResult> results;
+  private List<ResultSpec> results;
   private String script;
   private Integer version;
   private String workingDir;
@@ -35,7 +36,7 @@ public class TaskTemplateSpec {
     return image;
   }
 
-  public List<TaskTemplateResult> getResults() {
+  public List<ResultSpec> getResults() {
     return results;
   }
 
@@ -71,7 +72,7 @@ public class TaskTemplateSpec {
     this.image = image;
   }
 
-  public void setResults(List<TaskTemplateResult> results) {
+  public void setResults(List<ResultSpec> results) {
     this.results = results;
   }
 

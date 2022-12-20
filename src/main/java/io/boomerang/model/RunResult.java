@@ -4,7 +4,7 @@ public class RunResult {
   
   private String name;
   private String description;
-  private String value;
+  private Object value;
   
   public String getName() {
     return name;
@@ -18,10 +18,10 @@ public class RunResult {
   public void setDescription(String description) {
     this.description = description;
   }
-  public String getValue() {
+  public Object getValue() {
     return value;
   }
-  public void setValue(String value) {
+  public void setValue(Object value) {
     this.value = value;
   } 
 

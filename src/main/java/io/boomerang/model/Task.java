@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.boomerang.data.model.TaskTemplateResult;
 import io.boomerang.model.enums.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -32,7 +31,7 @@ public class Task {
   private List<TaskDependency> dependencies;
   
   //This is needed as some of our Tasks allow you to define Result Definitions on the fly
-  private List<TaskTemplateResult> results;
+  private List<ResultSpec> results;
   
   //Optional - the default is that the workspace goes to all Tasks
   //Not supported by all integrations
@@ -107,11 +106,11 @@ public class Task {
     this.dependencies = dependencies;
   }
 
-  public List<TaskTemplateResult> getResults() {
+  public List<ResultSpec> getResults() {
     return results;
   }
 
-  public void setResults(List<TaskTemplateResult> results) {
+  public void setResults(List<ResultSpec> results) {
     this.results = results;
   }
 

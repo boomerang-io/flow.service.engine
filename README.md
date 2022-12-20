@@ -51,6 +51,12 @@ docker run -e JAVA_OPTS="-Dspring.data.mongodb.uri=mongodb://localhost:27017/boo
 
 ## Dependencies
 
+### Parameters and Results
+
+The implementation is based on Tekton Params and Results.
+
+There is limited support for [Tekton Propagated Object Parameters](https://tekton.dev/docs/pipelines/taskruns/#propagated-object-parameters) in that Tekton requires you to provide the Spec for the JSON Object if you are going to reference child elements. We do not have this constraint, we essentially take the path from what is provided after `params.<param-name>`. 
+
 ### Locks
 
 For distributed locking, we use this [distributed lock](https://github.com/alturkovic/distributed-lock) project with the Mongo implementation.
@@ -86,4 +92,5 @@ The format can be seen in `io.boomerang.error.ErrorDetail.java`
 
 The implementation allows for known and custom exceptions in the code.
 
-Known codes are indexed in the `io.boomerang.error.BoomerangError.java` with the message text in `messages.properties`. Alternatively, a custom exception can be thrown in the code however this will lose the benefit of localization (_future_) 
+Known codes are indexed in the `io.boomerang.error.BoomerangError.java` with the message text in `messages.properties`. Alternatively, a custom exception can be thrown in the code however this will lose the benefit of localization (_future_)
+

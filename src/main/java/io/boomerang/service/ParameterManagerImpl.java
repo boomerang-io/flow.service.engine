@@ -19,74 +19,90 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
+import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
+import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+import io.boomerang.data.entity.TaskRunEntity;
+import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.model.ParamLayers;
 import io.boomerang.model.RunParam;
+import io.boomerang.model.RunResult;
 import io.boomerang.util.ParameterUtil;
 
 @Service
 public class ParameterManagerImpl implements ParameterManager {
   private static final Logger LOGGER = LogManager.getLogger();
 
-//  @Autowired
-//  private FlowSettingsService flowSettingsService;
-//
-//  @Autowired
-//  private RevisionService revisionService;
-//
-//  @Autowired
-//  private WorkflowService workflowService;
-//
-//  @Autowired
-//  private FlowTeamService flowTeamService;
-//
-//  @Autowired
-//  private FlowActivityService activityService;
+  // @Autowired
+  // private FlowSettingsService flowSettingsService;
+  //
+  // @Autowired
+  // private RevisionService revisionService;
+  //
+  // @Autowired
+  // private WorkflowService workflowService;
+  //
+  // @Autowired
+  // private FlowTeamService flowTeamService;
+  //
+  // @Autowired
+  // private FlowActivityService activityService;
 
   @Autowired
   public WorkflowRunRepository workflowRunRepository;
-//
-//  @Autowired
-//  private FlowGlobalConfigService flowGlobalConfigService;
-//
-//  @Autowired
-//  private FlowTaskTemplateService flowTaskTemplateService;
 
-//  @Value("${flow.services.listener.webhook.url}")
-//  private String webhookUrl;
-//
-//
-//  @Value("${flow.services.listener.wfe.url}")
-//  private String waitForEventUrl;
-//
-//
-//  @Value("${flow.services.listener.event.url}")
-//  private String eventUrl;
+  @Autowired
+  public TaskRunRepository taskRunRepository;
+  //
+  // @Autowired
+  // private FlowGlobalConfigService flowGlobalConfigService;
+  //
+  // @Autowired
+  // private FlowTaskTemplateService flowTaskTemplateService;
+
+  // @Value("${flow.services.listener.webhook.url}")
+  // private String webhookUrl;
+  //
+  //
+  // @Value("${flow.services.listener.wfe.url}")
+  // private String waitForEventUrl;
+  //
+  //
+  // @Value("${flow.services.listener.event.url}")
+  // private String eventUrl;
 
 
   final String[] reserved = {"system", "workflow", "global", "team", "workflow"};
-  
+
   @Override
   public void resolveWorkflowRunParams(String wfRunId, List<RunParam> wfRunParams) {
     ParamLayers paramLayers = buildParameterLayering(Optional.of(wfRunParams), Optional.empty());
     resolveParams(wfRunId, wfRunParams, paramLayers);
   }
-  
+
   @Override
-  public void resolveTaskRunParams(String wfRunId, List<RunParam> wfRunParams, List<RunParam> taskRunParams) {
+  public void resolveTaskRunParams(String wfRunId, List<RunParam> wfRunParams,
+      List<RunParam> taskRunParams) {
     LOGGER.debug("WorkflowRun Params: " + wfRunParams);
     LOGGER.debug("TaskRun Params: " + taskRunParams);
-    ParamLayers paramLayers = buildParameterLayering(Optional.of(wfRunParams), Optional.of(taskRunParams));
+    ParamLayers paramLayers =
+        buildParameterLayering(Optional.of(wfRunParams), Optional.of(taskRunParams));
     LOGGER.debug("Workflow ParamLayer: " + paramLayers.getWorkflowProperties());
     resolveParams(wfRunId, taskRunParams, paramLayers);
   }
-  
+
   /*
    * Resolve all parameters for a particular set of RunParams
    */
   private void resolveParams(String wfRunId, List<RunParam> runParams, ParamLayers paramLayers) {
-    //This model should include an orderedList of the scope layers and then parameters for each layer (similar to a Page object)
+    // This model should include an orderedList of the scope layers and then parameters for each
+    // layer (similar to a Page object)
     String regex = "(?<=\\$\\().+?(?=\\))";
     Pattern pattern = Pattern.compile(regex);
     runParams.stream().forEach(p -> {
@@ -102,7 +118,8 @@ public class ParameterManagerImpl implements ParameterManager {
         ObjectMapper mapper = new ObjectMapper();
         try {
           String objectString = mapper.writeValueAsString(p.getValue());
-          String replacedObjectString = replacePropertiesAlternate(objectString, wfRunId, paramLayers);
+          String replacedObjectString =
+              replacePropertiesAlternate(objectString, wfRunId, paramLayers);
           p.setValue(mapper.readValue(replacedObjectString, Object.class));
         } catch (JsonProcessingException e) {
           e.printStackTrace();
@@ -116,28 +133,30 @@ public class ParameterManagerImpl implements ParameterManager {
    * 
    * If you only pass it the Workflow Run Entity, it won't add the Task Run Params to the map
    */
-  private ParamLayers buildParameterLayering(Optional<List<RunParam>> wfRunParams, Optional<List<RunParam>> taskRunParams) {
+  private ParamLayers buildParameterLayering(Optional<List<RunParam>> wfRunParams,
+      Optional<List<RunParam>> taskRunParams) {
     ParamLayers parameterLayers = new ParamLayers();
-    //TODO: retrieve extended parameter layers from Workflow service if the application property / URL has been provided
-//    Map<String, String> systemProperties = parameterLayers.getSystemProperties();
-//    Map<String, String> globalProperties = parameterLayers.getGlobalProperties();
-//    Map<String, String> teamProperties = parameterLayers.getTeamProperties();
-//    Map<String, String> workflowProperties = parameterLayers.getWorkflowProperties();
-//    Map<String, String> reservedProperties = parameterLayers.getReservedProperties();
+    // TODO: retrieve extended parameter layers from Workflow service if the application property /
+    // URL has been provided
+    // Map<String, String> systemProperties = parameterLayers.getSystemProperties();
+    // Map<String, String> globalProperties = parameterLayers.getGlobalProperties();
+    // Map<String, String> teamProperties = parameterLayers.getTeamProperties();
+    // Map<String, String> workflowProperties = parameterLayers.getWorkflowProperties();
+    // Map<String, String> reservedProperties = parameterLayers.getReservedProperties();
 
-//    buildGlobalProperties(globalProperties);
-//    buildSystemProperties(task, activityId, workflowId, systemProperties);
-//    buildReservedPropertyList(reservedProperties, workflowId);
+    // buildGlobalProperties(globalProperties);
+    // buildSystemProperties(task, activityId, workflowId, systemProperties);
+    // buildReservedPropertyList(reservedProperties, workflowId);
 
-//    if (flowSettingsService.getConfiguration("features", "teamParameters").getBooleanValue()) {
-//      buildTeamProperties(teamProperties, workflowId);
-//    }
-      if (wfRunParams.isPresent()) {
-        parameterLayers.setWorkflowProperties(ParameterUtil.runParamListToMap(wfRunParams.get()));
-      }
-      if (taskRunParams.isPresent()) {
-        parameterLayers.setTaskInputProperties(ParameterUtil.runParamListToMap(taskRunParams.get()));
-      }
+    // if (flowSettingsService.getConfiguration("features", "teamParameters").getBooleanValue()) {
+    // buildTeamProperties(teamProperties, workflowId);
+    // }
+    if (wfRunParams.isPresent()) {
+      parameterLayers.setWorkflowProperties(ParameterUtil.runParamListToMap(wfRunParams.get()));
+    }
+    if (taskRunParams.isPresent()) {
+      parameterLayers.setTaskInputProperties(ParameterUtil.runParamListToMap(taskRunParams.get()));
+    }
 
     return parameterLayers;
   }
@@ -145,178 +164,178 @@ public class ParameterManagerImpl implements ParameterManager {
   /*
    * Adds Workflow API Tokens as Parameters
    */
-//  private void buildReservedPropertyList(Map<String, String> reservedProperties,
-//      String workflowId) {
-//
-//    WorkflowEntity workflow = workflowService.getWorkflow(workflowId);
-//    if (workflow.getTokens() != null) {
-//      for (WorkflowToken token : workflow.getTokens()) {
-//        reservedProperties.put("system.tokens." + token.getLabel(), token.getToken());
-//      }
-//    }
-//  }
+  // private void buildReservedPropertyList(Map<String, String> reservedProperties,
+  // String workflowId) {
+  //
+  // WorkflowEntity workflow = workflowService.getWorkflow(workflowId);
+  // if (workflow.getTokens() != null) {
+  // for (WorkflowToken token : workflow.getTokens()) {
+  // reservedProperties.put("system.tokens." + token.getLabel(), token.getToken());
+  // }
+  // }
+  // }
 
-//  private void buildTaskInputProperties(ParamLayers applicationProperties,
-//      Task task, String activityId) {
-//    ActivityEntity activity = activityService.findWorkflowActivity(activityId);
-//
-//    List<TaskTemplateConfig> configs = getInputsForTask(task, activity.getWorkflowRevisionid());
-//
-//    Map<String, String> workflowInputProperties = applicationProperties.getTaskInputProperties();
-//    for (TaskTemplateConfig config : configs) {
-//      String key = config.getKey();
-//      String value = this.getInputForTaskKey(task, activity.getWorkflowRevisionid(), key);
-//
-//      if (value == null || value.isBlank()) {
-//        value = config.getDefaultValue();
-//      }
-//
-//      if (value != null) {
-//        String newValue = this.replaceValueWithProperty(value, activityId, applicationProperties);
-//        newValue = this.replaceValueWithProperty(newValue, activityId, applicationProperties);
-//
-//        newValue = this.replaceAllParams(newValue, activityId, applicationProperties);
-//
-//        workflowInputProperties.put(key, newValue);
-//      } else {
-//        workflowInputProperties.put(key, "");
-//      }
-//    }
-//  }
-//
-//  private String getInputForTaskKey(Task task, String revisionId, String key) {
-//    Optional<RevisionEntity> revisionOptional = revisionService.getRevision(revisionId);
-//    if (revisionOptional.isPresent()) {
-//      RevisionEntity revision = revisionOptional.get();
-//      Dag dag = revision.getDag();
-//      List<DAGTask> tasks = dag.getTasks();
-//      if (tasks != null) {
-//        DAGTask dagTask = tasks.stream().filter(e -> e.getTaskId().equals(task.getTaskId()))
-//            .findFirst().orElse(null);
-//        if (dagTask != null) {
-//          List<KeyValuePair> properties = dagTask.getProperties();
-//          if (properties != null) {
-//            KeyValuePair property =
-//                properties.stream().filter(e -> key.equals(e.getKey())).findFirst().orElse(null);
-//            if (property != null) {
-//              return property.getValue();
-//            }
-//          }
-//        }
-//      }
-//    }
-//    return null;
-//  }
-//
-//
-//  private List<TaskTemplateConfig> getInputsForTask(Task task, String revisionId) {
-//    Optional<RevisionEntity> revisionOptional = revisionService.getRevision(revisionId);
-//    if (revisionOptional.isPresent()) {
-//      RevisionEntity revision = revisionOptional.get();
-//      Dag dag = revision.getDag();
-//      List<DAGTask> tasks = dag.getTasks();
-//      if (tasks != null) {
-//        DAGTask dagTask = tasks.stream().filter(e -> e.getTaskId().equals(task.getTaskId()))
-//            .findFirst().orElse(null);
-//        if (dagTask != null) {
-//          String templateId = dagTask.getTemplateId();
-//          Integer templateVersion = dagTask.getTemplateVersion();
-//          FlowTaskTemplateEntity taskTemplate =
-//              flowTaskTemplateService.getTaskTemplateWithId(templateId);
-//
-//          if (taskTemplate != null) {
-//            List<Revision> revisions = taskTemplate.getRevisions();
-//            if (revisions != null) {
-//              Revision rev = revisions.stream().filter(e -> e.getVersion().equals(templateVersion))
-//                  .findFirst().orElse(null);
-//              if (rev != null && rev.getConfig() != null) {
-//                return rev.getConfig();
-//              }
-//            }
-//          }
-//        }
-//      }
-//    }
-//    return new LinkedList<>();
-//  }
-//
-//  @Override
-//  public void buildGlobalProperties(Map<String, String> globalProperties) {
-//    List<FlowGlobalConfigEntity> globalConfigs = this.flowGlobalConfigService.getGlobalConfigs();
-//    for (FlowGlobalConfigEntity entity : globalConfigs) {
-//      if (entity.getValue() != null) {
-//        globalProperties.put(entity.getKey(), entity.getValue());
-//      }
-//    }
-//  }
-//
-//  @Override
-//  public void buildSystemProperties(Task task, String activityId, String workflowId,
-//      Map<String, String> systemProperties) {
-//
-//    WorkflowEntity workflow = workflowService.getWorkflow(workflowId);
-//    if (activityId != null) {
-//      ActivityEntity activity = activityService.findWorkflowActivity(activityId);
-//      RevisionEntity revision =
-//          revisionService.getWorkflowlWithId(activity.getWorkflowRevisionid());
-//
-//      if (revision != null) {
-//        systemProperties.put("workflow-version", Long.toString(revision.getVersion()));
-//      }
-//      systemProperties.put("trigger-type", activity.getTrigger());
-//      systemProperties.put("workflow-activity-initiator", "");
-//      if (activity.getInitiatedByUserId() != null) {
-//        systemProperties.put("workflow-activity-initiator", activity.getInitiatedByUserId());
-//      }
-//    }
-//
-//    systemProperties.put("workflow-name", workflow.getName());
-//    systemProperties.put("workflow-activity-id", activityId);
-//    systemProperties.put("workflow-id", workflow.getId());
-//
-//    systemProperties.put("trigger-webhook-url", this.webhookUrl);
-//    systemProperties.put("trigger-wfe-url", this.waitForEventUrl);
-//    systemProperties.put("trigger-event-url", this.eventUrl);
-//
-//
-//    if (task != null) {
-//      systemProperties.put("task-name", task.getTaskName());
-//      systemProperties.put("task-id", task.getTaskId());
-//      systemProperties.put("task-type", task.getTaskType().toString());
-//    }
-//  }
-//
-//  @Override
-//  public void buildTeamProperties(Map<String, String> teamProperties, String workflowId) {
-//    WorkflowSummary workflow = workflowService.getWorkflow(workflowId);
-//
-//    if (WorkflowScope.team.equals(workflow.getScope())) {
-//      TeamEntity flowTeamEntity = this.flowTeamService.findById(workflow.getFlowTeamId());
-//      if (flowTeamEntity == null) {
-//        return;
-//      }
-//
-//      List<FlowTeamConfiguration> teamConfig = null;
-//      if (flowTeamEntity.getSettings() != null) {
-//        teamConfig = flowTeamEntity.getSettings().getProperties();
-//      }
-//      if (teamConfig != null) {
-//        for (FlowTeamConfiguration config : teamConfig) {
-//          teamProperties.put(config.getKey(), config.getValue());
-//        }
-//      }
-//    }
-//  }
+  // private void buildTaskInputProperties(ParamLayers applicationProperties,
+  // Task task, String activityId) {
+  // ActivityEntity activity = activityService.findWorkflowActivity(activityId);
+  //
+  // List<TaskTemplateConfig> configs = getInputsForTask(task, activity.getWorkflowRevisionid());
+  //
+  // Map<String, String> workflowInputProperties = applicationProperties.getTaskInputProperties();
+  // for (TaskTemplateConfig config : configs) {
+  // String key = config.getKey();
+  // String value = this.getInputForTaskKey(task, activity.getWorkflowRevisionid(), key);
+  //
+  // if (value == null || value.isBlank()) {
+  // value = config.getDefaultValue();
+  // }
+  //
+  // if (value != null) {
+  // String newValue = this.replaceValueWithProperty(value, activityId, applicationProperties);
+  // newValue = this.replaceValueWithProperty(newValue, activityId, applicationProperties);
+  //
+  // newValue = this.replaceAllParams(newValue, activityId, applicationProperties);
+  //
+  // workflowInputProperties.put(key, newValue);
+  // } else {
+  // workflowInputProperties.put(key, "");
+  // }
+  // }
+  // }
+  //
+  // private String getInputForTaskKey(Task task, String revisionId, String key) {
+  // Optional<RevisionEntity> revisionOptional = revisionService.getRevision(revisionId);
+  // if (revisionOptional.isPresent()) {
+  // RevisionEntity revision = revisionOptional.get();
+  // Dag dag = revision.getDag();
+  // List<DAGTask> tasks = dag.getTasks();
+  // if (tasks != null) {
+  // DAGTask dagTask = tasks.stream().filter(e -> e.getTaskId().equals(task.getTaskId()))
+  // .findFirst().orElse(null);
+  // if (dagTask != null) {
+  // List<KeyValuePair> properties = dagTask.getProperties();
+  // if (properties != null) {
+  // KeyValuePair property =
+  // properties.stream().filter(e -> key.equals(e.getKey())).findFirst().orElse(null);
+  // if (property != null) {
+  // return property.getValue();
+  // }
+  // }
+  // }
+  // }
+  // }
+  // return null;
+  // }
+  //
+  //
+  // private List<TaskTemplateConfig> getInputsForTask(Task task, String revisionId) {
+  // Optional<RevisionEntity> revisionOptional = revisionService.getRevision(revisionId);
+  // if (revisionOptional.isPresent()) {
+  // RevisionEntity revision = revisionOptional.get();
+  // Dag dag = revision.getDag();
+  // List<DAGTask> tasks = dag.getTasks();
+  // if (tasks != null) {
+  // DAGTask dagTask = tasks.stream().filter(e -> e.getTaskId().equals(task.getTaskId()))
+  // .findFirst().orElse(null);
+  // if (dagTask != null) {
+  // String templateId = dagTask.getTemplateId();
+  // Integer templateVersion = dagTask.getTemplateVersion();
+  // FlowTaskTemplateEntity taskTemplate =
+  // flowTaskTemplateService.getTaskTemplateWithId(templateId);
+  //
+  // if (taskTemplate != null) {
+  // List<Revision> revisions = taskTemplate.getRevisions();
+  // if (revisions != null) {
+  // Revision rev = revisions.stream().filter(e -> e.getVersion().equals(templateVersion))
+  // .findFirst().orElse(null);
+  // if (rev != null && rev.getConfig() != null) {
+  // return rev.getConfig();
+  // }
+  // }
+  // }
+  // }
+  // }
+  // }
+  // return new LinkedList<>();
+  // }
+  //
+  // @Override
+  // public void buildGlobalProperties(Map<String, String> globalProperties) {
+  // List<FlowGlobalConfigEntity> globalConfigs = this.flowGlobalConfigService.getGlobalConfigs();
+  // for (FlowGlobalConfigEntity entity : globalConfigs) {
+  // if (entity.getValue() != null) {
+  // globalProperties.put(entity.getKey(), entity.getValue());
+  // }
+  // }
+  // }
+  //
+  // @Override
+  // public void buildSystemProperties(Task task, String activityId, String workflowId,
+  // Map<String, String> systemProperties) {
+  //
+  // WorkflowEntity workflow = workflowService.getWorkflow(workflowId);
+  // if (activityId != null) {
+  // ActivityEntity activity = activityService.findWorkflowActivity(activityId);
+  // RevisionEntity revision =
+  // revisionService.getWorkflowlWithId(activity.getWorkflowRevisionid());
+  //
+  // if (revision != null) {
+  // systemProperties.put("workflow-version", Long.toString(revision.getVersion()));
+  // }
+  // systemProperties.put("trigger-type", activity.getTrigger());
+  // systemProperties.put("workflow-activity-initiator", "");
+  // if (activity.getInitiatedByUserId() != null) {
+  // systemProperties.put("workflow-activity-initiator", activity.getInitiatedByUserId());
+  // }
+  // }
+  //
+  // systemProperties.put("workflow-name", workflow.getName());
+  // systemProperties.put("workflow-activity-id", activityId);
+  // systemProperties.put("workflow-id", workflow.getId());
+  //
+  // systemProperties.put("trigger-webhook-url", this.webhookUrl);
+  // systemProperties.put("trigger-wfe-url", this.waitForEventUrl);
+  // systemProperties.put("trigger-event-url", this.eventUrl);
+  //
+  //
+  // if (task != null) {
+  // systemProperties.put("task-name", task.getTaskName());
+  // systemProperties.put("task-id", task.getTaskId());
+  // systemProperties.put("task-type", task.getTaskType().toString());
+  // }
+  // }
+  //
+  // @Override
+  // public void buildTeamProperties(Map<String, String> teamProperties, String workflowId) {
+  // WorkflowSummary workflow = workflowService.getWorkflow(workflowId);
+  //
+  // if (WorkflowScope.team.equals(workflow.getScope())) {
+  // TeamEntity flowTeamEntity = this.flowTeamService.findById(workflow.getFlowTeamId());
+  // if (flowTeamEntity == null) {
+  // return;
+  // }
+  //
+  // List<FlowTeamConfiguration> teamConfig = null;
+  // if (flowTeamEntity.getSettings() != null) {
+  // teamConfig = flowTeamEntity.getSettings().getProperties();
+  // }
+  // if (teamConfig != null) {
+  // for (FlowTeamConfiguration config : teamConfig) {
+  // teamProperties.put(config.getKey(), config.getValue());
+  // }
+  // }
+  // }
+  // }
 
-//  @Override
-//  public String replaceValueWithProperty(String value, String activityId,
-//      ParamLayers properties) {
-//
-//    String replacementString = value;
-//    replacementString = replaceProperties(replacementString, activityId, properties);
-//
-//    return replacementString;
-//  }
+  // @Override
+  // public String replaceValueWithProperty(String value, String activityId,
+  // ParamLayers properties) {
+  //
+  // String replacementString = value;
+  // replacementString = replaceProperties(replacementString, activityId, properties);
+  //
+  // return replacementString;
+  // }
 
   private String replaceProperties(String value, String wfRunId,
       ParamLayers applicationProperties) {
@@ -351,12 +370,12 @@ public class ParameterManagerImpl implements ParameterManager {
           } else {
             replaceValue = "";
           }
-//        } else if (reservedList.contains(params)) {
-//          String key = components[1];
-//          if ("allParams".equals(key)) {
-//            Map<String, Object> properties = applicationProperties.getMapForKey(params);
-//            replaceValue = this.getEncodedPropertiesForMap(properties);
-//          }
+          // } else if (reservedList.contains(params)) {
+          // String key = components[1];
+          // if ("allParams".equals(key)) {
+          // Map<String, Object> properties = applicationProperties.getMapForKey(params);
+          // replaceValue = this.getEncodedPropertiesForMap(properties);
+          // }
         }
       } else if (components.length == 4) {
 
@@ -365,38 +384,38 @@ public class ParameterManagerImpl implements ParameterManager {
         String results = components[2];
         String outputProperty = components[3];
 
-//        if (("task".equals(task) || "tasks".equals(task)) && "results".equals(results)) {
-//
-//          TaskExecutionEntity taskExecution = getTaskExecutionEntity(activityId, taskName);
-//          if (taskExecution != null && taskExecution.getOutputs() != null
-//              && taskExecution.getOutputs().get(outputProperty) != null) {
-//            replaceValue = taskExecution.getOutputs().get(outputProperty);
-//          } else {
-//            replaceValue = "";
-//          }
-//        }
+        // if (("task".equals(task) || "tasks".equals(task)) && "results".equals(results)) {
+        //
+        // TaskExecutionEntity taskExecution = getTaskExecutionEntity(activityId, taskName);
+        // if (taskExecution != null && taskExecution.getOutputs() != null
+        // && taskExecution.getOutputs().get(outputProperty) != null) {
+        // replaceValue = taskExecution.getOutputs().get(outputProperty);
+        // } else {
+        // replaceValue = "";
+        // }
+        // }
       } else if (components.length == 3) {
         String scope = components[0];
         String params = components[1];
         String name = components[2];
         List<String> reservedList = Arrays.asList(reserved);
-//        if ("tokens".equals(params) && "system".equals(scope)) {
-//          if (executionProperties.get(extractedValue) != null) {
-//            replaceValue = executionProperties.get(extractedValue);
-//          } else {
-//            replaceValue = "";
-//          }
-//        } else if ("params".equals(params) && reservedList.contains(scope)) {
-//          if (reservedList.contains(scope)) {
-//            String key = scope + "/" + name;
-//
-//            if (executionProperties.get(key) != null) {
-//              replaceValue = executionProperties.get(key);
-//            } else {
-//              replaceValue = "";
-//            }
-//          }
-//        }
+        // if ("tokens".equals(params) && "system".equals(scope)) {
+        // if (executionProperties.get(extractedValue) != null) {
+        // replaceValue = executionProperties.get(extractedValue);
+        // } else {
+        // replaceValue = "";
+        // }
+        // } else if ("params".equals(params) && reservedList.contains(scope)) {
+        // if (reservedList.contains(scope)) {
+        // String key = scope + "/" + name;
+        //
+        // if (executionProperties.get(key) != null) {
+        // replaceValue = executionProperties.get(key);
+        // } else {
+        // replaceValue = "";
+        // }
+        // }
+        // }
       }
 
       if (replaceValue != null) {
@@ -412,20 +431,77 @@ public class ParameterManagerImpl implements ParameterManager {
     return updatedString;
   }
 
-  private String replacePropertiesAlternate(String value, String wfRunId,
-      ParamLayers paramLayers) {
-
+  private String replacePropertiesAlternate(String value, String wfRunId, ParamLayers paramLayers) {
     Map<String, Object> executionProperties = paramLayers.getFlatMap();
     LOGGER.debug("Parameter Layers: " + paramLayers.toString());
-    final StringSubstitutor substitutor = new StringSubstitutor(executionProperties, "$(", ")");
-//    substitutor.setEnableUndefinedVariableException(true);
-
+    LOGGER.debug("Value: " + value);
     String replacedString = value;
     String regex = "(?<=\\$\\().+?(?=\\))";
     Pattern pattern = Pattern.compile(regex);
     Matcher m = pattern.matcher(value);
     while (m.find()) {
-      replacedString = substitutor.replace(value);
+      String extractedKey = m.group(0);
+      String objectPath = "";
+      String searchKey = extractedKey;
+
+      // TODO: need to support Array syntax too
+      String[] components = extractedKey.split("\\.");
+      LOGGER.debug("Found reference: " + extractedKey + ", length: " + components.length);
+
+      // TODO: provide greater support for JSON Object Path Parameters
+      // TODO: split this out into a wrapper function that calls this function and is only called
+      // for instanceOf Object
+      // TODO: add in reserved list check
+      if (components.length >= 2 && "params".equals(components[0])) {
+        if (components.length > 2) {
+          int index = extractedKey.indexOf(".", extractedKey.indexOf(".") + 1);
+          searchKey = extractedKey.substring(0, index);
+          objectPath = extractedKey.substring(index + 1);
+        }
+      } else if (components.length >= 3 && "params".equals(components[1])) {
+        if (components.length > 3) {
+          int index = extractedKey.indexOf(".",
+              extractedKey.indexOf(".", extractedKey.indexOf(".") + 1) + 1);
+          searchKey = extractedKey.substring(0, index);
+          objectPath = extractedKey.substring(index + 1);
+        }
+      } else if (components.length >= 4 && "results".equals(components[2])) {
+        // Resolves references to TaskRun Results
+        // Requires access to the specific TaskRun and does not follow the StringSubstitutor pattern
+        String taskName = components[1];
+        String resultName = components[3];
+        Optional<TaskRunEntity> taskRunEntity =
+            taskRunRepository.findFirstByNameAndWorkflowRunRef(taskName, wfRunId);
+        if (taskRunEntity.isPresent()) {
+          List<RunResult> taskRunResults = taskRunEntity.get().getResults();
+          if (!taskRunResults.isEmpty()) {
+            Optional<RunResult> result =
+                taskRunResults.stream().filter(p -> resultName.equals(p.getName())).findFirst();
+
+            if (result.isPresent()) {
+              if (components.length > 4) {
+                int index = extractedKey.indexOf(".", extractedKey.indexOf(".",
+                    extractedKey.indexOf(".", extractedKey.indexOf(".") + 1) + 1) + 1);
+                searchKey = extractedKey.substring(0, index);
+                objectPath = extractedKey.substring(index + 1);
+                String reducedValue = reduceObjectByJsonPath(objectPath, result.get().getValue());
+                return reducedValue != null ? reducedValue : value;
+              } else {
+                return result.get().getValue().toString();
+              }
+            }
+          }
+        }
+
+      }
+      LOGGER.debug("Key: " + searchKey + ", ObjectPath: " + objectPath);
+      final StringSubstitutor substitutor = new StringSubstitutor(executionProperties, "$(", ")");
+      // substitutor.setEnableUndefinedVariableException(true);
+      replacedString = substitutor.replace("$(" + searchKey + ")");
+      if (!objectPath.isEmpty()) {
+        String reducedValue = reduceObjectByJsonPath(objectPath, replacedString);
+        replacedString = reducedValue != null ? reducedValue : replacedString;
+      }
       LOGGER.debug("Pattern Matched: " + m.toString() + " = " + replacedString);
     }
     return replacedString;
@@ -464,12 +540,12 @@ public class ParameterManagerImpl implements ParameterManager {
           } else {
             replaceValue = "";
           }
-//        } else if (reservedList.contains(params)) {
-//          String key = components[1];
-//          if ("allParams".equals(key)) {
-//            Map<String, Object> properties = applicationProperties.getMapForKey(params);
-//            replaceValue = this.getEncodedPropertiesForMap(properties);
-//          }
+          // } else if (reservedList.contains(params)) {
+          // String key = components[1];
+          // if ("allParams".equals(key)) {
+          // Map<String, Object> properties = applicationProperties.getMapForKey(params);
+          // replaceValue = this.getEncodedPropertiesForMap(properties);
+          // }
         }
       } else if (components.length == 4) {
 
@@ -478,38 +554,38 @@ public class ParameterManagerImpl implements ParameterManager {
         String results = components[2];
         String outputProperty = components[3];
 
-//        if (("task".equals(task) || "tasks".equals(task)) && "results".equals(results)) {
-//
-//          TaskExecutionEntity taskExecution = getTaskExecutionEntity(activityId, taskName);
-//          if (taskExecution != null && taskExecution.getOutputs() != null
-//              && taskExecution.getOutputs().get(outputProperty) != null) {
-//            replaceValue = taskExecution.getOutputs().get(outputProperty);
-//          } else {
-//            replaceValue = "";
-//          }
-//        }
+        // if (("task".equals(task) || "tasks".equals(task)) && "results".equals(results)) {
+        //
+        // TaskExecutionEntity taskExecution = getTaskExecutionEntity(activityId, taskName);
+        // if (taskExecution != null && taskExecution.getOutputs() != null
+        // && taskExecution.getOutputs().get(outputProperty) != null) {
+        // replaceValue = taskExecution.getOutputs().get(outputProperty);
+        // } else {
+        // replaceValue = "";
+        // }
+        // }
       } else if (components.length == 3) {
         String scope = components[0];
         String params = components[1];
         String name = components[2];
         List<String> reservedList = Arrays.asList(reserved);
-//        if ("tokens".equals(params) && "system".equals(scope)) {
-//          if (executionProperties.get(extractedValue) != null) {
-//            replaceValue = executionProperties.get(extractedValue);
-//          } else {
-//            replaceValue = "";
-//          }
-//        } else if ("params".equals(params) && reservedList.contains(scope)) {
-//          if (reservedList.contains(scope)) {
-//            String key = scope + "/" + name;
-//
-//            if (executionProperties.get(key) != null) {
-//              replaceValue = executionProperties.get(key);
-//            } else {
-//              replaceValue = "";
-//            }
-//          }
-//        }
+        // if ("tokens".equals(params) && "system".equals(scope)) {
+        // if (executionProperties.get(extractedValue) != null) {
+        // replaceValue = executionProperties.get(extractedValue);
+        // } else {
+        // replaceValue = "";
+        // }
+        // } else if ("params".equals(params) && reservedList.contains(scope)) {
+        // if (reservedList.contains(scope)) {
+        // String key = scope + "/" + name;
+        //
+        // if (executionProperties.get(key) != null) {
+        // replaceValue = executionProperties.get(key);
+        // } else {
+        // replaceValue = "";
+        // }
+        // }
+        // }
       }
 
       if (replaceValue != null) {
@@ -555,6 +631,26 @@ public class ParameterManagerImpl implements ParameterManager {
     } catch (IOException e) {
       return "";
     }
+  }
+
+  private String reduceObjectByJsonPath(String path, Object object) {
+    Configuration jsonConfig = Configuration.builder().mappingProvider(new JacksonMappingProvider())
+        .jsonProvider(new JacksonJsonNodeJsonProvider()).options(Option.DEFAULT_PATH_LEAF_TO_NULL)
+        .build();
+
+    try {
+//      String json = object instanceof String ? new JsonObject(object.toString()) : new ObjectMapper().writeValueAsString(object);
+      DocumentContext jsonContext =
+          JsonPath.using(jsonConfig).parse(new ObjectMapper().writeValueAsString(object));
+      if (path != null && !path.isBlank() && object != null) {
+        JsonNode value = jsonContext.read("$." + path);
+        return value.toString().replaceAll("^\"+|\"+$", "");
+      }
+    } catch (Exception e) {
+      // Log and drop exception. We want the workflow to continue execution.
+      LOGGER.error(e.toString());
+    }
+    return null;
   }
 
 }
