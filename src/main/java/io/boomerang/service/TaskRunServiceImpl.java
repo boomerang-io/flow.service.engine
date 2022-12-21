@@ -158,6 +158,7 @@ public class TaskRunServiceImpl implements TaskRunService {
         taskRunEntity.putLabels(optRunRequest.get().getLabels());
         taskRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
         taskRunEntity.setResults(optRunRequest.get().getResults());
+        taskRunEntity.setStatus(optRunRequest.get().getStatus());
         taskRunRepository.save(taskRunEntity);
       }
       taskExecutionClient.endTask(taskExecutionService, optTaskRunEntity.get());
