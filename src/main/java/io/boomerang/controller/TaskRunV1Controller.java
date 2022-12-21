@@ -9,7 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.domain.Sort.Order;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -96,7 +95,6 @@ public class TaskRunV1Controller {
     return taskRunService.end(taskRunId, taskRunRequest);
   }
 
-  //TODO implement
   @PutMapping(value = "/{taskRunId}/cancel")
   @Operation(summary = "Cancel a Task Run")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
@@ -105,6 +103,6 @@ public class TaskRunV1Controller {
       @Parameter(name = "taskRunId",
       description = "ID of Task Run to Cancel",
       required = true) @PathVariable(required = true) String taskRunId) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+    return taskRunService.cancel(taskRunId);
   }
 }

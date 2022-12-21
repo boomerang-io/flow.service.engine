@@ -158,10 +158,30 @@ public class TaskRunServiceImpl implements TaskRunService {
         taskRunEntity.putLabels(optRunRequest.get().getLabels());
         taskRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
         taskRunEntity.setResults(optRunRequest.get().getResults());
+        if (!(RunStatus.failed.equals(optRunRequest.get().getStatus()) || RunStatus.succeeded.equals(optRunRequest.get().getStatus()))) {
+          throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_END_STATUS);
+        }
         taskRunEntity.setStatus(optRunRequest.get().getStatus());
         taskRunRepository.save(taskRunEntity);
       }
-      taskExecutionClient.endTask(taskExecutionService, optTaskRunEntity.get());
+      taskExecutionClient.endTask(taskExecutionService, taskRunEntity);
+      TaskRun taskRun = new TaskRun(taskRunEntity);
+      return ResponseEntity.ok(taskRun);
+    } else {
+      throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_REF);
+    }
+  }
+
+  @Override
+  public ResponseEntity<TaskRun> cancel(String taskRunId) {
+    if (taskRunId == null || taskRunId.isBlank()) {
+      throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_REF);
+    }
+    Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
+    if (optTaskRunEntity.isPresent()) {
+      TaskRunEntity taskRunEntity = optTaskRunEntity.get();
+      taskRunEntity.setStatus(RunStatus.cancelled);
+      taskExecutionClient.endTask(taskExecutionService, taskRunEntity);
       TaskRun taskRun = new TaskRun(optTaskRunEntity.get());
       return ResponseEntity.ok(taskRun);
     } else {

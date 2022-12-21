@@ -20,4 +20,6 @@ public interface TaskRunService {
   ResponseEntity<TaskRun> end(String taskRunId, Optional<TaskRunEndRequest> taskRunRequest);
 
   ResponseEntity<TaskRun> get(String taskRunId);
+  
+  ResponseEntity<TaskRun> cancel(String taskRunId);
 }
