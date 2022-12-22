@@ -129,6 +129,7 @@ public class DAGUtility {
                   "latest");
             }
           }
+          executionTask.setTemplateVersion(taskTemplate.get().getVersion());
           LOGGER.debug("[{}] Found Task Template: {} ({})", wfRunEntity.getId(), taskTemplate.get().getName(), taskTemplate.get().getId());
           executionTask.setTemplateResults(taskTemplate.get().getSpec().getResults());
           // Stack the labels based on label propagation
