@@ -3,12 +3,13 @@ package io.boomerang.util;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Date;
-import java.util.Map;
 import java.util.UUID;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
+import io.boomerang.model.TaskRun;
+import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.enums.EventType;
-import io.boomerang.model.events.StatusUpdateEvent;
+import io.boomerang.model.events.TaskRunStatusEvent;
 import io.boomerang.model.events.WorkflowRunStatusEvent;
 
 public class EventFactory {
@@ -54,14 +55,14 @@ public class EventFactory {
     statusEvent.setSource(URI.create(EVENT_SOURCE_URI));
     statusEvent.setSubject(eventSubject);
     statusEvent.setDate(new Date());
-    statusEvent.setType(EventType.WORKFLOW_STATUS_UPDATE);
-    statusEvent.setWorkflowRunEntity(wfRunEntity);
+    statusEvent.setType(EventType.WORKFLOWRUN_STATUS_UPDATE);
+    statusEvent.setWorkflowRun(new WorkflowRun(wfRunEntity));
 
     return statusEvent;
   }
 
-  public static StatusUpdateEvent buildStatusUpdateEvent(
-      TaskRunEntity taskRunEntity, Map<String, String> additionalData) {
+  public static TaskRunStatusEvent buildStatusUpdateEvent(
+      TaskRunEntity taskRunEntity) {
 
     // Event subject
     // @formatter:off
@@ -71,24 +72,37 @@ public class EventFactory {
     // @formatter:on
 
     // Create task status update event
-    StatusUpdateEvent statusUpdateEvent = new StatusUpdateEvent();
+    TaskRunStatusEvent statusUpdateEvent = new TaskRunStatusEvent();
     statusUpdateEvent.setId(UUID.randomUUID().toString());
     statusUpdateEvent.setSource(URI.create(EVENT_SOURCE_URI));
     statusUpdateEvent.setSubject(eventSubject);
     statusUpdateEvent.setDate(new Date());
-    statusUpdateEvent.setType(EventType.TASK_STATUS_UPDATE);
-    statusUpdateEvent.setName(taskRunEntity.getName());
-    statusUpdateEvent.setTaskRunRef(taskRunEntity.getId());
-    statusUpdateEvent.setWorkflowRef(taskRunEntity.getWorkflowRef());
-    statusUpdateEvent.setWorkflowRunRef(taskRunEntity.getWorkflowRunRef());
-    statusUpdateEvent.setStatus(taskRunEntity.getStatus());
-    statusUpdateEvent.setPhase(taskRunEntity.getPhase());
-    statusUpdateEvent.setTaskType(taskRunEntity.getType());
-    statusUpdateEvent.setParams(taskRunEntity.getParams());
-    statusUpdateEvent.setResults(taskRunEntity.getResults());
-    statusUpdateEvent.setError(taskRunEntity.getError());
-    statusUpdateEvent.setAdditionalData(additionalData);
+    statusUpdateEvent.setType(EventType.TASKRUN_STATUS_UPDATE);
+    statusUpdateEvent.setTaskRun(new TaskRun(taskRunEntity));
 
     return statusUpdateEvent;
   }
+  
+
+//TODO
+//  public static GenericStatusEvent buildStatusUpdateEvent(Map<String, String> additionalData) {
+//
+//    // Event subject
+//    // @formatter:off
+//    String eventSubject = MessageFormat.format("/task/run/{0}/status/{1}",
+//        taskRunEntity.getId(),
+//        taskRunEntity.getStatus().toString().toLowerCase());
+//    // @formatter:on
+//
+//    // Create task status update event
+//    TaskRunStatusEvent statusUpdateEvent = new TaskRunStatusEvent();
+//    statusUpdateEvent.setId(UUID.randomUUID().toString());
+//    statusUpdateEvent.setSource(URI.create(EVENT_SOURCE_URI));
+//    statusUpdateEvent.setSubject(eventSubject);
+//    statusUpdateEvent.setDate(new Date());
+//    statusUpdateEvent.setType(EventType.TASKRUN_STATUS_UPDATE);
+//    statusUpdateEvent.setAdditionalData(additionalData);
+//
+//    return statusUpdateEvent;
+//  }
 }

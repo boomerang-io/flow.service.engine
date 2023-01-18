@@ -105,13 +105,13 @@ public class WorkflowRunV1Controller {
     return workflowRunService.start(workflowRunId, runRequest);
   }
 
-  @PutMapping(value = "/run/{workflowRunId}/end")
+  @PutMapping(value = "/run/{workflowRunId}/finalize")
   @Operation(summary = "End a Workflow Run")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<WorkflowRun> endWorkflowRun(
       @Parameter(name = "workflowRunId",
-      description = "ID of Workflow Run to End",
+      description = "ID of Workflow Run to Finalize",
       required = true) @PathVariable(required = true) String workflowRunId) {
     return workflowRunService.end(workflowRunId);
   }

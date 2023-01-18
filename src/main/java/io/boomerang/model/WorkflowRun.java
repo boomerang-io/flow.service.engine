@@ -18,6 +18,11 @@ public class WorkflowRun extends WorkflowRunEntity {
     BeanUtils.copyProperties(entity, this);
   }
 
+  @Override
+  public String toString() {
+    return "WorkflowRun [tasks=" + tasks + ", toString()=" + super.toString() + "]";
+  }
+
   public List<TaskRun> getTasks() {
     return tasks;
   }

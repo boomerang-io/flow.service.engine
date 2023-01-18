@@ -9,11 +9,13 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.boomerang.data.model.TaskRunSpec;
 import io.boomerang.model.ResultSpec;
 import io.boomerang.model.RunError;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
+import io.boomerang.model.TaskWorkspace;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
@@ -43,6 +45,10 @@ public class TaskRunEntity {
   private List<RunParam> params = new LinkedList<>();
 
   private List<RunResult> results = new LinkedList<>();
+  
+  private List<TaskWorkspace> workspaces = new LinkedList<>();
+  
+  private TaskRunSpec spec;
 
   private RunStatus status;
   
@@ -171,6 +177,22 @@ public class TaskRunEntity {
 
   public void addResult(RunResult result) {
     this.results.add(result);
+  }
+
+  public List<TaskWorkspace> getWorkspaces() {
+    return workspaces;
+  }
+
+  public void setWorkspaces(List<TaskWorkspace> workspaces) {
+    this.workspaces = workspaces;
+  }
+
+  public TaskRunSpec getSpec() {
+    return spec;
+  }
+
+  public void setSpec(TaskRunSpec spec) {
+    this.spec = spec;
   }
 
   public RunStatus getStatus() {

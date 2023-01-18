@@ -27,6 +27,12 @@ public abstract class Event {
   private Date date;
 
   private EventType type;
+  
+  private String initiatorId;
+  
+  private String initiatorContext;
+  
+  private String callbackURL;
 
   protected Event() {}
 
@@ -96,6 +102,30 @@ public abstract class Event {
   public void setType(EventType type) {
     this.type = type;
   }
+
+  public String getInitiatorId() {
+    return this.initiatorId;
+  }
+
+  public void setInitiatorId(String initiatorId) {
+    this.initiatorId = initiatorId;
+  }
+
+  public String getInitiatorContext() {
+    return this.initiatorContext;
+  }
+
+  public void setInitiatorContext(String initiatorContext) {
+    this.initiatorContext = initiatorContext;
+  }
+
+  public String getCallbackURL() {
+    return this.callbackURL;
+  }
+
+  public void setCallbackURL(String callbackURL) {
+    this.callbackURL = callbackURL;
+  }  
 
   // @formatter:off
   @Override

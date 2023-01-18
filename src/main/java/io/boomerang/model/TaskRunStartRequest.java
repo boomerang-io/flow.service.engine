@@ -13,7 +13,7 @@ public class TaskRunStartRequest {
   
   private List<RunParam> params = new LinkedList<>();
   
-  private Map<String, String> resources;
+  private Map<String, String> workspaces;
   
   private boolean preApproved;
 
@@ -41,12 +41,12 @@ public class TaskRunStartRequest {
     this.params = params;
   }
 
-  public Map<String, String> getResources() {
-    return resources;
+  public Map<String, String> getWorkspaces() {
+    return workspaces;
   }
 
-  public void setResources(Map<String, String> resources) {
-    this.resources = resources;
+  public void setWorkspaces(Map<String, String> resources) {
+    this.workspaces = resources;
   }
 
   public boolean isPreApproved() {

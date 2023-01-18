@@ -34,6 +34,7 @@ import io.boomerang.model.enums.ExecutionCondition;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
+import io.boomerang.model.TaskWorkspace;
 import io.boomerang.util.GraphProcessor;
 import io.boomerang.util.ParameterUtil;
 
@@ -92,28 +93,28 @@ public class DAGUtility {
         taskList.add(existingTaskRunEntity.get());
       } else {
         LOGGER.info("[{}] Creating TaskRunEntity: {}", wfRunEntity.getId(), wfRevisionTask.getName());
-        TaskRunEntity executionTask = new TaskRunEntity();
-        executionTask.setName(wfRevisionTask.getName());
-        executionTask.setStatus(RunStatus.notstarted);
-        executionTask.setPhase(RunPhase.pending);
+        TaskRunEntity taskRunEntity = new TaskRunEntity();
+        taskRunEntity.setName(wfRevisionTask.getName());
+        taskRunEntity.setStatus(RunStatus.notstarted);
+        taskRunEntity.setPhase(RunPhase.pending);
         if (TaskType.start.equals(wfRevisionTask.getType())) {
-          executionTask.setStatus(RunStatus.succeeded);
-          executionTask.setPhase(RunPhase.completed);
+          taskRunEntity.setStatus(RunStatus.succeeded);
+          taskRunEntity.setPhase(RunPhase.completed);
         }
-        executionTask.setType(wfRevisionTask.getType());
-        executionTask.setCreationDate(new Date());
-        executionTask.setTemplateVersion(wfRevisionTask.getTemplateVersion());
-        executionTask.setAnnotations(wfRevisionTask.getAnnotations());
-        executionTask.setDependencies(wfRevisionTask.getDependencies());
-        executionTask.setWorkflowRef(wfRevisionEntity.getWorkflowRef());
-        executionTask.setWorkflowRevisionRef(wfRevisionEntity.getId());
-        executionTask.setWorkflowRunRef(wfRunEntity.getId());
+        taskRunEntity.setType(wfRevisionTask.getType());
+        taskRunEntity.setCreationDate(new Date());
+        taskRunEntity.setTemplateVersion(wfRevisionTask.getTemplateVersion());
+        taskRunEntity.setAnnotations(wfRevisionTask.getAnnotations());
+        taskRunEntity.setDependencies(wfRevisionTask.getDependencies());
+        taskRunEntity.setWorkflowRef(wfRevisionEntity.getWorkflowRef());
+        taskRunEntity.setWorkflowRevisionRef(wfRevisionEntity.getId());
+        taskRunEntity.setWorkflowRunRef(wfRunEntity.getId());
 
         if (!TaskType.start.equals(wfRevisionTask.getType())
             && !TaskType.end.equals(wfRevisionTask.getType())) {
 
           String templateRef = wfRevisionTask.getTemplateRef();
-          executionTask.setTemplateRef(templateRef);
+          taskRunEntity.setTemplateRef(templateRef);
           Optional<TaskTemplateEntity> taskTemplate;
           if (wfRevisionTask.getTemplateVersion() != null) {
             taskTemplate = taskTemplateRepository.findByNameAndVersion(templateRef,
@@ -129,32 +130,32 @@ public class DAGUtility {
                   "latest");
             }
           }
-          executionTask.setTemplateVersion(taskTemplate.get().getVersion());
+          taskRunEntity.setTemplateVersion(taskTemplate.get().getVersion());
           LOGGER.debug("[{}] Found Task Template: {} ({})", wfRunEntity.getId(), taskTemplate.get().getName(), taskTemplate.get().getId());
-          executionTask.setTemplateResults(taskTemplate.get().getSpec().getResults());
+          taskRunEntity.setTemplateResults(taskTemplate.get().getSpec().getResults());
           // Stack the labels based on label propagation
           // Task Template -> Workflow Task -> Run 
-          executionTask.getLabels().putAll(taskTemplate.get().getLabels());
-          executionTask.getLabels().putAll(wfRevisionTask.getLabels());
-          executionTask.getLabels().putAll(wfRunEntity.getLabels());
+          taskRunEntity.getLabels().putAll(taskTemplate.get().getLabels());
+          taskRunEntity.getLabels().putAll(wfRevisionTask.getLabels());
+          taskRunEntity.getLabels().putAll(wfRunEntity.getLabels());
 
           //Set Task RunParams
           if (taskTemplate.get().getSpec().getParams() != null && !taskTemplate.get().getSpec().getParams().isEmpty()) {
             LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(), taskTemplate.get().getSpec().getParams().toString());
             LOGGER.debug("[{}] Revision Task Params: {}", wfRunEntity.getId(), wfRevisionTask.getParams().toString());
-            executionTask.setParams(ParameterUtil.addUniqueParams(
+            taskRunEntity.setParams(ParameterUtil.addUniqueParams(
                 ParameterUtil.paramSpecToRunParam(taskTemplate.get().getSpec().getParams()),
                 wfRevisionTask.getParams()));
           } else {
             LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(), wfRevisionTask.getParams().toString());
-            executionTask.setParams(wfRevisionTask.getParams());
+            taskRunEntity.setParams(wfRevisionTask.getParams());
           }
-          LOGGER.debug("[{}] Task Run Params: {}", wfRunEntity.getId(), executionTask.getParams());
+          LOGGER.debug("[{}] Task Run Params: {}", wfRunEntity.getId(), taskRunEntity.getParams());
         }
-        taskRunRepository.save(executionTask);
-        LOGGER.info("[{}] TaskRunEntity ({}) created for: {}", wfRunEntity.getId(), executionTask.getId(),
-            executionTask.getName());
-        taskList.add(executionTask);
+        taskRunRepository.save(taskRunEntity);
+        LOGGER.info("[{}] TaskRunEntity ({}) created for: {}", wfRunEntity.getId(), taskRunEntity.getId(),
+            taskRunEntity.getName());
+        taskList.add(taskRunEntity);
       }
     }
     LOGGER.info("[{}] Task List: {}", wfRunEntity.getId(), taskList.toString());

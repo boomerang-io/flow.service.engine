@@ -13,7 +13,7 @@ public class TaskTemplateSpec {
   private String image;
   private List<ResultSpec> results;
   private String script;
-  private Integer version;
+//  private Integer version;
   private String workingDir;
   
   public List<String> getArguments() {
@@ -44,9 +44,9 @@ public class TaskTemplateSpec {
     return script;
   }
 
-  public Integer getVersion() {
-    return version;
-  }
+//  public Integer getVersion() {
+//    return version;
+//  }
 
   public String getWorkingDir() {
     return workingDir;
@@ -80,9 +80,9 @@ public class TaskTemplateSpec {
     this.script = script;
   }
 
-  public void setVersion(Integer version) {
-    this.version = version;
-  }
+//  public void setVersion(Integer version) {
+//    this.version = version;
+//  }
 
   public void setWorkingDir(String workingDir) {
     this.workingDir = workingDir;

@@ -48,9 +48,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   
   @Autowired
   private ParameterManager paramManager;
-  
-  @Value("${flow.engine.mode}")
-  private String engineMode;
 
   @Override
   public void queueRevision(WorkflowRunEntity workflowExecution) {
@@ -65,13 +62,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 //  WorkflowEntity workflow = workflowService.getWorkflow(workflowId);
 //  if (workflow != null) {
 //    String workflowName = workflow.getName();
-    
-    //If in sync mode, don't wait for external prompt to startRevision
-    if ("sync".equals(engineMode)) {
-      // controllerClient.createFlow(workflowId, workflowName, workflowExecution.getId(), enablePVC, ,
-      // executionProperties);
-      startRevision(workflowExecution);
-    }
   }
 
   @Override

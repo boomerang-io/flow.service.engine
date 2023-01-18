@@ -1,11 +1,8 @@
 package io.boomerang.service;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,11 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.model.enums.TaskType;
-import io.boomerang.model.events.StatusUpdateEvent;
+import io.boomerang.model.events.TaskRunStatusEvent;
 import io.boomerang.model.events.WorkflowRunStatusEvent;
 import io.boomerang.util.EventFactory;
-import io.boomerang.util.ParameterUtil;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
@@ -50,54 +45,27 @@ public class EventSinkServiceImpl implements EventSinkService {
     Supplier<Boolean> supplier = () -> {
       Boolean isSuccess = Boolean.FALSE;
 
-      try {
-        Map<String, String> additionalData = new HashMap<>();
-        // Retrieve WFE task topic if task is of type WFE
-        if (TaskType.eventwait.equals(taskRunEntity.getType())) {
-          String taskWFETopic = (String) ParameterUtil.getValue(taskRunEntity.getParams(), "topic");
+      try {// Create status update CloudEvent from task execution
+        TaskRunStatusEvent statusEvent = EventFactory.buildStatusUpdateEvent(taskRunEntity);
 
-          if (StringUtils.isNotBlank(taskWFETopic)) {
-            additionalData.put("wfetopic", taskWFETopic);
-          }
-        }
-
-        // Create status update CloudEvent from task execution
-        StatusUpdateEvent eventStatusUpdate =
-            EventFactory.buildStatusUpdateEvent(taskRunEntity, additionalData);
+        // Extract initiatorId and initiatorContext
         String initiatorId = "";
-
-        // Extract initiator ID and initiator context
+        String initiatorContext = "";
         if (taskRunEntity.getLabels() != null && !taskRunEntity.getLabels().isEmpty()) {
-          // String sharedLabelPrefix = properties.getShared().getLabel().getPrefix() + "/";
-
           initiatorId = taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_ID) != null
               ? taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_ID)
               : "";
           if (taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT) != null) {
-            eventStatusUpdate
-                .setInitiatorContext(taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT));
+            initiatorContext = taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT) != null
+                ? taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT)
+                : "";
           }
         }
+        statusEvent.setInitiatorId(initiatorId);
+        statusEvent.setInitiatorContext(initiatorContext);
 
-        // Generate NATS message subject and publish cloud event
-        // String natsSubject = generateNATSSubject(taskExecutionEntity, initiatorId);
-        // String serializedCloudEvent = new String(eventFormatProvider
-        // .resolveFormat(JsonFormat.CONTENT_TYPE).serialize(eventStatusUpdate.toCloudEvent()));
-        //
-        // outputEventsTunnel.publish(natsSubject, serializedCloudEvent);
-        // isSuccess = Boolean.TRUE;
-        //
-        // logger.debug("Task with ID {} has changed its status to {}",
-        // eventStatusUpdate.getTaskId(),
-        // eventStatusUpdate.getStatus());
-
-        httpSink(eventStatusUpdate.toCloudEvent());
+        httpSink(statusEvent.toCloudEvent());
         isSuccess = Boolean.TRUE;
-
-        // } catch (IllegalStateException | IOException | JetStreamApiException e) {
-        // LOGGER.error("An exception occurred while publishing the message to NATS server!", e);
-        // } catch (StreamNotFoundException | SubjectMismatchException e) {
-        // LOGGER.error("Stream is not configured properly!", e);
       } catch (Exception e) {
         LOGGER.fatal("A fatal error has occurred while publishing the message!", e);
       }
@@ -115,6 +83,23 @@ public class EventSinkServiceImpl implements EventSinkService {
       try {
         // Create status update CloudEvent
         WorkflowRunStatusEvent statusEvent = EventFactory.buildStatusUpdateEvent(workflowRunEntity);
+
+        // Extract initiatorId and initiatorContext
+        String initiatorId = "";
+        String initiatorContext = "";
+        if (workflowRunEntity.getLabels() != null && !workflowRunEntity.getLabels().isEmpty()) {
+          initiatorId = workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_ID) != null
+              ? workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_ID)
+              : "";
+          if (workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT) != null) {
+            initiatorContext =
+                workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT) != null
+                    ? workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT)
+                    : "";
+          }
+        }
+        statusEvent.setInitiatorId(initiatorId);
+        statusEvent.setInitiatorContext(initiatorContext);
 
         httpSink(statusEvent.toCloudEvent());
         isSuccess = Boolean.TRUE;
@@ -143,7 +128,9 @@ public class EventSinkServiceImpl implements EventSinkService {
         ResponseEntity<String> responseEntity =
             restTemplate.exchange(sinkUrl, HttpMethod.POST, req, String.class);
         LOGGER.debug("httpSink() - Status Code: " + responseEntity.getStatusCode());
-        LOGGER.debug("httpSink() - Body: " + responseEntity.getBody().toString());
+        if (responseEntity.getBody() != null) {
+          LOGGER.debug("httpSink() - Body: " + responseEntity.getBody().toString());
+        }
       }
     }
   }

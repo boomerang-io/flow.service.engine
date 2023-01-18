@@ -8,10 +8,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.boomerang.data.entity.ActionEntity;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowEntity;
@@ -25,8 +25,10 @@ import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
+import io.boomerang.model.TaskWorkspace;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunRequest;
+import io.boomerang.model.WorkflowWorkspaceSpec;
 import io.boomerang.model.enums.ActionStatus;
 import io.boomerang.model.enums.ActionType;
 import io.boomerang.model.enums.RunPhase;
@@ -95,9 +97,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   @Autowired
   private ParameterManager paramManager;
 
-  @Value("${flow.engine.mode}")
-  private String engineMode;
-
   @Override
   @Async("asyncTaskExecutor")
   public void queueTask(TaskRunEntity taskExecution) {
@@ -139,11 +138,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       
       // Update Status and Phase
       updateStatusAndSaveTask(taskExecution, RunStatus.ready, RunPhase.pending, Optional.empty());
-
-      // If in sync mode, don't wait for external prompt to startTask
-      if ("sync".equals(engineMode)) {
-        startTask(taskExecution);
-      }
     } else {
       LOGGER.debug("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
       taskExecution.setStatus(RunStatus.skipped);
@@ -201,21 +195,14 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         this.endTask(taskExecution);
       } else if (TaskType.template.equals(taskType) || TaskType.script.equals(taskType)) {
         LOGGER.info("[{}] Execute Template Task", wfRunId);
-//        if ("sync".equals(engineMode)) {
-//           Map<String, String> labels = wfRunEntity.get().getLabels();
-//          controllerClient.submitTemplateTask(this, flowClient, task, wfRunId, workflowName,
-//            labels);
-//        }
+        getTaskWorkspaces(taskExecution, wfRunEntity);
       } else if (TaskType.custom.equals(taskType)) {
         LOGGER.info("[{}] Execute Custom Task", wfRunId);
-//      if ("sync".equals(engineMode)) {
-//      Map<String, String> labels = wfRunEntity.get().getLabels();
-//     controllerClient.submitCustomTask(this, flowClient, task, wfRunId, workflowName,
-//       labels);
-//   }
+        getTaskWorkspaces(taskExecution, wfRunEntity);
       } else if (TaskType.generic.equals(taskType)) {
         LOGGER.info("[{}] Execute Generic Task", wfRunId);
-        //TODO resolve any params
+        getTaskWorkspaces(taskExecution, wfRunEntity);
+        //Nothing to do here. This Generic task is completely up to the Handler.
       } else if (TaskType.acquirelock.equals(taskType)) {
         LOGGER.info("[{}] Execute Acquire Lock", wfRunId);
         String token = lockManager.acquireTaskLock(taskExecution, wfRunEntity.get().getId());
@@ -262,6 +249,21 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       taskExecution.setStatus(RunStatus.skipped);
       endTask(taskExecution);
     }
+  }
+
+  private void getTaskWorkspaces(TaskRunEntity taskExecution,
+      Optional<WorkflowRunEntity> wfRunEntity) {
+    ObjectMapper mapper = new ObjectMapper();
+    List<TaskWorkspace> taskWorkspaces = new LinkedList<>();
+    wfRunEntity.get().getWorkspaces().forEach(ws -> {
+      TaskWorkspace tw = new TaskWorkspace();
+      WorkflowWorkspaceSpec spec = mapper.convertValue(ws.getSpec(), WorkflowWorkspaceSpec.class);
+      tw.setName(ws.getName());
+      tw.setMountPath(spec.getMountPath());
+      tw.setOptional(ws.isOptional());
+      tw.setType(ws.getType());
+    });
+    taskExecution.setWorkspaces(taskWorkspaces);
   }
 
   @Override
