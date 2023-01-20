@@ -46,7 +46,7 @@ jobs:
         if: ${{ success() }}
         with:
           name: service-engine.jar
-          path: build/libs/service-engine.jar
+          path: target/service-engine.jar
       - name: Slack
         uses: 8398a7/action-slack@v3
         if: ${{ always() }}
@@ -65,7 +65,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: service-engine.jar
-          path: ${{ github.workspace }}/build/libs
+          path: ${{ github.workspace }}/target
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx

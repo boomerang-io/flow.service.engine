@@ -5,7 +5,7 @@ ENV BMRG_HOME=/opt/boomerang
 ENV BMRG_SVC=service-engine
 
 WORKDIR $BMRG_HOME
-ADD ./build/libs/$BMRG_SVC.jar service.jar
+ADD ./target/$BMRG_SVC.jar service.jar
 RUN sh -c 'touch /service.jar'
 
 # Create user, chown, and chmod. 
