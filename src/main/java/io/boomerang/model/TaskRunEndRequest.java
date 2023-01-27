@@ -16,6 +16,10 @@ public class TaskRunEndRequest {
   
   private List<RunResult> results = new LinkedList<>();
 
+  private String statusMessage;
+  
+  private RunError error;
+
   public RunStatus getStatus() {
     return status;
   }
@@ -46,5 +50,21 @@ public class TaskRunEndRequest {
 
   public void setResults(List<RunResult> results) {
     this.results = results;
+  }
+
+  public String getStatusMessage() {
+    return statusMessage;
+  }
+
+  public void setStatusMessage(String statusMessage) {
+    this.statusMessage = statusMessage;
+  }
+
+  public RunError getError() {
+    return error;
+  }
+
+  public void setError(RunError error) {
+    this.error = error;
   }
 }

@@ -157,11 +157,20 @@ public class TaskRunServiceImpl implements TaskRunService {
       if (optRunRequest.isPresent()) {
         taskRunEntity.putLabels(optRunRequest.get().getLabels());
         taskRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
-        taskRunEntity.setResults(optRunRequest.get().getResults());
-        if (!(RunStatus.failed.equals(optRunRequest.get().getStatus()) || RunStatus.succeeded.equals(optRunRequest.get().getStatus()))) {
-          throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_END_STATUS);
+        if (optRunRequest.get().getError() != null) {
+          taskRunEntity.setError(optRunRequest.get().getError());
         }
-        taskRunEntity.setStatus(optRunRequest.get().getStatus());
+        if (optRunRequest.get().getStatusMessage() != null && !optRunRequest.get().getStatusMessage().isEmpty()) {
+          taskRunEntity.setStatusMessage(optRunRequest.get().getStatusMessage());
+        }
+        taskRunEntity.setResults(optRunRequest.get().getResults());
+        if (optRunRequest.get().getStatus() == null) {
+          taskRunEntity.setStatus(RunStatus.succeeded);
+        } else if (!(RunStatus.failed.equals(optRunRequest.get().getStatus()) || RunStatus.succeeded.equals(optRunRequest.get().getStatus()))) {
+          throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_END_STATUS);
+        } else {
+          taskRunEntity.setStatus(optRunRequest.get().getStatus());          
+        }
         taskRunRepository.save(taskRunEntity);
       }
       taskExecutionClient.endTask(taskExecutionService, taskRunEntity);
