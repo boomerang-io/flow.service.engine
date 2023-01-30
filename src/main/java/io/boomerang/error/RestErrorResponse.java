@@ -1,13 +1,15 @@
 package io.boomerang.error;
 
-import org.springframework.http.HttpStatus;
+import java.util.Date;
 
-public class ErrorResponse {
+public class RestErrorResponse {
   
+  private Date timestamp = new Date();
   private int code;
   private String reason;
   private String message;
-  private HttpStatus status;
+  private String status;
+  private String cause;
   
   public int getCode() {
     return code;
@@ -27,10 +29,22 @@ public class ErrorResponse {
   public void setMessage(String message) {
     this.message = message;
   }
-  public HttpStatus getStatus() {
+  public String getStatus() {
     return status;
   }
-  public void setStatus(HttpStatus status) {
+  public void setStatus(String status) {
     this.status = status;
+  }
+  public Date getTimestamp() {
+    return timestamp;
+  }
+  public void setTimestamp(Date timestamp) {
+    this.timestamp = timestamp;
+  }
+  public String getCause() {
+    return cause;
+  }
+  public void setCause(String cause) {
+    this.cause = cause;
   }
 }

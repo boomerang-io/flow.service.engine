@@ -2,6 +2,13 @@ package io.boomerang.error;
 
 import org.springframework.http.HttpStatus;
 
+/*
+ * The Boomerang exception format
+ * 
+ * References:
+ * - https://cloud.google.com/apis/design/errors
+ * - https://docs.aws.amazon.com/AWSEC2/latest/APIReference/errors-overview.html#api-error-response
+ */
 public class BoomerangException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
@@ -11,6 +18,24 @@ public class BoomerangException extends RuntimeException {
   private final String message;
   private final HttpStatus status;
   private final Object[] args;
+  
+  public BoomerangException(int code, String reason, HttpStatus status, Object... args) {
+    super();
+    this.code = code;
+    this.reason = reason;
+    this.message = null;
+    this.status = status;
+    this.args = args;
+  }
+  
+  public BoomerangException(Throwable ex, int code, String reason, HttpStatus status, Object... args) {
+    super(ex);
+    this.code = code;
+    this.reason = reason;
+    this.message = null;
+    this.status = status;
+    this.args = args;
+  }
   
   public BoomerangException(int code, String reason, String message, HttpStatus status, Object... args) {
     super();

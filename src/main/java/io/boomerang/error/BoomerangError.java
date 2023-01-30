@@ -4,8 +4,21 @@ import org.springframework.http.HttpStatus;
 
 public enum BoomerangError {
   
-  /** Add reusable error list here. Map to messages.properties*/
+  /** 
+   * Add reusable error list here. Map to messages.properties
+   * 
+   * @param code the internal codes documented for end users and systems to integrate
+   * @param reason Key to look up in messages.properties
+   * @param HttpStatus status to respond as
+   * 
+   * Last updated 2023/01/30 - keep this date updated as this is used across the services.
+   * 
+   * */
+  TEAM_NAME_ALREADY_EXISTS(100, "TEAM_NAME_ALREADY_EXISTS", HttpStatus.BAD_REQUEST),
   TOO_MANY_REQUESTS(429, "TOO_MANY_REQUESTS", HttpStatus.TOO_MANY_REQUESTS),
+  IMPORT_WORKFLOW_FAILED(400, "IMPORT_WORKFLOW_FAILED", HttpStatus.BAD_REQUEST),
+  WORKFLOW_TRIGGER_DISABLED(429, "WORKFLOW_TRIGGER_DISABLED", HttpStatus.UNAUTHORIZED),
+  WORKFLOW_TEAM_INACTIVE(429, "WORKFLOW_TEAM_INACTIVE", HttpStatus.UNAUTHORIZED),
   QUERY_INVALID_FILTERS(1001, "QUERY_INVALID_FILTERS", HttpStatus.BAD_REQUEST),
   WORKFLOW_INVALID_REF(1101, "WORKFLOW_INVALID_REFERENCE", HttpStatus.BAD_REQUEST),
   WORKFLOW_NON_UNIQUE_TASK_NAME(1102, "WORKFLOW_NON_UNIQUE_TASK_NAME", HttpStatus.BAD_REQUEST),
