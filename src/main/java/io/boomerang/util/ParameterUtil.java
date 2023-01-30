@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import io.boomerang.error.BoomerangError;
+import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ParamSpec;
 import io.boomerang.model.RunParam;
 
@@ -32,12 +34,17 @@ public class ParameterUtil {
    * @return the parameter list
    */
   public static List<RunParam> addUniqueParam(List<RunParam> parameterList, RunParam param) {
+    try {
     if (parameterList.stream().noneMatch(p -> param.getName().equals(p.getName()))) {
       parameterList.add(param);
     } else {
       parameterList.stream().filter(p -> param.getName().equals(p.getName())).findFirst().ifPresent(p -> p.setValue(param.getValue()));
     }
     return parameterList;
+    } catch (NullPointerException npe) {
+      throw new BoomerangException(npe, BoomerangError.REQUEST_INVALID_PARAMS);
+      
+    }
   }
   
   /*
