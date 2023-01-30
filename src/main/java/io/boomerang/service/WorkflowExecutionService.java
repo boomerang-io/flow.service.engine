@@ -5,9 +5,11 @@ import io.boomerang.data.entity.WorkflowRunEntity;
 
 public interface WorkflowExecutionService {
 
-  void queueRevision(WorkflowRunEntity wfRunEntity);
+  void queue(WorkflowRunEntity wfRunEntity);
 
-  CompletableFuture<Boolean> startRevision(WorkflowRunEntity wfRunEntity);
+  CompletableFuture<Boolean> start(WorkflowRunEntity wfRunEntity);
 
-  void endRevision(WorkflowRunEntity wfRunEntity);
+  void end(WorkflowRunEntity wfRunEntity);
+
+  void cancel(WorkflowRunEntity workflowExecution);
 }

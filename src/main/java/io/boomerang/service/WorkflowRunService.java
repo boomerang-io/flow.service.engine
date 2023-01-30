@@ -13,13 +13,16 @@ public interface WorkflowRunService {
 
   ResponseEntity<WorkflowRun> get(String workflowRunId, boolean withTasks);
 
-  Page<WorkflowRunEntity> query(Pageable pageable, Optional<List<String>> labels,
-      Optional<List<String>> status, Optional<List<String>> phase);
-
   ResponseEntity<WorkflowRun> submit(String workflowId, Optional<Integer> version, boolean start, Optional<WorkflowRunRequest> runRequest);
 
   ResponseEntity<WorkflowRun> start(String workflowRunId, Optional<WorkflowRunRequest> runRequest);
 
   ResponseEntity<WorkflowRun> end(String workflowRunId);
+
+  Page<WorkflowRunEntity> query(Pageable pageable, Optional<List<String>> queryLabels,
+      Optional<List<String>> queryStatus, Optional<List<String>> queryPhase,
+      Optional<List<String>> ids);
+
+  ResponseEntity<WorkflowRun> cancel(String workflowRunId);
   
 }

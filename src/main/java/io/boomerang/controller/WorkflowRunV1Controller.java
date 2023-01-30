@@ -66,13 +66,16 @@ public class WorkflowRunV1Controller {
       @Parameter(name = "phase",
       description = "List of phases to filter for. Defaults to all.", example = "completed,finalized",
       required = false) @RequestParam(required = false)  Optional<List<String>> phase,
+      @Parameter(name = "ids",
+      description = "List of WorkflowRun IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
+      required = false) @RequestParam(required = false)  Optional<List<String>> ids,
       @Parameter(name = "limit", description = "Result Size", example = "10",
           required = true) @RequestParam(defaultValue = "10") int limit,
       @Parameter(name = "page", description = "Page Number", example = "0",
           required = true) @RequestParam(defaultValue = "0") int page) {
     final Sort sort = Sort.by(new Order(Direction.ASC, "creationDate"));
     final Pageable pageable = PageRequest.of(page, limit, sort);
-    return workflowRunService.query(pageable, labels, status, phase);
+    return workflowRunService.query(pageable, labels, status, phase, ids);
   }
 
   @PostMapping(value = "/{workflowId}/run/submit")
@@ -116,7 +119,6 @@ public class WorkflowRunV1Controller {
     return workflowRunService.end(workflowRunId);
   }
 
-  //TODO implement
   @PutMapping(value = "/run/{workflowRunId}/cancel")
   @Operation(summary = "Cancel a Workflow Run")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
@@ -125,7 +127,7 @@ public class WorkflowRunV1Controller {
       @Parameter(name = "workflowRunId",
       description = "ID of Workflow Run to Cancel",
       required = true) @PathVariable(required = true) String workflowRunId) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+    return workflowRunService.cancel(workflowRunId);
   }
 
   //TODO implement

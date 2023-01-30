@@ -15,17 +15,22 @@ import io.boomerang.data.entity.WorkflowRunEntity;
 public class WorkflowExecutionClientImpl implements WorkflowExecutionClient {
   
   @Override
-  public void queueRevision(WorkflowExecutionService workflowExecutionService, WorkflowRunEntity wfRunEntity) {
-    workflowExecutionService.queueRevision(wfRunEntity);
+  public void queue(WorkflowExecutionService workflowExecutionService, WorkflowRunEntity wfRunEntity) {
+    workflowExecutionService.queue(wfRunEntity);
   }
 
   @Override
-  public void startRevision(WorkflowExecutionService workflowExecutionService, WorkflowRunEntity wfRunEntity) {
-      workflowExecutionService.startRevision(wfRunEntity);
+  public void start(WorkflowExecutionService workflowExecutionService, WorkflowRunEntity wfRunEntity) {
+      workflowExecutionService.start(wfRunEntity);
   }
 
   @Override
-  public void endRevision(WorkflowExecutionService workflowExecutionService, WorkflowRunEntity wfRunEntity) {
-      workflowExecutionService.endRevision(wfRunEntity);
+  public void end(WorkflowExecutionService workflowExecutionService, WorkflowRunEntity wfRunEntity) {
+      workflowExecutionService.end(wfRunEntity);
+  }
+
+  @Override
+  public void cancel(WorkflowExecutionService workflowExecutionService, WorkflowRunEntity wfRunEntity) {
+      workflowExecutionService.end(wfRunEntity);
   }
 }

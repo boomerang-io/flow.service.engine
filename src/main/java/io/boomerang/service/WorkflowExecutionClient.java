@@ -4,12 +4,14 @@ import io.boomerang.data.entity.WorkflowRunEntity;
 
 public interface WorkflowExecutionClient {
 
-  void queueRevision(WorkflowExecutionService workflowExecutionService,
+  void queue(WorkflowExecutionService workflowExecutionService,
       WorkflowRunEntity wfRunEntity);
 
-  void startRevision(WorkflowExecutionService workflowExecutionService,
+  void start(WorkflowExecutionService workflowExecutionService,
       WorkflowRunEntity wfRunEntity);
 
-  void endRevision(WorkflowExecutionService workflowExecutionService,
+  void end(WorkflowExecutionService workflowExecutionService,
       WorkflowRunEntity wfRunEntity);
+
+  void cancel(WorkflowExecutionService workflowExecutionService, WorkflowRunEntity wfRunEntity);
 }

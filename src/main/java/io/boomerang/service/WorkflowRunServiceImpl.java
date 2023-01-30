@@ -84,7 +84,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   @Override
   // TODO switch to WorkflowRun
   public Page<WorkflowRunEntity> query(Pageable pageable, Optional<List<String>> queryLabels,
-      Optional<List<String>> queryStatus, Optional<List<String>> queryPhase) {
+      Optional<List<String>> queryStatus, Optional<List<String>> queryPhase, Optional<List<String>> queryIds) {
     List<Criteria> criteriaList = new ArrayList<>();
 
     if (queryLabels.isPresent()) {
@@ -121,6 +121,11 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       } else {
         throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "phase");
       }
+    }
+    
+    if (queryIds.isPresent()) {
+      Criteria criteria = Criteria.where("id").in(queryIds.get());
+      criteriaList.add(criteria);
     }
 
     Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);
@@ -198,7 +203,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       // Throws Execution exception if not able to
       // workflowService.canExecuteWorkflow(workflowId);
 
-      workflowExecutionClient.queueRevision(workflowExecutionService, wfRunEntity);
+      workflowExecutionClient.queue(workflowExecutionService, wfRunEntity);
 
       if (start) {
         return this.start(wfRunEntity.getId(), Optional.empty());
@@ -232,7 +237,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         workflowRunRepository.save(wfRunEntity);
       }
 
-      workflowExecutionClient.startRevision(workflowExecutionService, wfRunEntity);
+      workflowExecutionClient.start(workflowExecutionService, wfRunEntity);
       
       //Retrieve the refreshed status
       WorkflowRunEntity updatedWfRunEntity = 
@@ -255,7 +260,26 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     if (optWfRunEntity.isPresent()) {
       WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
 
-      workflowExecutionClient.endRevision(workflowExecutionService, wfRunEntity);
+      workflowExecutionClient.end(workflowExecutionService, wfRunEntity);
+      final WorkflowRun response = new WorkflowRun(wfRunEntity);
+      response.setTasks(getTaskRuns(wfRunEntity.getId()));
+      return ResponseEntity.ok(response);
+    } else {
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+    }
+  }
+
+  @Override
+  public ResponseEntity<WorkflowRun> cancel(String workflowRunId) {
+    if (workflowRunId == null || workflowRunId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+    }
+    final Optional<WorkflowRunEntity> optWfRunEntity =
+        workflowRunRepository.findById(workflowRunId);
+    if (optWfRunEntity.isPresent()) {
+      WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
+
+      workflowExecutionClient.cancel(workflowExecutionService, wfRunEntity);
       final WorkflowRun response = new WorkflowRun(wfRunEntity);
       response.setTasks(getTaskRuns(wfRunEntity.getId()));
       return ResponseEntity.ok(response);
