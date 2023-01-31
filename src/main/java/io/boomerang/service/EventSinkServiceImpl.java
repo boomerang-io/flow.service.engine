@@ -30,10 +30,10 @@ public class EventSinkServiceImpl implements EventSinkService {
 
   protected static final String LABEL_KEY_INITIATOR_CONTEXT = "initiatorContext";
 
-  @Value("${flow.events.sink.urls}")
+  @Value("${flow.events.sink-urls}")
   private String sinkUrls;
 
-  @Value("${flow.events.sink.enabled}")
+  @Value("${flow.events.sink-enabled}")
   private boolean sinkEnabled;
 
   @Autowired
