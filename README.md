@@ -73,18 +73,22 @@ The format can be seen in `io.boomerang.error.ErrorDetail.java`
 
 | Field | Description|
 | --- | --- |
+| timestamp | UTC timestamp of when the error occurred | 
 | code | unique identifier (int) that can be read and understood that detect and handle errors programmatically. |
 | reason | unique identifier (string) that can be used to quickly identify and search for more information regarding the error. |
 | message | a description of the error intended for a human and an end user to provide context. |
-| status | HTTP Status Code Message |
+| status | HTTP Status Code & Message |
+| cause | Optional present if `flow.error.include-cause=true` config property is provided |
 
 
 ```java
 {
+  "timestamp": "2023-01-31T00:15:12.672+00:00",
   "code": 1001
   "reason": "QUERY_INVALID_FILTERS",
   "message": "Invalid query filters(status) have been provided.",
-  "status": "BAD_REQUEST"
+  "status": "400 BAD_REQUEST",
+  "cause": null
 }
 ```
 
