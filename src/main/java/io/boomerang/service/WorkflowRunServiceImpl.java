@@ -215,7 +215,6 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         return this.start(wfRunEntity.getId(), Optional.empty());
       } else {
         final WorkflowRun response = new WorkflowRun(wfRunEntity);
-//        response.setTasks(getTaskRuns(wfRunEntity.getId()));
         return ResponseEntity.ok(response);
       }
     } else {
@@ -249,7 +248,6 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       WorkflowRunEntity updatedWfRunEntity = 
           workflowRunRepository.findById(workflowRunId).get();
       final WorkflowRun response = new WorkflowRun(updatedWfRunEntity);
-//      response.setTasks(getTaskRuns(workflowRunId));
       return ResponseEntity.ok(response);
     } else {
       throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
@@ -268,7 +266,6 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
       workflowExecutionClient.end(workflowExecutionService, wfRunEntity);
       final WorkflowRun response = new WorkflowRun(wfRunEntity);
-//      response.setTasks(getTaskRuns(wfRunEntity.getId()));
       return ResponseEntity.ok(response);
     } else {
       throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
@@ -287,7 +284,6 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
       workflowExecutionClient.cancel(workflowExecutionService, wfRunEntity);
       final WorkflowRun response = new WorkflowRun(wfRunEntity);
-//      response.setTasks(getTaskRuns(wfRunEntity.getId()));
       return ResponseEntity.ok(response);
     } else {
       throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
@@ -315,7 +311,6 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         return this.start(wfRunEntity.getId(), Optional.empty());
       } else {
         final WorkflowRun response = new WorkflowRun(wfRunEntity);
-//        response.setTasks(getTaskRuns(wfRunEntity.getId()));
         return ResponseEntity.ok(response);
       }
     } else {
