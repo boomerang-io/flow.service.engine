@@ -31,6 +31,6 @@ public class WorkflowExecutionClientImpl implements WorkflowExecutionClient {
 
   @Override
   public void cancel(WorkflowExecutionService workflowExecutionService, WorkflowRunEntity wfRunEntity) {
-      workflowExecutionService.end(wfRunEntity);
+      workflowExecutionService.cancel(wfRunEntity);
   }
 }

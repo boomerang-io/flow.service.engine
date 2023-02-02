@@ -9,8 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.domain.Sort.Order;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -119,7 +119,7 @@ public class WorkflowRunV1Controller {
     return workflowRunService.end(workflowRunId);
   }
 
-  @PutMapping(value = "/run/{workflowRunId}/cancel")
+  @DeleteMapping(value = "/run/{workflowRunId}/cancel")
   @Operation(summary = "Cancel a Workflow Run")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
@@ -130,7 +130,6 @@ public class WorkflowRunV1Controller {
     return workflowRunService.cancel(workflowRunId);
   }
 
-  //TODO implement
   @PutMapping(value = "/run/{workflowRunId}/retry")
   @Operation(summary = "Retry Workflow Run execution.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
@@ -139,7 +138,9 @@ public class WorkflowRunV1Controller {
       @Parameter(name = "workflowRunId",
       description = "ID of Workflow Run to Retry.",
       required = true) @PathVariable(required = true) String workflowRunId,
-      @RequestBody Optional<WorkflowRunRequest> runRequest) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+      @Parameter(name = "start",
+      description = "Start the Workflow Run immediately after submission",
+      required = false) @RequestParam(required = false, defaultValue = "false") boolean start) {
+    return workflowRunService.retry(workflowRunId, start);
   }
 }

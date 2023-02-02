@@ -87,6 +87,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       Optional<List<String>> queryStatus, Optional<List<String>> queryPhase, Optional<List<String>> queryIds) {
     List<Criteria> criteriaList = new ArrayList<>();
 
+    //TODO add the ability to OR labels not just AND
     if (queryLabels.isPresent()) {
       queryLabels.get().stream().forEach(l -> {
         String decodedLabel = "";
@@ -143,6 +144,11 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     return pages;
   }
 
+  /*
+   * Queues the Workflow to be executed (and optionally starts the execution)
+   * 
+   * Currently does not worry about Ownership, Triggers, or Status 
+   */
   @Override
   public ResponseEntity<WorkflowRun> submit(String workflowId, Optional<Integer> version, boolean start,
       Optional<WorkflowRunRequest> optRunRequest) {
@@ -209,7 +215,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         return this.start(wfRunEntity.getId(), Optional.empty());
       } else {
         final WorkflowRun response = new WorkflowRun(wfRunEntity);
-        response.setTasks(getTaskRuns(wfRunEntity.getId()));
+//        response.setTasks(getTaskRuns(wfRunEntity.getId()));
         return ResponseEntity.ok(response);
       }
     } else {
@@ -243,7 +249,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       WorkflowRunEntity updatedWfRunEntity = 
           workflowRunRepository.findById(workflowRunId).get();
       final WorkflowRun response = new WorkflowRun(updatedWfRunEntity);
-      response.setTasks(getTaskRuns(workflowRunId));
+//      response.setTasks(getTaskRuns(workflowRunId));
       return ResponseEntity.ok(response);
     } else {
       throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
@@ -262,7 +268,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
       workflowExecutionClient.end(workflowExecutionService, wfRunEntity);
       final WorkflowRun response = new WorkflowRun(wfRunEntity);
-      response.setTasks(getTaskRuns(wfRunEntity.getId()));
+//      response.setTasks(getTaskRuns(wfRunEntity.getId()));
       return ResponseEntity.ok(response);
     } else {
       throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
@@ -281,8 +287,37 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
       workflowExecutionClient.cancel(workflowExecutionService, wfRunEntity);
       final WorkflowRun response = new WorkflowRun(wfRunEntity);
-      response.setTasks(getTaskRuns(wfRunEntity.getId()));
+//      response.setTasks(getTaskRuns(wfRunEntity.getId()));
       return ResponseEntity.ok(response);
+    } else {
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+    }
+  }
+
+  @Override
+  public ResponseEntity<WorkflowRun> retry(String workflowRunId, boolean start) {
+    if (workflowRunId == null || workflowRunId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+    }
+    final Optional<WorkflowRunEntity> optWfRunEntity =
+        workflowRunRepository.findById(workflowRunId);
+    if (optWfRunEntity.isPresent()) {
+      WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
+      wfRunEntity.setCreationDate(new Date());
+      wfRunEntity.setStatus(RunStatus.notstarted);
+      wfRunEntity.setPhase(RunPhase.pending);
+      wfRunEntity.setId(null);
+      workflowRunRepository.save(wfRunEntity);
+
+      workflowExecutionClient.queue(workflowExecutionService, wfRunEntity);
+
+      if (start) {
+        return this.start(wfRunEntity.getId(), Optional.empty());
+      } else {
+        final WorkflowRun response = new WorkflowRun(wfRunEntity);
+//        response.setTasks(getTaskRuns(wfRunEntity.getId()));
+        return ResponseEntity.ok(response);
+      }
     } else {
       throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
     }

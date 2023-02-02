@@ -46,25 +46,27 @@ public class EventSinkServiceImpl implements EventSinkService {
       Boolean isSuccess = Boolean.FALSE;
 
       try {// Create status update CloudEvent from task execution
-        TaskRunStatusEvent statusEvent = EventFactory.buildStatusUpdateEvent(taskRunEntity);
+        if (sinkEnabled) {
+          TaskRunStatusEvent statusEvent = EventFactory.buildStatusUpdateEvent(taskRunEntity);
 
-        // Extract initiatorId and initiatorContext
-        String initiatorId = "";
-        String initiatorContext = "";
-        if (taskRunEntity.getLabels() != null && !taskRunEntity.getLabels().isEmpty()) {
-          initiatorId = taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_ID) != null
-              ? taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_ID)
-              : "";
-          if (taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT) != null) {
-            initiatorContext = taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT) != null
-                ? taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT)
+          // Extract initiatorId and initiatorContext
+          String initiatorId = "";
+          String initiatorContext = "";
+          if (taskRunEntity.getLabels() != null && !taskRunEntity.getLabels().isEmpty()) {
+            initiatorId = taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_ID) != null
+                ? taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_ID)
                 : "";
+            if (taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT) != null) {
+              initiatorContext = taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT) != null
+                  ? taskRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT)
+                  : "";
+            }
           }
-        }
-        statusEvent.setInitiatorId(initiatorId);
-        statusEvent.setInitiatorContext(initiatorContext);
+          statusEvent.setInitiatorId(initiatorId);
+          statusEvent.setInitiatorContext(initiatorContext);
 
-        httpSink(statusEvent.toCloudEvent());
+          httpSink(statusEvent.toCloudEvent());
+        }
         isSuccess = Boolean.TRUE;
       } catch (Exception e) {
         LOGGER.fatal("A fatal error has occurred while publishing the message!", e);
@@ -81,27 +83,30 @@ public class EventSinkServiceImpl implements EventSinkService {
       Boolean isSuccess = Boolean.FALSE;
 
       try {
-        // Create status update CloudEvent
-        WorkflowRunStatusEvent statusEvent = EventFactory.buildStatusUpdateEvent(workflowRunEntity);
+        if (sinkEnabled) {
+          // Create status update CloudEvent
+          WorkflowRunStatusEvent statusEvent =
+              EventFactory.buildStatusUpdateEvent(workflowRunEntity);
 
-        // Extract initiatorId and initiatorContext
-        String initiatorId = "";
-        String initiatorContext = "";
-        if (workflowRunEntity.getLabels() != null && !workflowRunEntity.getLabels().isEmpty()) {
-          initiatorId = workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_ID) != null
-              ? workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_ID)
-              : "";
-          if (workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT) != null) {
-            initiatorContext =
-                workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT) != null
-                    ? workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT)
-                    : "";
+          // Extract initiatorId and initiatorContext
+          String initiatorId = "";
+          String initiatorContext = "";
+          if (workflowRunEntity.getLabels() != null && !workflowRunEntity.getLabels().isEmpty()) {
+            initiatorId = workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_ID) != null
+                ? workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_ID)
+                : "";
+            if (workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT) != null) {
+              initiatorContext =
+                  workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT) != null
+                      ? workflowRunEntity.getLabels().get(LABEL_KEY_INITIATOR_CONTEXT)
+                      : "";
+            }
           }
-        }
-        statusEvent.setInitiatorId(initiatorId);
-        statusEvent.setInitiatorContext(initiatorContext);
+          statusEvent.setInitiatorId(initiatorId);
+          statusEvent.setInitiatorContext(initiatorContext);
 
-        httpSink(statusEvent.toCloudEvent());
+          httpSink(statusEvent.toCloudEvent());
+        }
         isSuccess = Boolean.TRUE;
       } catch (Exception e) {
         LOGGER.fatal("A fatal error has occurred while publishing the message!", e);
