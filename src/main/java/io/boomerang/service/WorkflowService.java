@@ -15,7 +15,7 @@ public interface WorkflowService {
   ResponseEntity<Workflow> create(Workflow workflow, boolean useId);
 
   Page<WorkflowEntity> query(Pageable pageable, Optional<List<String>> labels,
-      Optional<List<String>> status);
+      Optional<List<String>> status, Optional<List<String>> ids);
 
   ResponseEntity<Workflow> apply(Workflow workflow, Boolean replace);
 //

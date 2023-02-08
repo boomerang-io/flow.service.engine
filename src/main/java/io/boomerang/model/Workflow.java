@@ -15,6 +15,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.util.TaskMapper;
+import io.boomerang.v4.model.ref.WorkflowToken;
+import io.boomerang.v4.model.ref.WorkflowTrigger;
 
 /*
  * Workflow Model joining Workflow Entity and Workflow Revision Entity
@@ -49,9 +51,10 @@ public class Workflow {
   
   private boolean upgradesAvailable = false;
 
-  //TODO: need to adjust the triggers model
+  //TODO: adjust the triggers model
   private WorkflowTrigger triggers;
   
+  //TODO: revisit tokens implementation
   private List<WorkflowToken> tokens;
   
   private List<Task> tasks = new LinkedList<>();

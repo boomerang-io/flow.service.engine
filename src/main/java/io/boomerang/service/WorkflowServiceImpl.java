@@ -96,7 +96,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
   @Override
   public Page<WorkflowEntity> query(Pageable pageable, Optional<List<String>> queryLabels,
-      Optional<List<String>> queryStatus) {
+      Optional<List<String>> queryStatus, Optional<List<String>> queryIds) {
     List<Criteria> criteriaList = new ArrayList<>();
 
     if (queryLabels.isPresent()) {
@@ -123,6 +123,11 @@ public class WorkflowServiceImpl implements WorkflowService {
       } else {
         throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "status");
       }
+    }
+    
+    if (queryIds.isPresent()) {
+      Criteria criteria = Criteria.where("id").in(queryIds.get());
+      criteriaList.add(criteria);
     }
 
     Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);

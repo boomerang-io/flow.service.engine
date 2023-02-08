@@ -63,13 +63,16 @@ public class WorkflowV1Controller {
       @Parameter(name = "status",
       description = "List of statuses to filter for. Defaults to all.", example = "active,archived",
       required = false) @RequestParam(required = false)  Optional<List<String>> status,
+      @Parameter(name = "ids",
+      description = "List of Workflow IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
+      required = false) @RequestParam(required = false)  Optional<List<String>> ids,
       @Parameter(name = "limit", description = "Result Size", example = "10",
           required = true) @RequestParam(defaultValue = "10") int limit,
       @Parameter(name = "page", description = "Page Number", example = "0",
           required = true) @RequestParam(defaultValue = "0") int page) {
     final Sort sort = Sort.by(new Order(Direction.ASC, "creationDate"));
     final Pageable pageable = PageRequest.of(page, limit, sort);
-    return workflowService.query(pageable, labels, status);
+    return workflowService.query(pageable, labels, status, ids);
   }
 
   @PostMapping(value = "/")
