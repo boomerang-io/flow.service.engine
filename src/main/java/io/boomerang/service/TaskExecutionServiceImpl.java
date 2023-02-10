@@ -325,9 +325,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     boolean finishedAllDependencies = this.finishedAll(wfRunEntity.get(), tasks, taskExecution);
     LOGGER.debug("[{}] Finished all previous tasks? {}", taskRunId, finishedAllDependencies);
 
-    LOGGER.debug("[{}] Attempting to get lock", taskRunId);
+    LOGGER.debug("[{}] Attempting to get WorkflowRun lock", taskRunId);
     String tokenId = lockManager.acquireWorkflowLock(keys);
-    LOGGER.debug("[{}] Obtained lock", taskRunId);
+    LOGGER.debug("[{}] Obtained WorkflowRun lock", taskRunId);
     //Refresh wfRunEntity and update approval status
     wfRunEntity = workflowRunRepository.findById(taskExecution.getWorkflowRunRef());
     updatePendingAprovalStatus(wfRunEntity.get());
@@ -336,7 +336,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     executeNextStep(wfRunEntity.get(), tasks, taskExecution, finishedAllDependencies);
     
     lockManager.releaseWorkflowLock(keys, tokenId);
-    LOGGER.debug("[{}] Released lock", taskRunId);
+    LOGGER.debug("[{}] Released WorkflowRun lock", taskRunId);
   }
 
   private void updatePendingAprovalStatus(WorkflowRunEntity wfRunEntity) {
@@ -628,10 +628,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   private void finishWorkflow(WorkflowRunEntity wfRunEntity, List<TaskRunEntity> tasks) {
     Optional<WorkflowEntity> workflow = workflowRepository.findById(wfRunEntity.getWorkflowRef());
 
-    // TODO: implement Workflow Termination Endpoint
-    // this.controllerClient.terminateFlow(workflow.getId(), workflow.getName(),
-    // wfRunEntity.getId());
-
     //Loop through and validate all paths have been taken
     //It also updates the status of each task and checks dependencies.
     tasks.stream().filter(t -> TaskType.end.equals(t.getType())).forEach(t -> {
@@ -641,6 +637,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     });
     boolean workflowCompleted = dagUtility.validateWorkflow(wfRunEntity, tasks);
 
+    //Set WorkflowRun status and phase
     if (wfRunEntity.getStatusOverride() != null) {
       wfRunEntity.setStatus(wfRunEntity.getStatusOverride());
     } else {
@@ -652,6 +649,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
     wfRunEntity.setPhase(RunPhase.completed);
 
+    // Calc Duration
     long duration = new Date().getTime() - wfRunEntity.getStartTime().getTime();
     wfRunEntity.setDuration(duration);
 

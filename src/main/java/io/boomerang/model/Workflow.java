@@ -15,8 +15,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.util.TaskMapper;
-import io.boomerang.v4.model.ref.WorkflowToken;
-import io.boomerang.v4.model.ref.WorkflowTrigger;
 
 /*
  * Workflow Model joining Workflow Entity and Workflow Revision Entity
@@ -48,6 +46,8 @@ public class Workflow {
   private Map<String, String> labels = new HashMap<>();
   
   private Map<String, Object> annotations = new HashMap<>();
+  
+  private long timeout;
   
   private boolean upgradesAvailable = false;
 
@@ -231,5 +231,13 @@ public class Workflow {
 
   public void setUpgradesAvailable(boolean upgradesAvailable) {
     this.upgradesAvailable = upgradesAvailable;
+  }
+
+  public long getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(long timeout) {
+    this.timeout = timeout;
   } 
 }

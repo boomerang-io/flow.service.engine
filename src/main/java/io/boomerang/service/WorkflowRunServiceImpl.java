@@ -5,6 +5,7 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.EnumUtils;
@@ -186,6 +187,9 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       wfRunEntity.putLabels(workflow.getLabels());
       wfRunEntity.setParams(ParameterUtil.paramSpecToRunParam(wfRevision.getParams()));
       wfRunEntity.setWorkspaces(wfRevision.getWorkspaces());
+      if (!Objects.isNull(wfRevision.getTimeout()) && wfRevision.getTimeout() != -1 && wfRevision.getTimeout() != 0) {
+        wfRunEntity.setTimeout(wfRevision.getTimeout());
+      }
 
       // Add values from Run Request if Present
       if (optRunRequest.isPresent()) {
@@ -194,6 +198,9 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         wfRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
         wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(), optRunRequest.get().getParams()));
         wfRunEntity.getWorkspaces().addAll(optRunRequest.get().getWorkspaces());
+        if (!Objects.isNull(optRunRequest.get().getTimeout()) && optRunRequest.get().getTimeout() != -1 && optRunRequest.get().getTimeout() != 0) {
+          wfRunEntity.setTimeout(optRunRequest.get().getTimeout());
+        }
       }
 
       // TODO: add trigger and set initiatedBy

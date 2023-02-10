@@ -39,6 +39,8 @@ public class WorkflowRevisionEntity {
   
   private List<WorkflowWorkspace> workspaces;
   
+  private long timeout;
+  
   private List<WorkflowConfig> config;
   
   @Override
@@ -126,5 +128,13 @@ public class WorkflowRevisionEntity {
 
   public void setConfig(List<WorkflowConfig> config) {
     this.config = config;
+  }
+
+  public long getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(long timeout) {
+    this.timeout = timeout;
   } 
 }

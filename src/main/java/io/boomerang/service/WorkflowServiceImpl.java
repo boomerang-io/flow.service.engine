@@ -183,6 +183,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     wfRevisionEntity.setWorkspaces(workflow.getWorkspaces());
     wfRevisionEntity.setTasks(TaskMapper.tasksToListOfRevisionTasks(workflow.getTasks()));
     wfRevisionEntity.setConfig(workflow.getConfig());
+    wfRevisionEntity.setTimeout(workflow.getTimeout());
 
     // Check Task Names are unique
     List<String> filteredNames =

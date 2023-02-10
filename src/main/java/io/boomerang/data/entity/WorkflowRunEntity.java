@@ -34,6 +34,8 @@ public class WorkflowRunEntity   {
   private Date startTime;
 
   private long duration = 0;
+  
+  private long timeout = -1;
 
   private RunStatus status = RunStatus.notstarted;
   
@@ -107,6 +109,14 @@ public class WorkflowRunEntity   {
 
   public void setDuration(long duration) {
     this.duration = duration;
+  }
+
+  public long getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(long timeout) {
+    this.timeout = timeout;
   }
 
   public String getId() {
