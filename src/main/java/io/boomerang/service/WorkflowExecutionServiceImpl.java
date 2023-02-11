@@ -189,10 +189,10 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
           String tokenId = lockManager.acquireWorkflowLock(keys);
           LOGGER.debug("[{}] Obtained WorkflowRun lock", wfRunId);
           
-          long duration = new Date().getTime() - wfRunEntity.getStartTime().getTime();
+          long duration = new Date().getTime() - optWorkflowRunEntity.get().getStartTime().getTime();
           wfRunEntity.setDuration(duration);
-          updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.failed, RunPhase.completed,
-               Optional.of("The WorkflowRun timed out"));
+          updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.timedout, RunPhase.completed,
+               Optional.of("The WorkflowRun exceeded the timeout. Timeout was set to {0} minutes"), wfRunEntity.getTimeout());
           //TODO: save error block
           //TODO: cancel running tasks
           //TODO: implement retries
