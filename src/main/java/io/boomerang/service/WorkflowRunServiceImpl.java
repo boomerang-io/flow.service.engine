@@ -206,6 +206,9 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         if (!Objects.isNull(optRunRequest.get().getTimeout()) && optRunRequest.get().getTimeout() != -1 && optRunRequest.get().getTimeout() != 0) {
           wfRunEntity.setTimeout(optRunRequest.get().getTimeout());
         }
+        if (!Objects.isNull(optRunRequest.get().getRetries()) && optRunRequest.get().getRetries() != -1 && optRunRequest.get().getRetries() != 0) {
+          wfRunEntity.setRetries(optRunRequest.get().getRetries());
+        }
       }
 
       // TODO: add trigger and set initiatedBy

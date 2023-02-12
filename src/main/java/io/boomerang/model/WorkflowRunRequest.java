@@ -16,6 +16,8 @@ public class WorkflowRunRequest {
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
   
   private long timeout;
+  
+  private long retries;
 
   public Map<String, String> getLabels() {
     return labels;
@@ -55,5 +57,13 @@ public class WorkflowRunRequest {
 
   public void setTimeout(long timeout) {
     this.timeout = timeout;
+  }
+
+  public long getRetries() {
+    return retries;
+  }
+
+  public void setRetries(long retries) {
+    this.retries = retries;
   }
 }
