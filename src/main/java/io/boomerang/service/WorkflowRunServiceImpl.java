@@ -4,7 +4,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -148,7 +150,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   /*
    * Queues the Workflow to be executed (and optionally starts the execution)
    * 
-   * Currently does not worry about Ownership, Triggers, or Status 
+   * TODO: implement Triggers && Status - triggers may only be a Workflow service concern (same as Relationship)
    */
   @Override
   public ResponseEntity<WorkflowRun> submit(String workflowId, Optional<Integer> version, boolean start,
@@ -190,6 +192,9 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       if (!Objects.isNull(wfRevision.getTimeout()) && wfRevision.getTimeout() != -1 && wfRevision.getTimeout() != 0) {
         wfRunEntity.setTimeout(wfRevision.getTimeout());
       }
+      if (!Objects.isNull(wfRevision.getRetries()) && wfRevision.getRetries() != -1 && wfRevision.getRetries() != 0) {
+        wfRunEntity.setRetries(wfRevision.getRetries());
+      }
 
       // Add values from Run Request if Present
       if (optRunRequest.isPresent()) {
@@ -209,6 +214,16 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       // final UserEntity userEntity = userIdentityService.getCurrentUser();
       // activity.setInitiatedById(userEntity.getId());
       // }
+      
+      //Add System Generated Annotations
+      Map<String, Object> annotations = new HashMap<>();
+      annotations.put("io.boomerang/generation", "4");
+      annotations.put("io.boomerang/kind", "WorkflowRun");
+      if (start) {
+        //Add annotation to know this was created with ?start=true
+        wfRunEntity.getAnnotations().put("io.boomerang/submit-with-start", "true");
+      }
+      wfRunEntity.getAnnotations().putAll(annotations);
 
       workflowRunRepository.save(wfRunEntity);
 
@@ -298,7 +313,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   }
 
   @Override
-  public ResponseEntity<WorkflowRun> retry(String workflowRunId, boolean start) {
+  public ResponseEntity<WorkflowRun> retry(String workflowRunId, boolean start, long retryCount) {
     if (workflowRunId == null || workflowRunId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
     }
@@ -310,6 +325,10 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       wfRunEntity.setStatus(RunStatus.notstarted);
       wfRunEntity.setPhase(RunPhase.pending);
       wfRunEntity.setId(null);
+      wfRunEntity.getAnnotations().put("io.boomerang/retry-count", retryCount);
+      if (!wfRunEntity.getAnnotations().containsKey("io.boomerang/retry-of")) {
+        wfRunEntity.getAnnotations().put("io.boomerang/retry-of", workflowRunId);
+      }
       workflowRunRepository.save(wfRunEntity);
 
       workflowExecutionClient.queue(workflowExecutionService, wfRunEntity);

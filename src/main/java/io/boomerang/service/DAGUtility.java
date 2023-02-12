@@ -34,7 +34,6 @@ import io.boomerang.model.enums.ExecutionCondition;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
-import io.boomerang.model.TaskWorkspace;
 import io.boomerang.util.GraphProcessor;
 import io.boomerang.util.ParameterUtil;
 

@@ -25,6 +25,6 @@ public interface WorkflowRunService {
 
   ResponseEntity<WorkflowRun> cancel(String workflowRunId);
 
-  ResponseEntity<WorkflowRun> retry(String workflowRunId, boolean start);
+  ResponseEntity<WorkflowRun> retry(String workflowRunId, boolean start, long retryCount);
   
 }

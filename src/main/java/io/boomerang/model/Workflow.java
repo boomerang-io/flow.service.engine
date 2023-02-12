@@ -23,6 +23,7 @@ import io.boomerang.util.TaskMapper;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_EMPTY)
+@JsonPropertyOrder({"id", "name", "status", "version", "creationDate", "timeout", "retries" })
 public class Workflow {
   
   private String id;
@@ -47,7 +48,9 @@ public class Workflow {
   
   private Map<String, Object> annotations = new HashMap<>();
   
-  private long timeout;
+  private long timeout = -1;
+  
+  private long retries = -1;
   
   private boolean upgradesAvailable = false;
 
@@ -239,5 +242,13 @@ public class Workflow {
 
   public void setTimeout(long timeout) {
     this.timeout = timeout;
+  }
+
+  public long getRetries() {
+    return retries;
+  }
+
+  public void setRetries(long retries) {
+    this.retries = retries;
   } 
 }

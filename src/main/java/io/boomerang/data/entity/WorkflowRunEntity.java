@@ -36,6 +36,8 @@ public class WorkflowRunEntity   {
   private long duration = 0;
   
   private long timeout = -1;
+  
+  private long retries = -1;
 
   private RunStatus status = RunStatus.notstarted;
   
@@ -229,6 +231,14 @@ public class WorkflowRunEntity   {
 
   public void setWorkspaces(List<WorkflowWorkspace> workspaces) {
     this.workspaces = workspaces;
+  }
+
+  public long getRetries() {
+    return retries;
+  }
+
+  public void setRetries(long retries) {
+    this.retries = retries;
   }
   
 }

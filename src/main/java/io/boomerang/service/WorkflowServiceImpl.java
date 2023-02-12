@@ -184,6 +184,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     wfRevisionEntity.setTasks(TaskMapper.tasksToListOfRevisionTasks(workflow.getTasks()));
     wfRevisionEntity.setConfig(workflow.getConfig());
     wfRevisionEntity.setTimeout(workflow.getTimeout());
+    wfRevisionEntity.setRetries(workflow.getRetries());
 
     // Check Task Names are unique
     List<String> filteredNames =
@@ -258,7 +259,7 @@ public class WorkflowServiceImpl implements WorkflowService {
       }
     }
     if (workflow.getTriggers() != null) {
-      workflowEntity.setAnnotations(null);
+      workflowEntity.getTriggers();
     }
     workflowRepository.save(workflowEntity);
     

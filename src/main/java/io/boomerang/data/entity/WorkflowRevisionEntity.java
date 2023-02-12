@@ -41,6 +41,8 @@ public class WorkflowRevisionEntity {
   
   private long timeout;
   
+  private long retries;
+  
   private List<WorkflowConfig> config;
   
   @Override
@@ -97,14 +99,6 @@ public class WorkflowRevisionEntity {
   public void setMarkdown(String markdown) {
     this.markdown = markdown;
   }
-//
-//  public RestConfig getConfig() {
-//    return config;
-//  }
-//
-//  public void setConfig(RestConfig config) {
-//    this.config = config;
-//  }
 
   public List<ParamSpec> getParams() {
     return params;
@@ -122,6 +116,22 @@ public class WorkflowRevisionEntity {
     this.workspaces = workspaces;
   }
 
+  public long getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(long timeout) {
+    this.timeout = timeout;
+  }
+
+  public long getRetries() {
+    return retries;
+  }
+
+  public void setRetries(long retries) {
+    this.retries = retries;
+  } 
+
   public List<WorkflowConfig> getConfig() {
     return config;
   }
@@ -129,12 +139,4 @@ public class WorkflowRevisionEntity {
   public void setConfig(List<WorkflowConfig> config) {
     this.config = config;
   }
-
-  public long getTimeout() {
-    return timeout;
-  }
-
-  public void setTimeout(long timeout) {
-    this.timeout = timeout;
-  } 
 }

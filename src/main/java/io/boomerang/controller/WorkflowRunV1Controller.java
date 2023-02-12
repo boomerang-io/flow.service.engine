@@ -141,6 +141,6 @@ public class WorkflowRunV1Controller {
       @Parameter(name = "start",
       description = "Start the Workflow Run immediately after submission",
       required = false) @RequestParam(required = false, defaultValue = "false") boolean start) {
-    return workflowRunService.retry(workflowRunId, start);
+    return workflowRunService.retry(workflowRunId, start, 1);
   }
 }
