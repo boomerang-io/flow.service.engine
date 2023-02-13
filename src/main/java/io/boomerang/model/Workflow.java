@@ -22,8 +22,8 @@ import io.boomerang.util.TaskMapper;
  * A number of the Workflow Revision elements are put under metadata
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(Include.NON_EMPTY)
-@JsonPropertyOrder({"id", "name", "status", "version", "creationDate", "timeout", "retries" })
+@JsonInclude(Include.NON_NULL)
+@JsonPropertyOrder({"id", "name", "status", "version", "creationDate", "timeout", "retries", "description", "shortDescription", "labels", "annotations", "tasks" })
 public class Workflow {
   
   private String id;
@@ -48,9 +48,9 @@ public class Workflow {
   
   private Map<String, Object> annotations = new HashMap<>();
   
-  private long timeout = -1;
+  private Long timeout;
   
-  private long retries = -1;
+  private Long retries;
   
   private boolean upgradesAvailable = false;
 
@@ -236,19 +236,19 @@ public class Workflow {
     this.upgradesAvailable = upgradesAvailable;
   }
 
-  public long getTimeout() {
+  public Long getTimeout() {
     return timeout;
   }
 
-  public void setTimeout(long timeout) {
+  public void setTimeout(Long timeout) {
     this.timeout = timeout;
   }
 
-  public long getRetries() {
+  public Long getRetries() {
     return retries;
   }
 
-  public void setRetries(long retries) {
+  public void setRetries(Long retries) {
     this.retries = retries;
   } 
 }

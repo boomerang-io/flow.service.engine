@@ -39,9 +39,9 @@ public class WorkflowRevisionEntity {
   
   private List<WorkflowWorkspace> workspaces;
   
-  private long timeout;
+  private Long timeout;
   
-  private long retries;
+  private Long retries;
   
   private List<WorkflowConfig> config;
   
@@ -116,19 +116,19 @@ public class WorkflowRevisionEntity {
     this.workspaces = workspaces;
   }
 
-  public long getTimeout() {
+  public Long getTimeout() {
     return timeout;
   }
 
-  public void setTimeout(long timeout) {
+  public void setTimeout(Long timeout) {
     this.timeout = timeout;
   }
 
-  public long getRetries() {
+  public Long getRetries() {
     return retries;
   }
 
-  public void setRetries(long retries) {
+  public void setRetries(Long retries) {
     this.retries = retries;
   } 
 

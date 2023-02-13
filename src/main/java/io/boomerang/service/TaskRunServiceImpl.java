@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.logging.log4j.LogManager;
@@ -134,9 +135,12 @@ public class TaskRunServiceImpl implements TaskRunService {
         taskRunEntity.putLabels(optRunRequest.get().getLabels());
         taskRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
         taskRunEntity.setParams(ParameterUtil.addUniqueParams(taskRunEntity.getParams(), optRunRequest.get().getParams()));
+        if (!Objects.isNull(optRunRequest.get().getTimeout()) && optRunRequest.get().getTimeout() != 0) {
+          taskRunEntity.setTimeout(optRunRequest.get().getTimeout());
+        }
         taskRunRepository.save(taskRunEntity);
       }
-      taskExecutionClient.startTask(taskExecutionService, taskRunEntity);
+      taskExecutionClient.start(taskExecutionService, taskRunEntity);      
       
       TaskRun taskRun = new TaskRun(taskRunEntity);
       return ResponseEntity.ok(taskRun);
@@ -173,7 +177,7 @@ public class TaskRunServiceImpl implements TaskRunService {
         }
 //        taskRunRepository.save(taskRunEntity);
       }
-      taskExecutionClient.endTask(taskExecutionService, taskRunEntity);
+      taskExecutionClient.end(taskExecutionService, taskRunEntity);
       TaskRun taskRun = new TaskRun(taskRunEntity);
       return ResponseEntity.ok(taskRun);
     } else {
@@ -190,7 +194,7 @@ public class TaskRunServiceImpl implements TaskRunService {
     if (optTaskRunEntity.isPresent()) {
       TaskRunEntity taskRunEntity = optTaskRunEntity.get();
       taskRunEntity.setStatus(RunStatus.cancelled);
-      taskExecutionClient.endTask(taskExecutionService, taskRunEntity);
+      taskExecutionClient.end(taskExecutionService, taskRunEntity);
       TaskRun taskRun = new TaskRun(optTaskRunEntity.get());
       return ResponseEntity.ok(taskRun);
     } else {

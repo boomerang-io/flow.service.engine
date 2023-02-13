@@ -189,10 +189,10 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       wfRunEntity.putLabels(workflow.getLabels());
       wfRunEntity.setParams(ParameterUtil.paramSpecToRunParam(wfRevision.getParams()));
       wfRunEntity.setWorkspaces(wfRevision.getWorkspaces());
-      if (!Objects.isNull(wfRevision.getTimeout()) && wfRevision.getTimeout() != -1 && wfRevision.getTimeout() != 0) {
+      if (!Objects.isNull(wfRevision.getTimeout()) && wfRevision.getTimeout() != 0) {
         wfRunEntity.setTimeout(wfRevision.getTimeout());
       }
-      if (!Objects.isNull(wfRevision.getRetries()) && wfRevision.getRetries() != -1 && wfRevision.getRetries() != 0) {
+      if (!Objects.isNull(wfRevision.getRetries()) && wfRevision.getRetries() != 0) {
         wfRunEntity.setRetries(wfRevision.getRetries());
       }
 
@@ -203,10 +203,10 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         wfRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
         wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(), optRunRequest.get().getParams()));
         wfRunEntity.getWorkspaces().addAll(optRunRequest.get().getWorkspaces());
-        if (!Objects.isNull(optRunRequest.get().getTimeout()) && optRunRequest.get().getTimeout() != -1 && optRunRequest.get().getTimeout() != 0) {
+        if (!Objects.isNull(optRunRequest.get().getTimeout()) && optRunRequest.get().getTimeout() != 0) {
           wfRunEntity.setTimeout(optRunRequest.get().getTimeout());
         }
-        if (!Objects.isNull(optRunRequest.get().getRetries()) && optRunRequest.get().getRetries() != -1 && optRunRequest.get().getRetries() != 0) {
+        if (!Objects.isNull(optRunRequest.get().getRetries()) && optRunRequest.get().getRetries() != 0) {
           wfRunEntity.setRetries(optRunRequest.get().getRetries());
         }
       }
@@ -266,7 +266,6 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         wfRunEntity.getWorkspaces().addAll(optRunRequest.get().getWorkspaces());
         workflowRunRepository.save(wfRunEntity);
       }
-
       workflowExecutionClient.start(workflowExecutionService, wfRunEntity);
       
       //Retrieve the refreshed status
@@ -319,7 +318,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
    * To be used internally within the Engine
    */
   @Override
-  public ResponseEntity<WorkflowRun> timeout(String workflowRunId) {
+  public ResponseEntity<WorkflowRun> timeout(String workflowRunId, boolean taskRunTimeout) {
     if (workflowRunId == null || workflowRunId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
     }
@@ -327,7 +326,9 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         workflowRunRepository.findById(workflowRunId);
     if (optWfRunEntity.isPresent()) {
       WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
-
+      wfRunEntity.getAnnotations().put("io.boomerang/timeout-cause", taskRunTimeout ? "TaskRun" : "WorkflowRun");
+      wfRunEntity.setStatus(RunStatus.timedout);
+      workflowRunRepository.save(wfRunEntity);
       workflowExecutionClient.timeout(workflowExecutionService, wfRunEntity);
       final WorkflowRun response = new WorkflowRun(wfRunEntity);
       return ResponseEntity.ok(response);
@@ -349,7 +350,11 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       wfRunEntity.setStatus(RunStatus.notstarted);
       wfRunEntity.setPhase(RunPhase.pending);
       wfRunEntity.setId(null);
+      wfRunEntity.setStatusMessage(null);
+      wfRunEntity.setDuration(0);
+      wfRunEntity.setStartTime(null);
       wfRunEntity.getAnnotations().put("io.boomerang/retry-count", retryCount);
+      wfRunEntity.getAnnotations().remove("io.boomerang/timeout-cause");
       if (!wfRunEntity.getAnnotations().containsKey("io.boomerang/retry-of")) {
         wfRunEntity.getAnnotations().put("io.boomerang/retry-of", workflowRunId);
         wfRunEntity.getLabels().put("io.boomerang/retry-of", workflowRunId);

@@ -15,6 +15,8 @@ public class TaskRunStartRequest {
   
   private Map<String, String> workspaces;
   
+  private Long timeout;
+  
   private boolean preApproved;
 
   public Map<String, String> getLabels() {
@@ -47,6 +49,14 @@ public class TaskRunStartRequest {
 
   public void setWorkspaces(Map<String, String> resources) {
     this.workspaces = resources;
+  }
+
+  public Long getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(Long timeout) {
+    this.timeout = timeout;
   }
 
   public boolean isPreApproved() {

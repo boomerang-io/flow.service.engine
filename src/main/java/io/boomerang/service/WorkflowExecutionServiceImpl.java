@@ -14,7 +14,9 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskRunEntity;
@@ -57,7 +59,12 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
   @Autowired
   @Lazy
-  private WorkflowRunService workflowRunService;
+  private WorkflowRunService workflowRunService; 
+  
+  @Autowired
+  @Lazy
+  @Qualifier("asyncWorkflowExecutor")
+  TaskExecutor asyncWorkflowExecutor;       
 
   @Override
   public void queue(WorkflowRunEntity workflowExecution) {
@@ -88,15 +95,15 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         wfRunEntity.setStartTime(new Date());
         updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.running, RunPhase.running,
             Optional.empty());
-        if (!Objects.isNull(wfRunEntity.getTimeout()) && wfRunEntity.getTimeout() != -1
+        if (!Objects.isNull(wfRunEntity.getTimeout())
             && wfRunEntity.getTimeout() != 0) {
           // Create Timeout Delayed CompletableFuture 
           LOGGER.debug("[{}] WorkflowRun Timeout provided of {} minutes. Creating future timeout check.", wfRunEntity.getId(), wfRunEntity.getTimeout());
           CompletableFuture.supplyAsync(timeoutWorkflowAsync(wfRunEntity.getId()),
-              CompletableFuture.delayedExecutor(wfRunEntity.getTimeout(), TimeUnit.MINUTES));
+              CompletableFuture.delayedExecutor(wfRunEntity.getTimeout(), TimeUnit.MINUTES, asyncWorkflowExecutor));
         }
         return CompletableFuture
-            .supplyAsync(executeWorkflowAsync(wfRunEntity.getId(), start, end, graph, tasks));
+            .supplyAsync(executeWorkflowAsync(wfRunEntity.getId(), start, end, graph, tasks), asyncWorkflowExecutor);
       }
       updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.invalid, RunPhase.completed,
           Optional.of("Failed to run workflow: incomplete, or invalid, workflow"));
@@ -128,8 +135,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
   @Override
   public void timeout(WorkflowRunEntity workflowExecution) {
-    if (!Objects.isNull(workflowExecution.getTimeout()) && workflowExecution.getTimeout() != -1
-        && workflowExecution.getTimeout() != 0) {
+    if (RunStatus.timedout.equals(workflowExecution.getStatus()) || (!Objects.isNull(workflowExecution.getTimeout())
+        && workflowExecution.getTimeout() != 0)) {
       CompletableFuture.supplyAsync(timeoutWorkflowAsync(workflowExecution.getId()));
     }
   }
@@ -160,7 +167,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             if (nodes.contains(next.getId())) {
               LOGGER.debug("[{}] Creating TaskRun ({})...", workflowRunEntity.getId(),
                   next.getId());
-              taskClient.queueTask(taskService, next);
+              taskClient.queue(taskService, next);
             }
           }
         } catch (Exception e) {
@@ -182,7 +189,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
    * The CompletableFuture.orTimeout() method can't be used as the WorkflowRun async thread will
    * finish and hand over to TaskRun threads and thus never reaches timeout.
    * 
-   * TODO: determine if this should be used a specific execution thread pool TODO: save error block
+   * TODO: save error block
    * Note: Implements same locks as TaskExecutionService
    */
   private Supplier<Boolean> timeoutWorkflowAsync(String wfRunId) {
@@ -204,8 +211,14 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
           long duration = new Date().getTime() - wfRunEntity.getStartTime().getTime();
           wfRunEntity.setDuration(duration);
+          String statusMessage = "The WorkflowRun exceeded the timeout. Timeout was set to {} minutes";
+          if (wfRunEntity.getAnnotations().containsKey("io.boomerang/timeout-cause") && "TaskRun".equals(wfRunEntity.getAnnotations().get("io.boomerang/timeout-cause"))) {
+            statusMessage = "A TaskRun exceeded it's timeout.";
+          } else {
+            wfRunEntity.getAnnotations().put("io.boomerang/timeout-cause", "WorkflowRun");
+          }
           updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.timedout, RunPhase.completed,
-              Optional.of("The WorkflowRun exceeded the timeout. Timeout was set to {} minutes"),
+              Optional.of(statusMessage),
               wfRunEntity.getTimeout());
 
           // Cancel Running Tasks
@@ -221,7 +234,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
           LOGGER.info("Timeout - # of Running Tasks: " + runningTasks.size());
           if (runningTasks.size() > 0) {
             runningTasks.forEach(t -> {
-              taskClient.endTask(taskService, t);
+              taskClient.end(taskService, t);
             });
           } else {
             // If no running tasks, check pending tasks and queue to force them to skip - will be
@@ -231,7 +244,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             LOGGER.info("Timeout - # of Pending Tasks: " + pendingTasks.size());
             if (pendingTasks.size() > 0) {
               pendingTasks.forEach(t -> {
-                taskClient.queueTask(taskService, t);
+                taskClient.queue(taskService, t);
               });
             }
           }

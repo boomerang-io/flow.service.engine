@@ -6,7 +6,10 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+@JsonInclude(Include.NON_NULL)
 public class TaskRunSpec {
 
   private List<String> arguments;
@@ -16,7 +19,6 @@ public class TaskRunSpec {
   private String script;
   private String workingDir;
   private Boolean debug = false;
-  private int timeout;
   private TaskDeletionEnum deletion;
   @JsonIgnore
   private Map<String, Object> additionalProperties = new HashMap<>();
@@ -85,14 +87,6 @@ public class TaskRunSpec {
 
   public void setDebug(Boolean debug) {
     this.debug = debug;
-  }
-
-  public int getTimeout() {
-    return timeout;
-  }
-
-  public void setTimeout(int timeout) {
-    this.timeout = timeout;
   }
 
   public TaskDeletionEnum getDeletion() {

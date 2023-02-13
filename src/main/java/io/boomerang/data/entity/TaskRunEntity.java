@@ -9,6 +9,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.data.model.TaskRunSpec;
 import io.boomerang.model.ResultSpec;
 import io.boomerang.model.RunError;
@@ -21,7 +23,7 @@ import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-//@JsonInclude(Include.NON_NULL)
+@JsonInclude(Include.NON_NULL)
 @Document(collection = "#{@mongoConfiguration.fullCollectionName('task_runs')}")
 public class TaskRunEntity {
 
@@ -41,6 +43,10 @@ public class TaskRunEntity {
   private Date startTime;
 
   private long duration;
+  
+  private Long timeout;
+  
+//  private Long retries;
   
   private List<RunParam> params = new LinkedList<>();
 
@@ -157,6 +163,14 @@ public class TaskRunEntity {
 
   public void setDuration(long duration) {
     this.duration = duration;
+  }
+
+  public Long getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(Long timeout) {
+    this.timeout = timeout;
   }
 
   public List<RunParam> getParams() {

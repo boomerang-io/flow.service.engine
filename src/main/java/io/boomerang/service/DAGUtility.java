@@ -1,10 +1,13 @@
 package io.boomerang.service;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -24,6 +27,7 @@ import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.TaskTemplateEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
+import io.boomerang.data.model.TaskRunSpec;
 import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.TaskTemplateRepository;
@@ -132,11 +136,18 @@ public class DAGUtility {
           taskRunEntity.setTemplateVersion(taskTemplate.get().getVersion());
           LOGGER.debug("[{}] Found Task Template: {} ({})", wfRunEntity.getId(), taskTemplate.get().getName(), taskTemplate.get().getId());
           taskRunEntity.setTemplateResults(taskTemplate.get().getSpec().getResults());
+          
           // Stack the labels based on label propagation
           // Task Template -> Workflow Task -> Run 
           taskRunEntity.getLabels().putAll(taskTemplate.get().getLabels());
           taskRunEntity.getLabels().putAll(wfRevisionTask.getLabels());
           taskRunEntity.getLabels().putAll(wfRunEntity.getLabels());
+          
+          //Add System Generated Annotations
+          Map<String, Object> annotations = new HashMap<>();
+          annotations.put("io.boomerang/generation", "4");
+          annotations.put("io.boomerang/kind", "TaskRun");
+          taskRunEntity.getAnnotations().putAll(annotations);
 
           //Set Task RunParams
           if (taskTemplate.get().getSpec().getParams() != null && !taskTemplate.get().getSpec().getParams().isEmpty()) {
@@ -150,6 +161,12 @@ public class DAGUtility {
             taskRunEntity.setParams(wfRevisionTask.getParams());
           }
           LOGGER.debug("[{}] Task Run Params: {}", wfRunEntity.getId(), taskRunEntity.getParams());
+          if (!Objects.isNull(wfRevisionTask.getTimeout())
+              && wfRevisionTask.getTimeout() != 0) {
+            taskRunEntity.setTimeout(wfRevisionTask.getTimeout());
+          }
+          
+          //TODO: add in spec from TaskTemplate to TaskRunEntity
         }
         taskRunRepository.save(taskRunEntity);
         LOGGER.info("[{}] TaskRunEntity ({}) created for: {}", wfRunEntity.getId(), taskRunEntity.getId(),

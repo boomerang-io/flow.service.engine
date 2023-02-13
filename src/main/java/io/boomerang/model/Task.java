@@ -7,10 +7,14 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.model.enums.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(Include.NON_NULL)
+@JsonPropertyOrder({"name", "type", "templateRef", "templateVersion", "timeout", "retries", "dependencies" })
 public class Task {
   
   private String name;
@@ -21,14 +25,18 @@ public class Task {
   
   private Integer templateVersion;
   
+  private Long timeout;
+  
+//  private long retries = -1;
+  
+  private List<TaskDependency> dependencies;
+  
   private Map<String, String> labels = new HashMap<>();
   
   private Map<String, Object> annotations = new HashMap<>();
   
   //Uses RunParam as the ParamSpec comes from the TaskTemplate
   private List<RunParam> params = new LinkedList<>();
-  
-  private List<TaskDependency> dependencies;
   
   //This is needed as some of our Tasks allow you to define Result Definitions on the fly
   private List<ResultSpec> results;
@@ -96,6 +104,14 @@ public class Task {
 
   public void setAnnotations(Map<String, Object> annotations) {
     this.annotations = annotations;
+  }
+
+  public Long getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(Long timeout) {
+    this.timeout = timeout;
   }
 
   public List<TaskDependency> getDependencies() {

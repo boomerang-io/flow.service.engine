@@ -14,19 +14,19 @@ public class TaskExecutionClientImpl implements TaskExecutionClient {
   
   @Override
   @Async
-  public void queueTask(TaskExecutionService taskService, TaskRunEntity taskRequest) {
-    taskService.queueTask(taskRequest);
+  public void queue(TaskExecutionService taskService, TaskRunEntity taskRequest) {
+    taskService.queue(taskRequest);
   }
   
   @Override
   @Async
-  public void startTask(TaskExecutionService taskService, TaskRunEntity taskRequest) {
-    taskService.startTask(taskRequest);
+  public void start(TaskExecutionService taskService, TaskRunEntity taskRequest) {
+    taskService.start(taskRequest);
   }
 
   @Override
   @Async
-  public void endTask(TaskExecutionService taskService, TaskRunEntity taskResponse) {
-    taskService.endTask(taskResponse);
+  public void end(TaskExecutionService taskService, TaskRunEntity taskResponse) {
+    taskService.end(taskResponse);
   }
 }

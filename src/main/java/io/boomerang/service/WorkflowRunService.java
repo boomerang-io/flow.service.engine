@@ -27,6 +27,6 @@ public interface WorkflowRunService {
 
   ResponseEntity<WorkflowRun> retry(String workflowRunId, boolean start, long retryCount);
 
-  ResponseEntity<WorkflowRun> timeout(String workflowRunId);
+  ResponseEntity<WorkflowRun> timeout(String workflowRunId, boolean taskRunTimeout);
   
 }

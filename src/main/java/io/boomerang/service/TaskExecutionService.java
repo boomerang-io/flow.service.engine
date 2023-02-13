@@ -6,14 +6,13 @@ import io.boomerang.model.RunResult;
 
 public interface TaskExecutionService {
 
-  void queueTask(TaskRunEntity taskExecution);
+  void queue(TaskRunEntity taskExecution);
 
-  void startTask(TaskRunEntity taskRequest);
+  void start(TaskRunEntity taskRequest);
 
-  void endTask(TaskRunEntity request);
+  void end(TaskRunEntity request);
 
   List<String> updateTaskRunForTopic(String activityId, String topic);
 
-  void submitActivity(String taskRunId, String taskStatus, List<RunResult> results);
-  
+  void submitActivity(String taskRunId, String taskStatus, List<RunResult> results);  
 }
