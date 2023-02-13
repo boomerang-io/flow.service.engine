@@ -33,4 +33,9 @@ public class WorkflowExecutionClientImpl implements WorkflowExecutionClient {
   public void cancel(WorkflowExecutionService workflowExecutionService, WorkflowRunEntity wfRunEntity) {
       workflowExecutionService.cancel(wfRunEntity);
   }
+
+  @Override
+  public void timeout(WorkflowExecutionService workflowExecutionService, WorkflowRunEntity wfRunEntity) {
+      workflowExecutionService.timeout(wfRunEntity);
+  }
 }

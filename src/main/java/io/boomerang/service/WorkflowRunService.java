@@ -17,7 +17,7 @@ public interface WorkflowRunService {
 
   ResponseEntity<WorkflowRun> start(String workflowRunId, Optional<WorkflowRunRequest> runRequest);
 
-  ResponseEntity<WorkflowRun> end(String workflowRunId);
+  ResponseEntity<WorkflowRun> finalize(String workflowRunId);
 
   Page<WorkflowRunEntity> query(Pageable pageable, Optional<List<String>> queryLabels,
       Optional<List<String>> queryStatus, Optional<List<String>> queryPhase,
@@ -26,5 +26,7 @@ public interface WorkflowRunService {
   ResponseEntity<WorkflowRun> cancel(String workflowRunId);
 
   ResponseEntity<WorkflowRun> retry(String workflowRunId, boolean start, long retryCount);
+
+  ResponseEntity<WorkflowRun> timeout(String workflowRunId);
   
 }

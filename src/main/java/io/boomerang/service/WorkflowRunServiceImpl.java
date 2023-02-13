@@ -280,7 +280,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   }
 
   @Override
-  public ResponseEntity<WorkflowRun> end(String workflowRunId) {
+  public ResponseEntity<WorkflowRun> finalize(String workflowRunId) {
     if (workflowRunId == null || workflowRunId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
     }
@@ -315,6 +315,27 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     }
   }
 
+  /*
+   * To be used internally within the Engine
+   */
+  @Override
+  public ResponseEntity<WorkflowRun> timeout(String workflowRunId) {
+    if (workflowRunId == null || workflowRunId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+    }
+    final Optional<WorkflowRunEntity> optWfRunEntity =
+        workflowRunRepository.findById(workflowRunId);
+    if (optWfRunEntity.isPresent()) {
+      WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
+
+      workflowExecutionClient.timeout(workflowExecutionService, wfRunEntity);
+      final WorkflowRun response = new WorkflowRun(wfRunEntity);
+      return ResponseEntity.ok(response);
+    } else {
+      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+    }
+  }
+
   @Override
   public ResponseEntity<WorkflowRun> retry(String workflowRunId, boolean start, long retryCount) {
     if (workflowRunId == null || workflowRunId.isBlank()) {
@@ -331,7 +352,8 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       wfRunEntity.getAnnotations().put("io.boomerang/retry-count", retryCount);
       if (!wfRunEntity.getAnnotations().containsKey("io.boomerang/retry-of")) {
         wfRunEntity.getAnnotations().put("io.boomerang/retry-of", workflowRunId);
-      }
+        wfRunEntity.getLabels().put("io.boomerang/retry-of", workflowRunId);
+      }      
       workflowRunRepository.save(wfRunEntity);
 
       workflowExecutionClient.queue(workflowExecutionService, wfRunEntity);

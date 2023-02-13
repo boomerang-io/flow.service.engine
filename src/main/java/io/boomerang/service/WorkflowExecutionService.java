@@ -12,4 +12,6 @@ public interface WorkflowExecutionService {
   void end(WorkflowRunEntity wfRunEntity);
 
   void cancel(WorkflowRunEntity workflowExecution);
+
+  void timeout(WorkflowRunEntity workflowExecution);
 }

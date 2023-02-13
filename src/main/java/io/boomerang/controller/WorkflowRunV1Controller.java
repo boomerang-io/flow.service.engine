@@ -116,7 +116,7 @@ public class WorkflowRunV1Controller {
       @Parameter(name = "workflowRunId",
       description = "ID of Workflow Run to Finalize",
       required = true) @PathVariable(required = true) String workflowRunId) {
-    return workflowRunService.end(workflowRunId);
+    return workflowRunService.finalize(workflowRunId);
   }
 
   @DeleteMapping(value = "/run/{workflowRunId}/cancel")

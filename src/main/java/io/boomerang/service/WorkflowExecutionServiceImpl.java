@@ -88,9 +88,10 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         wfRunEntity.setStartTime(new Date());
         updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.running, RunPhase.running,
             Optional.empty());
-        if (!Objects.isNull(wfRunEntity.getTimeout()) && wfRunEntity.getTimeout() != -1 && wfRunEntity.getTimeout() != 0) {
-          // Create Timeout Watcher
-          LOGGER.info("WorkflowRun Timeout: " + wfRunEntity.getTimeout());
+        if (!Objects.isNull(wfRunEntity.getTimeout()) && wfRunEntity.getTimeout() != -1
+            && wfRunEntity.getTimeout() != 0) {
+          // Create Timeout Delayed CompletableFuture 
+          LOGGER.debug("[{}] WorkflowRun Timeout provided of {} minutes. Creating future timeout check.", wfRunEntity.getId(), wfRunEntity.getTimeout());
           CompletableFuture.supplyAsync(timeoutWorkflowAsync(wfRunEntity.getId()),
               CompletableFuture.delayedExecutor(wfRunEntity.getTimeout(), TimeUnit.MINUTES));
         }
@@ -123,6 +124,14 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     workflowExecution.setStatus(RunStatus.cancelled);
     workflowExecution.setPhase(RunPhase.completed);
     workflowRunRepository.save(workflowExecution);
+  }
+
+  @Override
+  public void timeout(WorkflowRunEntity workflowExecution) {
+    if (!Objects.isNull(workflowExecution.getTimeout()) && workflowExecution.getTimeout() != -1
+        && workflowExecution.getTimeout() != 0) {
+      CompletableFuture.supplyAsync(timeoutWorkflowAsync(workflowExecution.getId()));
+    }
   }
 
   private Supplier<Boolean> executeWorkflowAsync(String wfRunId, final TaskRunEntity start,
@@ -173,8 +182,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
    * The CompletableFuture.orTimeout() method can't be used as the WorkflowRun async thread will
    * finish and hand over to TaskRun threads and thus never reaches timeout.
    * 
-   * TODO: determine if this should be used a specific execution thread pool
-   * TODO: save error block
+   * TODO: determine if this should be used a specific execution thread pool TODO: save error block
    * Note: Implements same locks as TaskExecutionService
    */
   private Supplier<Boolean> timeoutWorkflowAsync(String wfRunId) {
@@ -183,26 +191,26 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
           this.workflowRunRepository.findById(wfRunId);
       if (optWorkflowRunEntity.isPresent()) {
         WorkflowRunEntity wfRunEntity = optWorkflowRunEntity.get();
-        LOGGER.info("[{}] Timeout Workflow Async...", wfRunId);
         // Only need to check if Workflow is running - otherwise nothing to timeout
-        // Note: If the TaskList creation was to move into the WorkflowRun Queue step then tasks would
+        // Note: If the TaskList creation was to move into the WorkflowRun Queue step then tasks
+        // would
         // need to be moved into skipped.
         if (RunPhase.running.equals(wfRunEntity.getPhase())) {
+          LOGGER.info("[{}] Timeout Workflow Async...", wfRunId);
           List<String> keys = new LinkedList<>();
           keys.add(wfRunId);
           String tokenId = lockManager.acquireWorkflowLock(keys);
           LOGGER.debug("[{}] Obtained WorkflowRun lock", wfRunId);
 
-          long duration =
-              new Date().getTime() - wfRunEntity.getStartTime().getTime();
+          long duration = new Date().getTime() - wfRunEntity.getStartTime().getTime();
           wfRunEntity.setDuration(duration);
           updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.timedout, RunPhase.completed,
               Optional.of("The WorkflowRun exceeded the timeout. Timeout was set to {} minutes"),
               wfRunEntity.getTimeout());
 
           // Cancel Running Tasks
-          Optional<WorkflowRevisionEntity> wfRevisionEntity = workflowRevisionRepository
-              .findById(wfRunEntity.getWorkflowRevisionRef());
+          Optional<WorkflowRevisionEntity> wfRevisionEntity =
+              workflowRevisionRepository.findById(wfRunEntity.getWorkflowRevisionRef());
           List<TaskRunEntity> tasks =
               dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity);
 
@@ -228,7 +236,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             }
           }
           // Retry workflow and set required details
-          if (!Objects.isNull(wfRunEntity.getRetries()) && wfRunEntity.getRetries() != -1 && wfRunEntity.getRetries() != 0) {
+          if (!Objects.isNull(wfRunEntity.getRetries()) && wfRunEntity.getRetries() != -1
+              && wfRunEntity.getRetries() != 0) {
             long retryCount = 0;
             if (wfRunEntity.getAnnotations().containsKey("io.boomerang/retry-count")) {
               retryCount = (long) wfRunEntity.getAnnotations().get("io.boomerang/retry-count");
