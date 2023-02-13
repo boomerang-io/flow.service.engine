@@ -325,7 +325,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     List<TaskRunEntity> tasks =
         dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get());
     boolean finishedAllDependencies = this.finishedAll(wfRunEntity.get(), tasks, taskExecution);
-    LOGGER.debug("[{}] Finished all previous tasks? {}", taskRunId, finishedAllDependencies);
+    LOGGER.debug("[{}] Finished all TaskRuns? {}", taskRunId, finishedAllDependencies);
 
     List<String> keys = new LinkedList<>();
     keys.add(wfRunEntity.get().getId());
@@ -746,9 +746,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       }
 
       boolean executeTask = canExecuteTask(wfRunEntity, next);
-      LOGGER.debug("[{}] Task: {}", wfRunEntity.getId(), next.getName());
-
       if (executeTask) {
+        LOGGER.debug("[{}] Execute next TaskRun: {}", wfRunEntity.getId(), next.getName());
         Optional<TaskRunEntity> taskRunEntity =
             this.taskRunRepository.findById(currentTask.getId());
         if (!taskRunEntity.isPresent()) {
@@ -756,10 +755,15 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         } else {
           this.queue(next);
         }
+      } else {
+        LOGGER.debug("[{}] Unable to execute next TaskRun: {}. Not all dependencies have been completed.", wfRunEntity.getId(), next.getName());
       }
     }
   }
 
+  /*
+   * Checks if all the dependencies for the End task have been completed
+   */
   private boolean finishedAll(WorkflowRunEntity wfRunEntity, List<TaskRunEntity> tasks,
       TaskRunEntity currentTask) {
     boolean finishedAll = true;
@@ -790,8 +794,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
   private boolean canExecuteTask(WorkflowRunEntity wfRunEntity, TaskRunEntity next) {
     List<TaskDependency> deps = next.getDependencies();
+    LOGGER.debug("Found {} dependencies", deps.size());
     for (TaskDependency dep : deps) {
-      Optional<TaskRunEntity> taskRunEntity = this.taskRunRepository.findById(dep.getTaskRef());
+      Optional<TaskRunEntity> taskRunEntity = this.taskRunRepository
+          .findFirstByNameAndWorkflowRunRef(dep.getTaskRef(), wfRunEntity.getId());
       if (taskRunEntity.isPresent()) {
         RunPhase phase = taskRunEntity.get().getPhase();
         if (!RunPhase.completed.equals(phase)) {
