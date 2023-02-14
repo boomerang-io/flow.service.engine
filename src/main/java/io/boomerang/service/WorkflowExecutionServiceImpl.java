@@ -204,9 +204,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         // need to be moved into skipped.
         if (RunPhase.running.equals(wfRunEntity.getPhase())) {
           LOGGER.info("[{}] Timeout Workflow Async...", wfRunId);
-          List<String> keys = new LinkedList<>();
-          keys.add(wfRunId);
-          String tokenId = lockManager.acquireWorkflowLock(keys);
+          String tokenId = lockManager.acquireRunLock(wfRunId);
           LOGGER.debug("[{}] Obtained WorkflowRun lock", wfRunId);
 
           long duration = new Date().getTime() - wfRunEntity.getStartTime().getTime();
@@ -263,7 +261,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
               workflowRunService.retry(wfRunId, start, retryCount);
             }
           }
-          lockManager.releaseWorkflowLock(keys, tokenId);
+          lockManager.releaseRunLock(wfRunId, tokenId);
           LOGGER.debug("[{}] Released WorkflowRun lock", wfRunId);
         }
       }

@@ -82,7 +82,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   @Async("asyncTaskExecutor")
   public void queue(TaskRunEntity taskExecution) {
     String taskExecutionId = taskExecution.getId();
-    LOGGER.debug("[{}] Recieved queue task request.", taskExecutionId);
+    LOGGER.info("[{}] Recieved queue task request.", taskExecutionId);
 
     // Check if TaskRun Phase is valid
     if (!RunPhase.pending.equals(taskExecution.getPhase())) {
@@ -110,11 +110,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       return;
     }
 
-    List<String> keys = new LinkedList<>();
-    keys.add(wfRunEntity.get().getId());
-    LOGGER.debug("[{}] Attempting to get WorkflowRun lock", taskExecutionId);
-    String tokenId = lockManager.acquireWorkflowLock(keys);
-    LOGGER.debug("[{}] Obtained WorkflowRun lock", taskExecutionId);
+    LOGGER.info("[{}] Attempting to get WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
+    String tokenId = lockManager.acquireRunLock(wfRunEntity.get().getId());
+    LOGGER.info("[{}] Obtained WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
     
     // Ensure Task is valid as part of Graph
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
@@ -123,9 +121,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get());
     boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
     LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
-    
-    lockManager.releaseWorkflowLock(keys, tokenId);
-    LOGGER.debug("[{}] Released WorkflowRun lock", taskExecutionId);
 
     if (canRunTask) {
       // Resolve Parameter Substitutions
@@ -134,18 +129,33 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
       // Update Status and Phase
       updateStatusAndSaveTask(taskExecution, RunStatus.ready, RunPhase.pending, Optional.empty());
-    } else {
-      LOGGER.debug("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
+    } 
+
+    lockManager.releaseRunLock(wfRunEntity.get().getId(), tokenId);
+    LOGGER.info("[{}] Released WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
+    
+    if (!canRunTask) {
+      LOGGER.info("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
       taskExecution.setStatus(RunStatus.skipped);
       this.end(taskExecution);
     }
   }
 
+  /*
+   * Execute the Start of a task as requested by the Handler
+   * 
+   * This needs to get a lock on the TaskRun so that if a Handler requests end, it waits for the start to finish.
+   */
   @Override
   @Async("asyncTaskExecutor")
-  public void start(TaskRunEntity taskExecution) {
+  public void start(TaskRunEntity taskExecution) {    
     String taskExecutionId = taskExecution.getId();
     LOGGER.info("[{}] Recieved start task request.", taskExecutionId);
+    
+    LOGGER.info("[{}] Attempting to acquire TaskRun ({}) lock", taskExecutionId, taskExecutionId);
+    String taskTokenId = lockManager.acquireRunLock(taskExecutionId);
+    LOGGER.info("[{}] Obtained TaskRun ({}) lock", taskExecutionId, taskExecutionId);
+    
     LOGGER.debug("[{}] TaskRun: {}", taskExecutionId, taskExecution.toString());
 
     // Check if TaskRun Phase is valid. Pending means it correctly came from queueTask();
@@ -180,13 +190,12 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       return;
     }
 
-    List<String> keys = new LinkedList<>();
-    keys.add(wfRunEntity.get().getId());
-    LOGGER.debug("[{}] Attempting to get WorkflowRun lock", taskExecutionId);
-    String tokenId = lockManager.acquireWorkflowLock(keys);
-    LOGGER.debug("[{}] Obtained WorkflowRun lock", taskExecutionId);
+    LOGGER.info("[{}] Attempting to get WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
+    String tokenId = lockManager.acquireRunLock(wfRunEntity.get().getId());
+    LOGGER.info("[{}] Obtained WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
     
     // Ensure Task is valid as part of Graph
+    //TODO: can we remove this expensive check considering it is in Queue?
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
     List<TaskRunEntity> tasks =
@@ -194,8 +203,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
     LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
 
-    lockManager.releaseWorkflowLock(keys, tokenId);
-    LOGGER.debug("[{}] Released WorkflowRun lock", taskExecutionId);
+    lockManager.releaseRunLock(wfRunEntity.get().getId(), tokenId);
+    LOGGER.info("[{}] Released WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
     
     // Execute based on TaskType
     TaskType taskType = taskExecution.getType();
@@ -270,23 +279,36 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         CompletableFuture.supplyAsync(timeoutTaskAsync(taskExecution.getId()),
             CompletableFuture.delayedExecutor(taskExecution.getTimeout(), TimeUnit.MINUTES, asyncTaskExecutor));
       }
-    } else {
-      LOGGER.debug("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
+    } 
+    lockManager.releaseRunLock(taskExecutionId, taskTokenId);
+    LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
+    
+    if (!canRunTask) {
+      LOGGER.info("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
       taskExecution.setStatus(RunStatus.skipped);
-      end(taskExecution);
+      this.end(taskExecution);
     }
   }
 
+  /*
+   * Execute the End of a task as requested by the Handler
+   * 
+   * This needs to get a lock on the TaskRun so that if a Handler requests end, it waits for the start to finish. 
+   */
   @Override
   @Async("asyncTaskExecutor")
   public void end(TaskRunEntity taskExecution) {
-    String taskRunId = taskExecution.getId();
-    LOGGER.info("[{}] Recieved end task request.", taskRunId);
+    String taskExecutionId = taskExecution.getId();
+    LOGGER.info("[{}] Recieved end task request.", taskExecutionId);
+    
+    LOGGER.info("[{}] Attempting to acquire TaskRun ({}) lock", taskExecutionId, taskExecutionId);
+    String taskTokenId = lockManager.acquireRunLock(taskExecutionId);
+    LOGGER.info("[{}] Obtained TaskRun ({}) lock", taskExecutionId, taskExecutionId);
 
     // Check if task has been previously completed or cancelled
     TaskRunEntity storedTaskRun = taskRunRepository.findById(taskExecution.getId()).get();
     if (RunPhase.completed.equals(storedTaskRun.getPhase())) {
-      LOGGER.error("[{}] Task has already been completed or cancelled.", taskRunId);
+      LOGGER.error("[{}] Task has already been completed or cancelled.", taskExecutionId);
       return;
     }
 
@@ -311,7 +333,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     } else {
       // Update TaskRun with current TaskExecution status
       // updateStatusAndSaveTask is not used as we leave the Status to what user provided
-      LOGGER.info("[{}] Marking Task as {}.", taskRunId, taskExecution.getStatus());
+      LOGGER.info("[{}] Marking Task as {}.", taskExecutionId, taskExecution.getStatus());
       long duration = taskExecution.getStartTime() != null
           ? new Date().getTime() - taskExecution.getStartTime().getTime()
           : 0;
@@ -319,6 +341,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       taskExecution.setPhase(RunPhase.completed);
       taskExecution = taskRunRepository.save(taskExecution);
     }
+    
+    lockManager.releaseRunLock(taskExecutionId, taskTokenId);
+    LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
 
     // Execute Next Task (checking timeouts)
     // Check happens after saving the TaskRun to ensure we correctly record the provided user
@@ -339,18 +364,16 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       return;
     } 
     
-    List<String> keys = new LinkedList<>();
-    keys.add(wfRunEntity.get().getId());
-    LOGGER.debug("[{}] Attempting to get WorkflowRun lock", taskRunId);
-    String tokenId = lockManager.acquireWorkflowLock(keys);
-    LOGGER.debug("[{}] Obtained WorkflowRun lock", taskRunId);
+    LOGGER.info("[{}] Attempting to get WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
+    String tokenId = lockManager.acquireRunLock(wfRunEntity.get().getId());
+    LOGGER.info("[{}] Obtained WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
     
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
     List<TaskRunEntity> tasks =
         dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get());
     boolean finishedAllDependencies = this.finishedAll(wfRunEntity.get(), tasks, taskExecution);
-    LOGGER.debug("[{}] Finished all TaskRuns? {}", taskRunId, finishedAllDependencies);
+    LOGGER.debug("[{}] Finished all TaskRuns? {}", taskExecutionId, finishedAllDependencies);
 
     // Refresh wfRunEntity and update approval status
     wfRunEntity = workflowRunRepository.findById(taskExecution.getWorkflowRunRef());
@@ -358,8 +381,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     executeNextStep(wfRunEntity.get(), tasks, taskExecution, finishedAllDependencies);
 
-    lockManager.releaseWorkflowLock(keys, tokenId);
-    LOGGER.debug("[{}] Released WorkflowRun lock", taskRunId);
+    lockManager.releaseRunLock(wfRunEntity.get().getId(), tokenId);
+    LOGGER.info("[{}] Released WorkflowRun lock", taskExecutionId, wfRunEntity.get().getId());
   }
 
   // TODO: confirm if needed - currently not used.
@@ -702,9 +725,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     // String outputValue =
     // propertyManager.replaceValueWithProperty(input, activity.getId(), requestProperties);
 
-    List<String> keys = new LinkedList<>();
-    keys.add(wfRunEntity.getId());
-    String tokenId = lockManager.acquireWorkflowLock(keys);
+    String tokenId = lockManager.acquireRunLock(wfRunEntity.getId());
 
     List<RunResult> wfResults = wfRunEntity.getResults();
     RunResult wfResult = new RunResult();
@@ -714,7 +735,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     wfRunEntity.setResults(wfResults);
     workflowRunRepository.save(wfRunEntity);
 
-    lockManager.releaseWorkflowLock(keys, tokenId);
+    lockManager.releaseRunLock(wfRunEntity.getId(), tokenId);
   }
 
   private void finishWorkflow(WorkflowRunEntity wfRunEntity, List<TaskRunEntity> tasks) {

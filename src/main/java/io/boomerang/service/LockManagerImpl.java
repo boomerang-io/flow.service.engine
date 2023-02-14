@@ -2,6 +2,7 @@ package io.boomerang.service;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -39,7 +40,12 @@ public class LockManagerImpl implements LockManager {
 
   private static final Logger LOGGER = LogManager.getLogger(LockManagerImpl.class);
 
-  public String acquireWorkflowLock(List<String> keys) {
+  /*
+   * Locks on a single key in 2 minutes timeout
+   */
+  public String acquireRunLock(String key) {
+    List<String> keys = new LinkedList<>();
+    keys.add(key);
     return this.acquireLock(keys, 120000, 2000l, 100);
   }
 
@@ -129,7 +135,9 @@ public class LockManagerImpl implements LockManager {
   }
 
   @Override
-  public void releaseWorkflowLock(List<String> keys, String tokenId) {
+  public void releaseRunLock(String key, String tokenId) {
+    List<String> keys = new LinkedList<>();
+    keys.add(key);
     this.releaseLock(keys, tokenId);
   }
 
