@@ -4,8 +4,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.boomerang.data.entity.TaskRunEntity;
@@ -26,9 +26,9 @@ public class TaskRunEntityUpdateInterceptor {
   @Autowired
   EventSinkService eventSinkService;
 
-  @Before("execution(* io.boomerang.data.repository.TaskRunRepository.save(..))"
+  @After("execution(* io.boomerang.data.repository.TaskRunRepository.save(..))"
       + " && args(entityToBeSaved)")
-  public void beforeSaveInvoked(JoinPoint thisJoinPoint, Object entityToBeSaved) {
+  public void afterSaveInvoked(JoinPoint thisJoinPoint, Object entityToBeSaved) {
 
     LOGGER.info("Intercepted save action on entity {} from {}", entityToBeSaved,
         thisJoinPoint.getSignature().getDeclaringTypeName());

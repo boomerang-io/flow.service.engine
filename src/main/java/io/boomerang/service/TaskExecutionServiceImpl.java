@@ -110,6 +110,12 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       return;
     }
 
+    List<String> keys = new LinkedList<>();
+    keys.add(wfRunEntity.get().getId());
+    LOGGER.debug("[{}] Attempting to get WorkflowRun lock", taskExecutionId);
+    String tokenId = lockManager.acquireWorkflowLock(keys);
+    LOGGER.debug("[{}] Obtained WorkflowRun lock", taskExecutionId);
+    
     // Ensure Task is valid as part of Graph
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
@@ -117,6 +123,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get());
     boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
     LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
+    
+    lockManager.releaseWorkflowLock(keys, tokenId);
+    LOGGER.debug("[{}] Released WorkflowRun lock", taskExecutionId);
 
     if (canRunTask) {
       // Resolve Parameter Substitutions
@@ -128,7 +137,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     } else {
       LOGGER.debug("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
       taskExecution.setStatus(RunStatus.skipped);
-      end(taskExecution);
+      this.end(taskExecution);
     }
   }
 
@@ -171,6 +180,12 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       return;
     }
 
+    List<String> keys = new LinkedList<>();
+    keys.add(wfRunEntity.get().getId());
+    LOGGER.debug("[{}] Attempting to get WorkflowRun lock", taskExecutionId);
+    String tokenId = lockManager.acquireWorkflowLock(keys);
+    LOGGER.debug("[{}] Obtained WorkflowRun lock", taskExecutionId);
+    
     // Ensure Task is valid as part of Graph
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
@@ -179,6 +194,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
     LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
 
+    lockManager.releaseWorkflowLock(keys, tokenId);
+    LOGGER.debug("[{}] Released WorkflowRun lock", taskExecutionId);
+    
     // Execute based on TaskType
     TaskType taskType = taskExecution.getType();
     String wfRunId = wfRunEntity.get().getId();
@@ -289,6 +307,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       updateStatusAndSaveTask(taskExecution, RunStatus.cancelled, RunPhase.completed, Optional.of(
           "[{}] WorkflowRun has been marked as {}. Setting TaskRun as Cancelled. TaskRun may still run to completion."),
           wfRunEntity.get().getId(), wfRunEntity.get().getStatus());
+      return;
     } else {
       // Update TaskRun with current TaskExecution status
       // updateStatusAndSaveTask is not used as we leave the Status to what user provided
@@ -320,6 +339,12 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       return;
     } 
     
+    List<String> keys = new LinkedList<>();
+    keys.add(wfRunEntity.get().getId());
+    LOGGER.debug("[{}] Attempting to get WorkflowRun lock", taskRunId);
+    String tokenId = lockManager.acquireWorkflowLock(keys);
+    LOGGER.debug("[{}] Obtained WorkflowRun lock", taskRunId);
+    
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
         workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
     List<TaskRunEntity> tasks =
@@ -327,11 +352,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     boolean finishedAllDependencies = this.finishedAll(wfRunEntity.get(), tasks, taskExecution);
     LOGGER.debug("[{}] Finished all TaskRuns? {}", taskRunId, finishedAllDependencies);
 
-    List<String> keys = new LinkedList<>();
-    keys.add(wfRunEntity.get().getId());
-    LOGGER.debug("[{}] Attempting to get WorkflowRun lock", taskRunId);
-    String tokenId = lockManager.acquireWorkflowLock(keys);
-    LOGGER.debug("[{}] Obtained WorkflowRun lock", taskRunId);
     // Refresh wfRunEntity and update approval status
     wfRunEntity = workflowRunRepository.findById(taskExecution.getWorkflowRunRef());
     updatePendingAprovalStatus(wfRunEntity.get());

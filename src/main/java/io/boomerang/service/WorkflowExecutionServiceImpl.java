@@ -236,17 +236,16 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             runningTasks.forEach(t -> {
               taskClient.end(taskService, t);
             });
-          } else {
-            // If no running tasks, check pending tasks and queue to force them to skip - will be
-            // trapped by queue task before task order is checked
-            List<TaskRunEntity> pendingTasks =
-                tasks.stream().filter(t -> RunPhase.pending.equals(t.getPhase())).toList();
-            LOGGER.info("Timeout - # of Pending Tasks: " + pendingTasks.size());
-            if (pendingTasks.size() > 0) {
-              pendingTasks.forEach(t -> {
-                taskClient.queue(taskService, t);
-              });
-            }
+          } 
+          // Check pending tasks and queue to force them to skip - will be
+          // trapped by queue task before task order is checked
+          List<TaskRunEntity> pendingTasks =
+              tasks.stream().filter(t -> RunPhase.pending.equals(t.getPhase())).toList();
+          LOGGER.info("Timeout - # of Pending Tasks: " + pendingTasks.size());
+          if (pendingTasks.size() > 0) {
+            pendingTasks.forEach(t -> {
+              taskClient.queue(taskService, t);
+            });
           }
           // Retry workflow and set required details
           if (!Objects.isNull(wfRunEntity.getRetries()) && wfRunEntity.getRetries() != -1
