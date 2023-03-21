@@ -138,10 +138,9 @@ public class TaskRunServiceImpl implements TaskRunService {
         if (!Objects.isNull(optRunRequest.get().getTimeout()) && optRunRequest.get().getTimeout() != 0) {
           taskRunEntity.setTimeout(optRunRequest.get().getTimeout());
         }
-        taskRunRepository.save(taskRunEntity);
+//        taskRunRepository.save(taskRunEntity);
       }
       taskExecutionClient.start(taskExecutionService, taskRunEntity);      
-      
       TaskRun taskRun = new TaskRun(taskRunEntity);
       return ResponseEntity.ok(taskRun);
     } else {
@@ -170,7 +169,7 @@ public class TaskRunServiceImpl implements TaskRunService {
         taskRunEntity.setResults(optRunRequest.get().getResults());
         if (optRunRequest.get().getStatus() == null) {
           taskRunEntity.setStatus(RunStatus.succeeded);
-        } else if (!(RunStatus.failed.equals(optRunRequest.get().getStatus()) || RunStatus.succeeded.equals(optRunRequest.get().getStatus()))) {
+        } else if (!(RunStatus.failed.equals(optRunRequest.get().getStatus()) || RunStatus.succeeded.equals(optRunRequest.get().getStatus()) || RunStatus.invalid.equals(optRunRequest.get().getStatus()))) {
           throw new BoomerangException(BoomerangError.TASK_RUN_INVALID_END_STATUS);
         } else {
           taskRunEntity.setStatus(optRunRequest.get().getStatus());          
