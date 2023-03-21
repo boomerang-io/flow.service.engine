@@ -15,9 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.alturkovic.lock.exception.LockNotAvailableException;
 import io.boomerang.data.entity.ActionEntity;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
@@ -109,10 +111,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
           wfRunEntity.get().getId(), wfRunEntity.get().getStatus());
       return;
     }
-
-    LOGGER.info("[{}] Attempting to get WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
-    String tokenId = lockManager.acquireRunLock(wfRunEntity.get().getId());
-    LOGGER.info("[{}] Obtained WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
     
     // Ensure Task is valid as part of Graph
     Optional<WorkflowRevisionEntity> wfRevisionEntity =
@@ -129,12 +127,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
       // Update Status and Phase
       updateStatusAndSaveTask(taskExecution, RunStatus.ready, RunPhase.pending, Optional.empty());
-    } 
-
-    lockManager.releaseRunLock(wfRunEntity.get().getId(), tokenId);
-    LOGGER.info("[{}] Released WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
-    
-    if (!canRunTask) {
+    } else {
       LOGGER.info("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
       taskExecution.setStatus(RunStatus.skipped);
       this.end(taskExecution);
@@ -151,18 +144,16 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   public void start(TaskRunEntity taskExecution) {    
     String taskExecutionId = taskExecution.getId();
     LOGGER.info("[{}] Recieved start task request.", taskExecutionId);
-    
-    LOGGER.info("[{}] Attempting to acquire TaskRun ({}) lock", taskExecutionId, taskExecutionId);
-    String taskTokenId = lockManager.acquireRunLock(taskExecutionId);
-    LOGGER.info("[{}] Obtained TaskRun ({}) lock", taskExecutionId, taskExecutionId);
-    
-    LOGGER.debug("[{}] TaskRun: {}", taskExecutionId, taskExecution.toString());
 
     // Check if TaskRun Phase is valid. Pending means it correctly came from queueTask();
     if (!RunPhase.pending.equals(taskExecution.getPhase())) {
       LOGGER.debug("[{}] Task Status invalid.", taskExecutionId);
       return;
     }
+   
+    LOGGER.info("[{}] Attempting to acquire TaskRun ({}) lock", taskExecutionId, taskExecutionId);
+    String taskTokenId = lockManager.acquireRunLock(taskExecutionId);
+    LOGGER.info("[{}] Obtained TaskRun ({}) lock", taskExecutionId, taskExecutionId);
 
     // Check if WorkflowRun Phase is valid
     Optional<WorkflowRunEntity> wfRunEntity =
@@ -170,6 +161,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     if (!wfRunEntity.isPresent()) {
       updateStatusAndSaveTask(taskExecution, RunStatus.cancelled, RunPhase.completed,
           Optional.of("Unable to find WorkflowRun"));
+      
+      lockManager.releaseRunLock(taskExecutionId, taskTokenId);
+      LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
       return;
     } else if (RunPhase.completed.equals(wfRunEntity.get().getPhase())
         || RunPhase.finalized.equals(wfRunEntity.get().getPhase())) {
@@ -181,18 +175,23 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       updateStatusAndSaveTask(taskExecution, RunStatus.cancelled, RunPhase.completed, Optional.of(
           "[{}] WorkflowRun has been marked as {}. Setting TaskRun as Cancelled. TaskRun may still run to completion."),
           wfRunEntity.get().getId(), wfRunEntity.get().getStatus());
+      
+      lockManager.releaseRunLock(taskExecutionId, taskTokenId);
+      LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
       return;
     } else if (hasWorkflowRunExceededTimeout(wfRunEntity.get())) {
+      lockManager.releaseRunLock(taskExecutionId, taskTokenId);
+      LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
       // Checking WorkflowRun Timeout
       // Check prior to starting the TaskRun before further execution can happen
       // Timeout will mark the task as skipped.
       workflowRunService.timeout(wfRunEntity.get().getId(), false);
       return;
     }
-
-    LOGGER.info("[{}] Attempting to get WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
-    String tokenId = lockManager.acquireRunLock(wfRunEntity.get().getId());
-    LOGGER.info("[{}] Obtained WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
+    
+//    LOGGER.info("[{}] Attempting to get WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
+//    String tokenId = lockManager.acquireRunLock(wfRunEntity.get().getId());
+//    LOGGER.info("[{}] Obtained WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
     
     // Ensure Task is valid as part of Graph
     //TODO: can we remove this expensive check considering it is in Queue?
@@ -203,14 +202,15 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
     LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
 
-    lockManager.releaseRunLock(wfRunEntity.get().getId(), tokenId);
-    LOGGER.info("[{}] Released WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
+//    lockManager.releaseRunLock(wfRunEntity.get().getId(), tokenId);
+//    LOGGER.info("[{}] Released WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
     
     // Execute based on TaskType
     TaskType taskType = taskExecution.getType();
     String wfRunId = wfRunEntity.get().getId();
     LOGGER.debug("[{}] Examining task type: {}", taskExecutionId, taskType);
     if (canRunTask) {
+      boolean callEnd = false;
       // Set up task
       taskExecution.setStartTime(new Date());
       updateStatusAndSaveTask(taskExecution, RunStatus.running, RunPhase.running, Optional.empty());
@@ -218,7 +218,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         LOGGER.info("[{}] Execute Decision Task", wfRunId);
         processDecision(taskExecution, wfRunId);
         taskExecution.setStatus(RunStatus.succeeded);
-        this.end(taskExecution);
+        callEnd = true;
       } else if (TaskType.template.equals(taskType) || TaskType.script.equals(taskType)) {
         LOGGER.info("[{}] Execute Template Task", wfRunId);
         getTaskWorkspaces(taskExecution, wfRunEntity);
@@ -237,16 +237,15 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         } else {
           taskExecution.setStatus(RunStatus.failed);
         }
-        this.end(taskExecution);
       } else if (TaskType.releaselock.equals(taskType)) {
         LOGGER.info("[{}] Execute Release Lock", wfRunId);
         lockManager.releaseTaskLock(taskExecution, wfRunEntity.get().getId());
         taskExecution.setStatus(RunStatus.succeeded);
-        this.end(taskExecution);
+        callEnd = true;
       } else if (TaskType.runworkflow.equals(taskType)) {
         LOGGER.info("[{}] Execute Run Workflow Task", wfRunId);
         this.runWorkflow(taskExecution, wfRunEntity.get());
-        this.end(taskExecution);
+        callEnd = true;
       } else if (TaskType.runscheduledworkflow.equals(taskType)) {
         LOGGER.info("TODO - Run Scheduled Workflow");
         // TODO: this.runScheduledWorkflow(taskExecution, wfRunEntity.get(), workflowName);
@@ -254,12 +253,12 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         LOGGER.info("[{}] Save Workflow Status", wfRunId);
         saveWorkflowStatus(taskExecution, wfRunEntity.get());
         taskExecution.setStatus(RunStatus.succeeded);
-        this.end(taskExecution);
+        callEnd = true;
       } else if (TaskType.setwfproperty.equals(taskType)) {
         LOGGER.info("[{}] Execute Set Workflow Result Parameter Task", wfRunId);
         saveWorkflowProperty(taskExecution, wfRunEntity.get());
         taskExecution.setStatus(RunStatus.succeeded);
-        this.end(taskExecution);
+        callEnd = true;
       } else if (TaskType.approval.equals(taskType)) {
         LOGGER.info("[{}] Execute Approval Action Task", wfRunId);
         createActionTask(taskExecution, wfRunEntity.get(), ActionType.approval);
@@ -269,6 +268,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       } else if (TaskType.eventwait.equals(taskType)) {
         LOGGER.info("TODO - Wait for Event");
         // TODO: createWaitForEventTask(taskExecution);
+//      } else if (TaskType.sleep.equals(taskType)) {
+//        Thread.sleep(0);;
+        // TODO: createSleepTask(taskExecution);
       }
       
       // Check if task has a timeout set
@@ -279,11 +281,16 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         CompletableFuture.supplyAsync(timeoutTaskAsync(taskExecution.getId()),
             CompletableFuture.delayedExecutor(taskExecution.getTimeout(), TimeUnit.MINUTES, asyncTaskExecutor));
       }
-    } 
-    lockManager.releaseRunLock(taskExecutionId, taskTokenId);
-    LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
-    
-    if (!canRunTask) {
+      
+      lockManager.releaseRunLock(taskExecutionId, taskTokenId);
+      LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
+      
+      if (callEnd) {
+        this.end(taskExecution);
+      }
+    } else {
+      lockManager.releaseRunLock(taskExecutionId, taskTokenId);
+      LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
       LOGGER.info("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
       taskExecution.setStatus(RunStatus.skipped);
       this.end(taskExecution);
@@ -300,17 +307,30 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   public void end(TaskRunEntity taskExecution) {
     String taskExecutionId = taskExecution.getId();
     LOGGER.info("[{}] Recieved end task request.", taskExecutionId);
+
+    // Check if task has been previously completed or cancelled
+    if (RunPhase.completed.equals(taskExecution.getPhase())) {
+      LOGGER.error("[{}] Task has already been completed or cancelled.", taskExecutionId);
+      return;
+    }
+    
+    try {
+      RetryTemplate retryTemplate = lockManager.getRetryTemplate(1000l, 3);
+      retryTemplate.execute(ctx -> {
+        final TaskRunEntity te = taskRunRepository.findById(taskExecutionId).get();
+        if (RunStatus.ready.equals(te.getStatus()) || RunStatus.notstarted.equals(te.getStatus())) {
+          throw new LockNotAvailableException([{}] Task is not in the correct status or phase.);
+        }
+        return true;
+      });
+    } catch (Exception ex) {
+      LOGGER.error("[{}] Task is not in the correct status or phase.", taskExecutionId);
+      return;
+    }
     
     LOGGER.info("[{}] Attempting to acquire TaskRun ({}) lock", taskExecutionId, taskExecutionId);
     String taskTokenId = lockManager.acquireRunLock(taskExecutionId);
     LOGGER.info("[{}] Obtained TaskRun ({}) lock", taskExecutionId, taskExecutionId);
-
-    // Check if task has been previously completed or cancelled
-    TaskRunEntity storedTaskRun = taskRunRepository.findById(taskExecution.getId()).get();
-    if (RunPhase.completed.equals(storedTaskRun.getPhase())) {
-      LOGGER.error("[{}] Task has already been completed or cancelled.", taskExecutionId);
-      return;
-    }
 
     // Check if WorkflowRun Phase is valid
     Optional<WorkflowRunEntity> wfRunEntity =
@@ -318,6 +338,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     if (!wfRunEntity.isPresent()) {
       updateStatusAndSaveTask(taskExecution, RunStatus.cancelled, RunPhase.completed,
           Optional.of("Unable to find WorkflowRun"));
+      
+      lockManager.releaseRunLock(taskExecutionId, taskTokenId);
+      LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
       return;
     } else if (RunPhase.completed.equals(wfRunEntity.get().getPhase())
         || RunPhase.finalized.equals(wfRunEntity.get().getPhase())) {
@@ -329,6 +352,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       updateStatusAndSaveTask(taskExecution, RunStatus.cancelled, RunPhase.completed, Optional.of(
           "[{}] WorkflowRun has been marked as {}. Setting TaskRun as Cancelled. TaskRun may still run to completion."),
           wfRunEntity.get().getId(), wfRunEntity.get().getStatus());
+      
+      lockManager.releaseRunLock(taskExecutionId, taskTokenId);
+      LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
       return;
     } else {
       // Update TaskRun with current TaskExecution status
@@ -340,10 +366,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       taskExecution.setDuration(duration);
       taskExecution.setPhase(RunPhase.completed);
       taskExecution = taskRunRepository.save(taskExecution);
+      
+      lockManager.releaseRunLock(taskExecutionId, taskTokenId);
+      LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
     }
-    
-    lockManager.releaseRunLock(taskExecutionId, taskTokenId);
-    LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
 
     // Execute Next Task (checking timeouts)
     // Check happens after saving the TaskRun to ensure we correctly record the provided user
@@ -382,7 +408,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     executeNextStep(wfRunEntity.get(), tasks, taskExecution, finishedAllDependencies);
 
     lockManager.releaseRunLock(wfRunEntity.get().getId(), tokenId);
-    LOGGER.info("[{}] Released WorkflowRun lock", taskExecutionId, wfRunEntity.get().getId());
+    LOGGER.info("[{}] Released WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
   }
 
   // TODO: confirm if needed - currently not used.
