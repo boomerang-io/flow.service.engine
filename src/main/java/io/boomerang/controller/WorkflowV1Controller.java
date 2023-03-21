@@ -48,8 +48,10 @@ public class WorkflowV1Controller {
       required = true) @PathVariable String workflowId,
       @Parameter(name = "version",
       description = "Workflow Version",
-      required = false) @RequestParam(required = false) Optional<Integer> version) {
-    return workflowService.get(workflowId, version);
+      required = false) @RequestParam(required = false) Optional<Integer> version,
+      @Parameter(name = "withTasks", description = "Include Workflow Tasks",
+      required = false) @RequestParam(defaultValue="true") boolean withTasks) {
+    return workflowService.get(workflowId, version, withTasks);
   }
 
   @GetMapping(value = "/query")

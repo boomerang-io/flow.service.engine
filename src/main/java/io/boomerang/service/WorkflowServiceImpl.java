@@ -60,7 +60,7 @@ public class WorkflowServiceImpl implements WorkflowService {
   private MongoTemplate mongoTemplate;
 
   @Override
-  public ResponseEntity<Workflow> get(String workflowId, Optional<Integer> version) {
+  public ResponseEntity<Workflow> get(String workflowId, Optional<Integer> version, boolean withTasks) {
     if (workflowId == null || workflowId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
@@ -81,7 +81,9 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     Workflow workflow = new Workflow(optWfEntity.get(), optWfRevisionEntity.get());
-    workflow.setTasks(TaskMapper.revisionTasksToListOfTasks(optWfRevisionEntity.get().getTasks()));
+    if (withTasks) {
+      workflow.setTasks(TaskMapper.revisionTasksToListOfTasks(optWfRevisionEntity.get().getTasks())); 
+    }
 
     // TODO: filter sensitive inputs/results
     // TODO: Add in the handling of Workspaces

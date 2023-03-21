@@ -10,7 +10,7 @@ import io.boomerang.model.Workflow;
 
 public interface WorkflowService {
 
-  ResponseEntity<Workflow> get(String workflowId, Optional<Integer> version);
+  ResponseEntity<Workflow> get(String workflowId, Optional<Integer> version, boolean withTasks);
 
   ResponseEntity<Workflow> create(Workflow workflow, boolean useId);
 
