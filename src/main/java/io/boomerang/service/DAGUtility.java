@@ -94,7 +94,7 @@ public class DAGUtility {
       if (existingTaskRunEntity.isPresent() && existingTaskRunEntity.get() != null) {
         taskList.add(existingTaskRunEntity.get());
       } else {
-        LOGGER.info("[{}] Creating TaskRunEntity: {}", wfRunEntity.getId(), wfRevisionTask.getName());
+        LOGGER.debug("[{}] Creating TaskRunEntity: {}", wfRunEntity.getId(), wfRevisionTask.getName());
         TaskRunEntity taskRunEntity = new TaskRunEntity();
         taskRunEntity.setName(wfRevisionTask.getName());
         taskRunEntity.setStatus(RunStatus.notstarted);
@@ -168,7 +168,7 @@ public class DAGUtility {
           //TODO: add in spec from TaskTemplate to TaskRunEntity
         }
         taskRunRepository.save(taskRunEntity);
-        LOGGER.info("[{}] TaskRunEntity ({}) created for: {}", wfRunEntity.getId(), taskRunEntity.getId(),
+        LOGGER.debug("[{}] TaskRunEntity ({}) created for: {}", wfRunEntity.getId(), taskRunEntity.getId(),
             taskRunEntity.getName());
         taskList.add(taskRunEntity);
       }
