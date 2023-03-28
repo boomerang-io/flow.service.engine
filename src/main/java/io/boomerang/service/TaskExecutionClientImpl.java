@@ -17,7 +17,7 @@ public class TaskExecutionClientImpl implements TaskExecutionClient {
   @Override
   @Async
   public void queue(TaskExecutionService taskService, TaskRunEntity taskRequest) {
-    taskService.queue(taskRequest);
+    taskService.queue(taskRequest); 
   }
   
   @Override

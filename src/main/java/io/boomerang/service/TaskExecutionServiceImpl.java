@@ -15,9 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.alturkovic.lock.exception.LockNotAvailableException;
 import io.boomerang.data.entity.ActionEntity;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
@@ -150,7 +152,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       LOGGER.debug("[{}] Task Status invalid.", taskExecutionId);
       return;
     }
-
+   
     LOGGER.info("[{}] Attempting to acquire TaskRun ({}) lock", taskExecutionId, taskExecutionId);
     String taskTokenId = lockManager.acquireRunLock(taskExecutionId);
     LOGGER.info("[{}] Obtained TaskRun ({}) lock", taskExecutionId, taskExecutionId);
@@ -188,12 +190,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       workflowRunService.timeout(wfRunEntity.get().getId(), false);
       return;
     }
-
-    // LOGGER.info("[{}] Attempting to get WorkflowRun ({}) lock", taskExecutionId,
-    // wfRunEntity.get().getId());
-    // String tokenId = lockManager.acquireRunLock(wfRunEntity.get().getId());
-    // LOGGER.info("[{}] Obtained WorkflowRun ({}) lock", taskExecutionId,
-    // wfRunEntity.get().getId());
+    
+//    LOGGER.info("[{}] Attempting to get WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
+//    String tokenId = lockManager.acquireRunLock(wfRunEntity.get().getId());
+//    LOGGER.info("[{}] Obtained WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
 
     // Ensure Task is valid as part of Graph
     // TODO: can we remove this expensive check considering it is in Queue?
@@ -204,10 +204,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
     LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
 
-    // lockManager.releaseRunLock(wfRunEntity.get().getId(), tokenId);
-    // LOGGER.info("[{}] Released WorkflowRun ({}) lock", taskExecutionId,
-    // wfRunEntity.get().getId());
-
+//    lockManager.releaseRunLock(wfRunEntity.get().getId(), tokenId);
+//    LOGGER.info("[{}] Released WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
+    
     // Execute based on TaskType
     TaskType taskType = taskExecution.getType();
     String wfRunId = wfRunEntity.get().getId();
