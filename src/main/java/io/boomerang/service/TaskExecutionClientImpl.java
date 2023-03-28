@@ -8,6 +8,8 @@ import io.boomerang.data.entity.TaskRunEntity;
  * Internal client allowing for async processing of individual tasks.
  * 
  * Referenced by both the external TaskRun Controller and the internal Workflow Execution.
+ * 
+ * Ref: https://www.baeldung.com/spring-async
  */
 @Service
 public class TaskExecutionClientImpl implements TaskExecutionClient {
