@@ -15,11 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.alturkovic.lock.exception.LockNotAvailableException;
 import io.boomerang.data.entity.ActionEntity;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
@@ -75,6 +73,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
   @Autowired
   private ParameterManager paramManager;
+
+  @Autowired
+  private TaskExecutionClient taskExecutionClient;
 
   @Autowired
   @Lazy
@@ -133,10 +134,15 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       taskExecution.setStatus(RunStatus.skipped);
       this.end(taskExecution);
     }
+    
+    // Auto start System related tasks
+    if (!TaskType.template.equals(taskExecution.getType()) && !TaskType.script.equals(taskExecution.getType()) && !TaskType.custom.equals(taskExecution.getType()) && !TaskType.generic.equals(taskExecution.getType())) {
+      taskExecutionClient.start(this, taskExecution);
+    }
   }
 
   /*
-   * Execute the Start of a task as requested by the Handler
+   * Execute the Start of a task as requested by the Handler or System
    * 
    * This needs to get a lock on the TaskRun so that if a Handler requests end, it waits for the
    * start to finish.
@@ -289,7 +295,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       LOGGER.info("[{}] Released TaskRun ({}) lock", taskExecutionId, taskExecutionId);
 
       if (callEnd) {
-        this.end(taskExecution);
+        taskExecutionClient.end(this, taskExecution);
       }
     } else {
       lockManager.releaseRunLock(taskExecutionId, taskTokenId);
