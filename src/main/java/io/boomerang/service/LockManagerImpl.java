@@ -90,101 +90,100 @@ public class LockManagerImpl implements LockManager {
    * key.
    * 
    */
-//  private String acquireLock(List<String> keys, long timeout, long backOffPeriod,
-//      Integer maxAttempts) {
-//    String storeId = mongoConfiguration.fullCollectionName(LOCKS_COLLECTION_NAME);
-//    String token = "";
-//
-//    if (keys != null) {
-//      // SimpleMongoLock requires a supplier - don't want the value to change at a future assign
-//      // time.
-//      final String finalKey = keys.get(0);
-//      Supplier<String> supplier = () -> finalKey;
-//      RetryTemplate retryTemplate = getRetryTemplate(backOffPeriod, maxAttempts);
-//      RetriableLock retryLock;
-//      if (mongoCosmosDBTTL) {
-//        CosmosDBMongoLock mongoLock = new CosmosDBMongoLock(supplier, this.mongoTemplate);
-//        retryLock = new RetriableLock(mongoLock, retryTemplate);
-//        token = retryLock.acquire(keys, storeId, timeout / 1000);
-//      } else {
-//        SimpleMongoLock mongoLock = new SimpleMongoLock(supplier, this.mongoTemplate);
-//        retryLock = new RetriableLock(mongoLock, retryTemplate);
-//        token = retryLock.acquire(keys, storeId, timeout);
-//      }
-//    }
-//    LOGGER.debug("Token: " + token);
-//    if (StringUtils.isEmpty(token)) {
-//      /** TODO: What to do here. */
-//      throw new LockNotAvailableException(
-//          String.format("Lock not available for keys: %s in store %s", keys, storeId));
-//    }
-//    return token;
-//  }
-  
+  // private String acquireLock(List<String> keys, long timeout, long backOffPeriod,
+  // Integer maxAttempts) {
+  // String storeId = mongoConfiguration.fullCollectionName(LOCKS_COLLECTION_NAME);
+  // String token = "";
+  //
+  // if (keys != null) {
+  // // SimpleMongoLock requires a supplier - don't want the value to change at a future assign
+  // // time.
+  // final String finalKey = keys.get(0);
+  // Supplier<String> supplier = () -> finalKey;
+  // RetryTemplate retryTemplate = getRetryTemplate(backOffPeriod, maxAttempts);
+  // RetriableLock retryLock;
+  // if (mongoCosmosDBTTL) {
+  // CosmosDBMongoLock mongoLock = new CosmosDBMongoLock(supplier, this.mongoTemplate);
+  // retryLock = new RetriableLock(mongoLock, retryTemplate);
+  // token = retryLock.acquire(keys, storeId, timeout / 1000);
+  // } else {
+  // SimpleMongoLock mongoLock = new SimpleMongoLock(supplier, this.mongoTemplate);
+  // retryLock = new RetriableLock(mongoLock, retryTemplate);
+  // token = retryLock.acquire(keys, storeId, timeout);
+  // }
+  // }
+  // LOGGER.debug("Token: " + token);
+  // if (StringUtils.isEmpty(token)) {
+  // /** TODO: What to do here. */
+  // throw new LockNotAvailableException(
+  // String.format("Lock not available for keys: %s in store %s", keys, storeId));
+  // }
+  // return token;
+  // }
 
-private String acquireLock(List<String> keys, long timeout, long backOffPeriod,
-    Integer maxAttempts) {
-  String storeId = mongoConfiguration.fullCollectionName(LOCKS_COLLECTION_NAME);
-//  String token = "";
-  if (keys != null) {
-    // SimpleMongoLock requires a supplier - don't want the value to change at a future assign
-    // time.
-    final String finalKey = keys.get(0);
-    Supplier<String> supplier = () -> finalKey;
-//    RetriableLock retryLock;
-    RetryTemplate retryTemplate = getRetryTemplate(backOffPeriod, maxAttempts);
-    if (mongoCosmosDBTTL) {
-      CosmosDBMongoLock mongoLock = new CosmosDBMongoLock(supplier, this.mongoTemplate);
-//      retryLock = new RetriableLock(mongoLock, retryTemplate);
-//      token = retryLock.acquire(keys, storeId, timeout / 1000);
 
-      return retryTemplate.execute(ctx -> {
-        final boolean lockExists = mongoLock.exists(storeId, keys.get(0));
-        if (lockExists) {
-          throw new LockNotAvailableException(
-              String.format("Lock hasn't been released yet for: %s in store %s", keys, storeId));
-        }
-        return mongoLock.acquire(keys, storeId, timeout);
-      });
-    } else {
-      FlowMongoLock mongoLock = new FlowMongoLock(supplier, this.mongoTemplate);
-//      retryLock = new RetriableLock(mongoLock, retryTemplate);
+  private String acquireLock(List<String> keys, long timeout, long backOffPeriod,
+      Integer maxAttempts) {
+    String storeId = mongoConfiguration.fullCollectionName(LOCKS_COLLECTION_NAME);
+    // String token = "";
+    if (keys != null) {
+      // SimpleMongoLock requires a supplier - don't want the value to change at a future assign
+      // time.
+      final String finalKey = keys.get(0);
+      Supplier<String> supplier = () -> finalKey;
+      // RetriableLock retryLock;
+      RetryTemplate retryTemplate = getRetryTemplate(backOffPeriod, maxAttempts);
+      if (mongoCosmosDBTTL) {
+        CosmosDBMongoLock mongoLock = new CosmosDBMongoLock(supplier, this.mongoTemplate);
+        // retryLock = new RetriableLock(mongoLock, retryTemplate);
+        // token = retryLock.acquire(keys, storeId, timeout / 1000);
 
-//      if (StringUtils.isEmpty(token)) {
-//        /** TODO: What to do here. */
-//        throw new LockNotAvailableException(
-//            String.format("Lock not available for keys: %s in store %s", keys, storeId));
-//      }
-//      return retryTemplate.execute(ctx -> {
-//        final String token = mongoLock.acquire(keys, storeId, timeout);
-//        if (StringUtils.isEmpty(token)) {
-//          throw new LockNotAvailableException(
-//              String.format("Lock not available for keys: %s in store %s", keys, storeId));
-//        }
-//        return token;
-//      });
+        return retryTemplate.execute(ctx -> {
+          final boolean lockExists = mongoLock.exists(storeId, keys.get(0));
+          if (lockExists) {
+            throw new LockNotAvailableException(
+                String.format("Lock hasn't been released yet for: %s in store %s", keys, storeId));
+          }
+          return mongoLock.acquire(keys, storeId, timeout);
+        });
+      } else {
+        FlowMongoLock mongoLock = new FlowMongoLock(supplier, this.mongoTemplate);
+        // retryLock = new RetriableLock(mongoLock, retryTemplate);
 
-      return retryTemplate.execute(ctx -> {
-        final boolean lockExists = mongoLock.exists(storeId, keys.get(0));
-        if (lockExists) {
-          throw new LockNotAvailableException(
-              String.format("Lock hasn't been released yet for: %s in store %s", keys, storeId));
-        }
-        return mongoLock.acquire(keys, storeId, timeout);
-      });
+        // if (StringUtils.isEmpty(token)) {
+        // /** TODO: What to do here. */
+        // throw new LockNotAvailableException(
+        // String.format("Lock not available for keys: %s in store %s", keys, storeId));
+        // }
+        // return retryTemplate.execute(ctx -> {
+        // final String token = mongoLock.acquire(keys, storeId, timeout);
+        // if (StringUtils.isEmpty(token)) {
+        // throw new LockNotAvailableException(
+        // String.format("Lock not available for keys: %s in store %s", keys, storeId));
+        // }
+        // return token;
+        // });
+
+        return retryTemplate.execute(ctx -> {
+          final boolean lockExists = mongoLock.exists(storeId, keys.get(0));
+          if (lockExists) {
+            throw new LockNotAvailableException(
+                String.format("Lock hasn't been released yet for: %s in store %s", keys, storeId));
+          }
+          return mongoLock.acquire(keys, storeId, timeout);
+        });
+      }
     }
+    // LOGGER.debug("Token: " + token);
+    // if (StringUtils.isEmpty(token)) {
+    // /** TODO: What to do here. */
+    // throw new LockNotAvailableException(
+    // String.format("Lock not available for keys: %s in store %s", keys, storeId));
+    // }
+    return "";
   }
-//  LOGGER.debug("Token: " + token);
-//  if (StringUtils.isEmpty(token)) {
-//    /** TODO: What to do here. */
-//    throw new LockNotAvailableException(
-//        String.format("Lock not available for keys: %s in store %s", keys, storeId));
-//  }
-  return "";
-}
 
-  @Override
-  public RetryTemplate getRetryTemplate(long backOffPeriod, Integer maxAttempts) {
+  private RetryTemplate getRetryTemplate(long backOffPeriod, Integer maxAttempts) {
     RetryTemplate retryTemplate = new RetryTemplate();
     FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
     fixedBackOffPolicy.setBackOffPeriod(backOffPeriod);
