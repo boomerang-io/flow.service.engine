@@ -228,6 +228,8 @@ public class WorkflowServiceImpl implements WorkflowService {
   //TODO: handle more of the apply i.e. if original has element, and new does not, keep the original element.
   @Override
   public ResponseEntity<Workflow> apply(Workflow workflow, Boolean replace) {
+    //Apply can create new with specified ID if it exists
+    //TODO: add check that ID matches required format for MongoDB
     if (workflow.getId() == null || workflow.getId().isBlank() || workflowRepository.findById(workflow.getId()).isEmpty()) {
         return this.create(workflow, replace);
     }
