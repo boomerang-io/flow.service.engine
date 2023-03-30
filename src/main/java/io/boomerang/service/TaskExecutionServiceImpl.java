@@ -287,8 +287,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       this.runWorkflow(taskExecution, wfRunEntity);
       callEnd = true;
     } else if (TaskType.runscheduledworkflow.equals(taskType)) {
-      LOGGER.info("TODO - Run Scheduled Workflow");
-      // TODO: this.runScheduledWorkflow(taskExecution, wfRunEntity.get(), workflowName);
+      LOGGER.info("[{}] Execute Run Scheduled Workflow Task", wfRunId);
+//      this.runScheduledWorkflow(taskExecution, wfRunEntity.get(), workflowName);
+      callEnd = true;
     } else if (TaskType.setwfstatus.equals(taskType)) {
       LOGGER.info("[{}] Save Workflow Status", wfRunId);
       saveWorkflowStatus(taskExecution, wfRunEntity);
@@ -307,7 +308,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       createActionTask(taskExecution, wfRunEntity, ActionType.manual);
     } else if (TaskType.eventwait.equals(taskType)) {
       LOGGER.info("[{}] Execute Wait For Event Task", wfRunId);
-      // TODO: createWaitForEventTask(taskExecution);
+      createWaitForEventTask(taskExecution, callEnd);
     } else if (TaskType.sleep.equals(taskType)) {
       LOGGER.info("[{}] Execute Sleep Task", wfRunId);
       createSleepTask(taskExecution);
@@ -721,20 +722,17 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   // }
   //
 
-  // private void createWaitForEventTask(TaskExecutionEntity taskExecution) {
-  //
-  // LOGGER.debug("[{}] Creating wait for event task", taskExecution.getActivityId());
-  //
-  // taskExecution.setFlowTaskStatus(TaskStatus.waiting);
-  // taskActivityService.save(taskExecution);
-  //
-  // if (taskExecution.isPreApproved()) {
-  // InternalTaskResponse response = new InternalTaskResponse();
-  // response.setActivityId(taskExecution.getId());
-  // response.setStatus(TaskStatus.completed);
-  // this.endTask(response);
-  // }
-  // }
+  private void createWaitForEventTask(TaskRunEntity taskExecution, boolean callEnd) {
+    LOGGER.debug("[{}] Creating wait for event task", taskExecution.getId());
+    taskExecution.setStatus(RunStatus.waiting);
+    taskExecution = taskRunRepository.save(taskExecution);
+
+    if (taskExecution.isPreApproved()) {
+      taskExecution.setStatus(RunStatus.succeeded);
+      taskExecution = taskRunRepository.save(taskExecution);
+      callEnd = true;
+    }
+  }
 
   private void createActionTask(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity,
       ActionType type) {

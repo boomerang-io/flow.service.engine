@@ -30,8 +30,12 @@ public class TaskExecutionClientImpl implements TaskExecutionClient {
     taskService.queue(taskRequest); 
   }
   
+  /*
+   * This method is not asynchronous as it needs to respond to the external API in a synchronous manner.
+   * 
+   *  Execute holds the code that needs to be asynchronous
+   */
   @Override
-//  @Async("asyncTaskExecutor")
   public void start(TaskExecutionService taskService, TaskRunEntity taskRequest) {
     taskService.start(taskRequest);
   }
