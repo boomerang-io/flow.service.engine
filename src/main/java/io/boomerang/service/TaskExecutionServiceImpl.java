@@ -132,7 +132,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     } else {
       LOGGER.info("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
       taskExecution.setStatus(RunStatus.skipped);
-      this.end(taskExecution);
+      taskExecutionClient.end(this, taskExecution);
     }
 
     // Auto start System related tasks skipping the start checks
@@ -479,7 +479,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         if (RunPhase.running.equals(taskExecution.getPhase())) {
           LOGGER.info("[{}] Timeout Task Async...", taskRunId);
           taskExecution.setStatus(RunStatus.timedout);
-          this.end(taskExecution);
+          taskExecutionClient.end(this, taskExecution);
         }
       }
       return true;
@@ -718,7 +718,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   // }
   // }
   //
-  // this.endTask(response);
+//  taskExecutionClient.end(this, taskExecution);
   // }
   //
 
