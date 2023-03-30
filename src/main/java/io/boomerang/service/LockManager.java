@@ -1,6 +1,5 @@
 package io.boomerang.service;
 
-import org.springframework.retry.support.RetryTemplate;
 import io.boomerang.data.entity.TaskRunEntity;
 
 public interface LockManager {
