@@ -138,7 +138,6 @@ public class TaskRunServiceImpl implements TaskRunService {
         if (!Objects.isNull(optRunRequest.get().getTimeout()) && optRunRequest.get().getTimeout() != 0) {
           taskRunEntity.setTimeout(optRunRequest.get().getTimeout());
         }
-//        taskRunRepository.save(taskRunEntity);
       }
       taskExecutionClient.start(taskExecutionService, taskRunEntity);      
       TaskRun taskRun = new TaskRun(taskRunEntity);
