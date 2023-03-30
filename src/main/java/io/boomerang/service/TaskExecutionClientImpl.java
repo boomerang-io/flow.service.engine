@@ -7,6 +7,7 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskRunEntity;
+import io.boomerang.data.entity.WorkflowRunEntity;
 
 /*
  * Internal client allowing for async processing of individual tasks.
@@ -30,9 +31,15 @@ public class TaskExecutionClientImpl implements TaskExecutionClient {
   }
   
   @Override
-  @Async("asyncTaskExecutor")
+//  @Async("asyncTaskExecutor")
   public void start(TaskExecutionService taskService, TaskRunEntity taskRequest) {
     taskService.start(taskRequest);
+  }
+  
+  @Override
+  @Async("asyncTaskExecutor")
+  public void execute(TaskExecutionService taskService, TaskRunEntity taskRequest, WorkflowRunEntity wfRunEntity) {
+    taskService.execute(taskRequest, wfRunEntity);
   }
 
   @Override
