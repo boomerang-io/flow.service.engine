@@ -26,7 +26,5 @@ public interface ActionRepository extends MongoRepository<ActionEntity, String> 
       Date date, Date date2);
 
   long countByStatusAndType(ActionStatus submitted, ActionType type);
-  
-  
 }
 

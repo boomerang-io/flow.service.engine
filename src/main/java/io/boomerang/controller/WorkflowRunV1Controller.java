@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.service.WorkflowRunService;
@@ -56,7 +55,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Search for Workflow Runs")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public Page<WorkflowRunEntity> queryWorkflowRuns(
+  public Page<WorkflowRun> queryWorkflowRuns(
       @Parameter(name = "labels",
       description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
       required = false) @RequestParam(required = false) Optional<List<String>> labels,
