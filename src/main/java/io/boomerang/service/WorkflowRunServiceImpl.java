@@ -5,6 +5,7 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -85,8 +86,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   }
 
   @Override
-  // TODO switch to WorkflowRun
-  public Page<WorkflowRunEntity> query(Pageable pageable, Optional<List<String>> queryLabels,
+  public Page<WorkflowRun> query(Pageable pageable, Optional<List<String>> queryLabels,
       Optional<List<String>> queryStatus, Optional<List<String>> queryPhase, Optional<List<String>> queryIds) {
     List<Criteria> criteriaList = new ArrayList<>();
 
@@ -139,9 +139,14 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     }
     Query query = new Query(allCriteria);
     query.with(pageable);
+    
+    List<WorkflowRunEntity> wfRunEntities = mongoTemplate.find(query.with(pageable), WorkflowRunEntity.class);
+    
+    List<WorkflowRun> wfRuns = new LinkedList<>();
+    wfRunEntities.forEach(e -> wfRuns.add(new WorkflowRun(e)));
 
-    Page<WorkflowRunEntity> pages = PageableExecutionUtils.getPage(
-        mongoTemplate.find(query.with(pageable), WorkflowRunEntity.class), pageable,
+    Page<WorkflowRun> pages = PageableExecutionUtils.getPage(
+        wfRuns, pageable,
         () -> mongoTemplate.count(query, WorkflowRunEntity.class));
 
     return pages;

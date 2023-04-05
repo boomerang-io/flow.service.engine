@@ -5,9 +5,8 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.WorkflowRunRequest;
 
 public interface WorkflowRunService {
 
@@ -19,7 +18,7 @@ public interface WorkflowRunService {
 
   ResponseEntity<WorkflowRun> finalize(String workflowRunId);
 
-  Page<WorkflowRunEntity> query(Pageable pageable, Optional<List<String>> queryLabels,
+  Page<WorkflowRun> query(Pageable pageable, Optional<List<String>> queryLabels,
       Optional<List<String>> queryStatus, Optional<List<String>> queryPhase,
       Optional<List<String>> ids);
 

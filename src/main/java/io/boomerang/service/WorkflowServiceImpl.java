@@ -3,6 +3,7 @@ package io.boomerang.service;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -86,6 +87,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     // TODO: filter sensitive inputs/results
+
+    
     // TODO: Add in the handling of Workspaces
     // if (workflow.getStorage() == null) {
     // workflow.setStorage(new Storage());
@@ -97,7 +100,7 @@ public class WorkflowServiceImpl implements WorkflowService {
   }
 
   @Override
-  public Page<WorkflowEntity> query(Pageable pageable, Optional<List<String>> queryLabels,
+  public Page<Workflow> query(Pageable pageable, Optional<List<String>> queryLabels,
       Optional<List<String>> queryStatus, Optional<List<String>> queryIds) {
     List<Criteria> criteriaList = new ArrayList<>();
 
@@ -139,9 +142,20 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
     Query query = new Query(allCriteria);
     query.with(pageable);
+    
+    List<WorkflowEntity> wfEntities = mongoTemplate.find(query.with(pageable), WorkflowEntity.class);
+    
+    List<Workflow> workflows = new LinkedList<>();
+    wfEntities.forEach(e -> {
+      Optional<WorkflowRevisionEntity> optWfRevisionEntity =
+          workflowRevisionRepository.findByWorkflowRefAndLatestVersion(e.getId());
+      if (optWfRevisionEntity.isPresent()) {
+        workflows.add(new Workflow(e, optWfRevisionEntity.get()));
+      }      
+    });
 
-    Page<WorkflowEntity> pages = PageableExecutionUtils.getPage(
-        mongoTemplate.find(query.with(pageable), WorkflowEntity.class), pageable,
+    Page<Workflow> pages = PageableExecutionUtils.getPage(
+        workflows, pageable,
         () -> mongoTemplate.count(query, WorkflowEntity.class));
 
     return pages;
