@@ -85,17 +85,10 @@ public class WorkflowServiceImpl implements WorkflowService {
     if (withTasks) {
       workflow.setTasks(TaskMapper.revisionTasksToListOfTasks(optWfRevisionEntity.get().getTasks())); 
     }
-
-    // TODO: filter sensitive inputs/results
-
     
-    // TODO: Add in the handling of Workspaces
-    // if (workflow.getStorage() == null) {
-    // workflow.setStorage(new Storage());
-    // }
-    // if (workflow.getStorage().getActivity() == null) {
-    // workflow.getStorage().setActivity(new ActivityStorage());
-    // }
+    // Determine if there are template upgrades available
+    areTemplateUpgradesAvailable(optWfRevisionEntity.get(), workflow);
+    
     return ResponseEntity.ok(workflow);
   }
 
@@ -150,8 +143,11 @@ public class WorkflowServiceImpl implements WorkflowService {
       Optional<WorkflowRevisionEntity> optWfRevisionEntity =
           workflowRevisionRepository.findByWorkflowRefAndLatestVersion(e.getId());
       if (optWfRevisionEntity.isPresent()) {
-        workflows.add(new Workflow(e, optWfRevisionEntity.get()));
-      }      
+        Workflow w = new Workflow(e, optWfRevisionEntity.get());
+        // Determine if there are template upgrades available
+        areTemplateUpgradesAvailable(optWfRevisionEntity.get(), w);
+        workflows.add(w);
+      }
     });
 
     Page<Workflow> pages = PageableExecutionUtils.getPage(
@@ -187,6 +183,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     workflowRevisionRepository.save(wfRevisionEntity);
     //TODO: figure out a better approach to rollback
 
+    // Determine if there are template upgrades available
+    areTemplateUpgradesAvailable(wfRevisionEntity, workflow);
     return ResponseEntity.ok(workflow);
   }
 
@@ -299,6 +297,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     Workflow appliedWorkflow = new Workflow(workflowEntity, newWorkflowRevisionEntity);
     appliedWorkflow.setTasks(TaskMapper.revisionTasksToListOfTasks(newWorkflowRevisionEntity.getTasks()));
 
+    // Determine if there are template upgrades available
+    areTemplateUpgradesAvailable(newWorkflowRevisionEntity, workflow);
     return ResponseEntity.ok(appliedWorkflow);
   }
   
@@ -327,6 +327,19 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
     updateWorkflowStatus(workflowId, WorkflowStatus.deleted);
     return ResponseEntity.noContent().build();
+  }
+
+  private void areTemplateUpgradesAvailable(WorkflowRevisionEntity wfRevisionEntity,
+      Workflow workflow) {
+      wfRevisionEntity.getTasks().stream().forEach(t -> {
+      Optional<TaskTemplateEntity> taskTemplate = taskTemplateRepository.findByNameAndLatestVersion(t.getTemplateRef());
+      if (taskTemplate.isPresent()) {
+        if (t.getTemplateVersion() < taskTemplate.get().getVersion()) {
+          workflow.setUpgradesAvailable(true);
+          return;
+        }
+      }
+    });
   }
   
   private void updateWorkflowStatus(String workflowId, WorkflowStatus workflowStatus) {
