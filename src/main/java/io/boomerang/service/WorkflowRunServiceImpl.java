@@ -170,8 +170,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
    */
   @Override
   public ResponseEntity<WorkflowRunInsight> insights(Optional<Date> from, Optional<Date> to,
-      Optional<List<String>> labels, Optional<List<String>> status, Optional<List<String>> phase,
-      Optional<List<String>> ids) {
+      Optional<List<String>> labels, Optional<List<String>> ids) {
     List<Criteria> criteriaList = new ArrayList<>();
     
     if (from.isPresent() && !to.isPresent()) {
@@ -200,26 +199,6 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
             Criteria.where("labels." + label[0].replace(".", "#")).is(label[1]);
         criteriaList.add(labelsCriteria);
       });
-    }
-
-    if (status.isPresent()) {
-      if (status.get().stream()
-          .allMatch(q -> EnumUtils.isValidEnumIgnoreCase(RunStatus.class, q))) {
-        Criteria criteria = Criteria.where("status").in(status.get());
-        criteriaList.add(criteria);
-      } else {
-        throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "status");
-      }
-    }
-
-    if (phase.isPresent()) {
-      if (phase.get().stream()
-          .allMatch(q -> EnumUtils.isValidEnumIgnoreCase(RunPhase.class, q))) {
-        Criteria criteria = Criteria.where("phase").in(phase.get());
-        criteriaList.add(criteria);
-      } else {
-        throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "phase");
-      }
     }
     
     if (ids.isPresent()) {

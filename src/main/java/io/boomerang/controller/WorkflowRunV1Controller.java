@@ -95,16 +95,10 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Retrieve WorkflowRun Insights.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public WorkflowRunInsight workflowRunInsights(
+  public ResponseEntity<WorkflowRunInsight> workflowRunInsights(
       @Parameter(name = "labels",
       description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
       required = false) @RequestParam(required = false) Optional<List<String>> labels,
-      @Parameter(name = "status",
-      description = "List of statuses to filter for. Defaults to all.", example = "succeeded,skipped",
-      required = false) @RequestParam(required = false)  Optional<List<String>> status,
-      @Parameter(name = "phase",
-      description = "List of phases to filter for. Defaults to all.", example = "completed,finalized",
-      required = false) @RequestParam(required = false)  Optional<List<String>> phase,
       @Parameter(name = "ids",
       description = "List of WorkflowRun IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
       required = false) @RequestParam(required = false)  Optional<List<String>> ids,
@@ -122,7 +116,7 @@ public class WorkflowRunV1Controller {
       to = Optional.of(new Date(toDate.get()));
     }
 
-    return workflowRunService.insights(from, to, labels, status, phase, ids);
+    return workflowRunService.insights(from, to, labels, ids);
   }
 
   @PostMapping(value = "/{workflowId}/run/submit")

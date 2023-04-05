@@ -30,7 +30,6 @@ public interface WorkflowRunService {
 
   ResponseEntity<WorkflowRun> timeout(String workflowRunId, boolean taskRunTimeout);
 
-  ResponseEntity<WorkflowRunInsight> insights(Optional<Date> from, Optional<Date> to, Optional<List<String>> labels, Optional<List<String>> status, Optional<List<String>> phase,
-      Optional<List<String>> ids);
+  ResponseEntity<WorkflowRunInsight> insights(Optional<Date> from, Optional<Date> to, Optional<List<String>> labels, Optional<List<String>> status);
   
 }
