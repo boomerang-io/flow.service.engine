@@ -39,6 +39,7 @@ import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
+import io.boomerang.model.enums.WorkflowStatus;
 import io.boomerang.util.ParameterUtil;
 
 @Service
@@ -166,6 +167,11 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
     
+    // Ensure Workflow is active to be able to be executed
+    if (!WorkflowStatus.active.equals(workflow.getStatus())) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_NOT_ACTIVE);
+    }
+    
     Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity;
     if (version.isPresent()) {
       optWorkflowRevisionEntity =
@@ -211,12 +217,12 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         }
       }
 
-      // TODO: add trigger and set initiatedBy
-      // workflowRun.setTrigger(null);
-      // if (!trigger.isPresent() || "manual".equals(trigger.get())) {
-      // final UserEntity userEntity = userIdentityService.getCurrentUser();
-      // activity.setInitiatedById(userEntity.getId());
-      // }
+      // Set Trigger
+      if (optRunRequest.get().getTrigger().isBlank()) {
+        wfRunEntity.setTrigger("api");
+      } else {
+        wfRunEntity.setTrigger(optRunRequest.get().getTrigger());
+      }
       
       //Add System Generated Annotations
       Map<String, Object> annotations = new HashMap<>();

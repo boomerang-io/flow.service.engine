@@ -29,11 +29,11 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.Workflow;
-import io.boomerang.model.WorkflowStatus;
 import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.model.enums.WorkflowScope;
+import io.boomerang.model.enums.WorkflowStatus;
 import io.boomerang.util.TaskMapper;
 
 /*
@@ -282,6 +282,46 @@ public class WorkflowServiceImpl implements WorkflowService {
     
     workflowRevisionRepository.save(newWorkflowRevisionEntity);
     
-    return ResponseEntity.ok(new Workflow(workflowEntity, newWorkflowRevisionEntity));
+    Workflow appliedWorkflow = new Workflow(workflowEntity, newWorkflowRevisionEntity);
+    appliedWorkflow.setTasks(TaskMapper.revisionTasksToListOfTasks(newWorkflowRevisionEntity.getTasks()));
+
+    return ResponseEntity.ok(appliedWorkflow);
+  }
+  
+  @Override
+  public ResponseEntity<?> enable(String workflowId) {
+    if (workflowId == null || workflowId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
+    }
+    updateWorkflowStatus(workflowId, WorkflowStatus.active);
+    return ResponseEntity.noContent().build();
+  }
+  
+  @Override
+  public ResponseEntity<?> disable(String workflowId) {
+    if (workflowId == null || workflowId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
+    }
+    updateWorkflowStatus(workflowId, WorkflowStatus.inactive);
+    return ResponseEntity.noContent().build();
+  }
+  
+  @Override
+  public ResponseEntity<?> delete(String workflowId) {
+    if (workflowId == null || workflowId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
+    }
+    updateWorkflowStatus(workflowId, WorkflowStatus.deleted);
+    return ResponseEntity.noContent().build();
+  }
+  
+  private void updateWorkflowStatus(String workflowId, WorkflowStatus workflowStatus) {
+    try {
+      WorkflowEntity wfEntity = workflowRepository.findById(workflowId).get();
+      wfEntity.setStatus(workflowStatus);
+      workflowRepository.save(wfEntity);
+    } catch (Exception e) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
+    }
   }
 }

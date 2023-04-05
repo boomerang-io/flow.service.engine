@@ -96,12 +96,36 @@ public class WorkflowV1Controller {
     return workflowService.apply(workflow, replace);
   }
 
-  //TODO
-  @DeleteMapping(value = "/{workflowId}")
-  @Operation(summary = "Archive a workflow")
-  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+  @PutMapping(value = "/{workflowId}/enable")
+  @Operation(summary = "Enable a workflow")
+  @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<Workflow> archiveWorkflow(@RequestBody Workflow workflow) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public ResponseEntity<?> enableWorkflow(
+      @Parameter(name = "workflowId",
+      description = "ID of Workflow",
+      required = true) @PathVariable String workflowId) {
+    return workflowService.enable(workflowId);
+  }
+
+  @PutMapping(value = "/{workflowId}/disable")
+  @Operation(summary = "Disable a workflow")
+  @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public ResponseEntity<?> disableWorkflow(
+      @Parameter(name = "workflowId",
+      description = "ID of Workflow",
+      required = true) @PathVariable String workflowId) {
+    return workflowService.disable(workflowId);
+  }
+
+  @DeleteMapping(value = "/{workflowId}")
+  @Operation(summary = "Delete a workflow")
+  @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public ResponseEntity<?> archiveWorkflow(
+      @Parameter(name = "workflowId",
+      description = "ID of Workflow",
+      required = true) @PathVariable String workflowId) {
+    return workflowService.delete(workflowId);
   }
 }

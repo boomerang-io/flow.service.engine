@@ -18,6 +18,12 @@ public interface WorkflowService {
       Optional<List<String>> status, Optional<List<String>> ids);
 
   ResponseEntity<Workflow> apply(Workflow workflow, Boolean replace);
+
+  ResponseEntity<?> enable(String workflowId);
+
+  ResponseEntity<?> disable(String workflowId);
+
+  ResponseEntity<?> delete(String workflowId);
 //
 //  WorkflowSummary updateWorkflow(WorkflowSummary summary);
 //

@@ -18,6 +18,8 @@ public class WorkflowRunRequest {
   private Long timeout;
   
   private Long retries;
+  
+  private String trigger;
 
   public Map<String, String> getLabels() {
     return labels;
@@ -65,5 +67,13 @@ public class WorkflowRunRequest {
 
   public void setRetries(Long retries) {
     this.retries = retries;
+  }
+
+  public String getTrigger() {
+    return trigger;
+  }
+
+  public void setTrigger(String trigger) {
+    this.trigger = trigger;
   }
 }
