@@ -172,7 +172,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   public ResponseEntity<WorkflowRunInsight> insights(Optional<Date> from, Optional<Date> to,
       Optional<List<String>> labels, Optional<List<String>> ids) {
     List<Criteria> criteriaList = new ArrayList<>();
-    
+
     if (from.isPresent() && !to.isPresent()) {
       Criteria criteria = Criteria.where("creationDate").gte(from.get());
       criteriaList.add(criteria);

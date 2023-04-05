@@ -3,6 +3,8 @@ package io.boomerang.controller;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -102,18 +104,18 @@ public class WorkflowRunV1Controller {
       @Parameter(name = "ids",
       description = "List of WorkflowRun IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
       required = false) @RequestParam(required = false)  Optional<List<String>> ids,
-      @Parameter(name = "fromDate", description = "The date to search from", example = "1680677547",
+      @Parameter(name = "fromDate", description = "The unix timestamp / date to search from", example = "1680677547",
       required = false) @RequestParam Optional<Long> fromDate,
-      @Parameter(name = "toDate", description = "The date to search to", example = "1680677547",
+      @Parameter(name = "toDate", description = "The unix timestamp / date to search to", example = "1680677547",
       required = false) @RequestParam Optional<Long> toDate) {
 
     Optional<Date> from = Optional.empty();
     Optional<Date> to = Optional.empty();
     if (fromDate.isPresent()) {
-      from = Optional.of(new Date(fromDate.get()));
+      from = Optional.of(new Date(fromDate.get()*1000L));
     }
     if (toDate.isPresent()) {
-      to = Optional.of(new Date(toDate.get()));
+      to = Optional.of(new Date(toDate.get()*1000L));
     }
 
     return workflowRunService.insights(from, to, labels, ids);
