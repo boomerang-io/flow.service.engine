@@ -37,6 +37,7 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.TaskRun;
 import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
@@ -87,9 +88,20 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   }
 
   @Override
-  public Page<WorkflowRun> query(Pageable pageable, Optional<List<String>> queryLabels,
+  public Page<WorkflowRun> query(Optional<Date> from, Optional<Date> to, Pageable pageable, Optional<List<String>> queryLabels,
       Optional<List<String>> queryStatus, Optional<List<String>> queryPhase, Optional<List<String>> queryIds) {
     List<Criteria> criteriaList = new ArrayList<>();
+    
+    if (from.isPresent() && !to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").gte(from.get());
+      criteriaList.add(criteria);
+    } else if (!from.isPresent() && to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").lt(to.get());
+      criteriaList.add(criteria);
+    } else if (from.isPresent() && to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").gte(from.get()).lt(to.get());
+      criteriaList.add(criteria);
+    }
 
     //TODO add the ability to OR labels not just AND
     if (queryLabels.isPresent()) {
@@ -151,6 +163,101 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         () -> mongoTemplate.count(query, WorkflowRunEntity.class));
 
     return pages;
+  }
+
+  /*
+   * Generates stats / insights for a given set of filters
+   */
+  @Override
+  public ResponseEntity<WorkflowRunInsight> insights(Optional<Date> from, Optional<Date> to,
+      Optional<List<String>> labels, Optional<List<String>> status, Optional<List<String>> phase,
+      Optional<List<String>> ids) {
+    List<Criteria> criteriaList = new ArrayList<>();
+    
+    if (from.isPresent() && !to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").gte(from.get());
+      criteriaList.add(criteria);
+    } else if (!from.isPresent() && to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").lt(to.get());
+      criteriaList.add(criteria);
+    } else if (from.isPresent() && to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").gte(from.get()).lt(to.get());
+      criteriaList.add(criteria);
+    }
+
+    //TODO add the ability to OR labels not just AND
+    if (labels.isPresent()) {
+      labels.get().stream().forEach(l -> {
+        String decodedLabel = "";
+        try {
+          decodedLabel = URLDecoder.decode(l, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+          throw new BoomerangException(e, BoomerangError.QUERY_INVALID_FILTERS, "labels");
+        }
+        LOGGER.debug(decodedLabel.toString());
+        String[] label = decodedLabel.split("[=]+");
+        Criteria labelsCriteria =
+            Criteria.where("labels." + label[0].replace(".", "#")).is(label[1]);
+        criteriaList.add(labelsCriteria);
+      });
+    }
+
+    if (status.isPresent()) {
+      if (status.get().stream()
+          .allMatch(q -> EnumUtils.isValidEnumIgnoreCase(RunStatus.class, q))) {
+        Criteria criteria = Criteria.where("status").in(status.get());
+        criteriaList.add(criteria);
+      } else {
+        throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "status");
+      }
+    }
+
+    if (phase.isPresent()) {
+      if (phase.get().stream()
+          .allMatch(q -> EnumUtils.isValidEnumIgnoreCase(RunPhase.class, q))) {
+        Criteria criteria = Criteria.where("phase").in(phase.get());
+        criteriaList.add(criteria);
+      } else {
+        throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "phase");
+      }
+    }
+    
+    if (ids.isPresent()) {
+      Criteria criteria = Criteria.where("id").in(ids.get());
+      criteriaList.add(criteria);
+    }
+
+    Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);
+    Criteria allCriteria = new Criteria();
+    if (criteriaArray.length > 0) {
+      allCriteria.andOperator(criteriaArray);
+    }
+    Query query = new Query(allCriteria);
+    
+    List<WorkflowRunEntity> wfRunEntities = mongoTemplate.find(query, WorkflowRunEntity.class);
+    
+    // Collect the Stats
+    Long totalDuration = 0L;
+    Long duration;
+
+    for (WorkflowRunEntity wfRunEntity : wfRunEntities) {
+      duration = wfRunEntity.getDuration();
+      if (duration != null) {
+        totalDuration += duration;
+      }
+//      addActivityDetail(executions, activity);
+    }
+    
+    WorkflowRunInsight wfRunInsight = new WorkflowRunInsight();
+    wfRunInsight.setTotalRuns(Long.valueOf(wfRunEntities.size()));
+    wfRunInsight.setConcurrentRuns(wfRunEntities.stream().filter(run -> RunPhase.running.equals(run.getPhase())).count());
+    wfRunInsight.setTotalDuration(totalDuration);
+    if (wfRunEntities.size() != 0) {
+      wfRunInsight.setMedianDuration(totalDuration / wfRunEntities.size());
+    } else {
+      wfRunInsight.setMedianDuration(0L);
+    }
+    return ResponseEntity.ok(wfRunInsight);
   }
 
   /*

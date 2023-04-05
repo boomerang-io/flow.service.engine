@@ -1,5 +1,6 @@
 package io.boomerang.controller;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.service.WorkflowRunService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -71,10 +73,56 @@ public class WorkflowRunV1Controller {
       @Parameter(name = "limit", description = "Result Size", example = "10",
           required = true) @RequestParam(defaultValue = "10") int limit,
       @Parameter(name = "page", description = "Page Number", example = "0",
-          required = true) @RequestParam(defaultValue = "0") int page) {
+          required = true) @RequestParam(defaultValue = "0") int page,
+      @Parameter(name = "fromDate", description = "The date to search from", example = "1680677547",
+      required = false) @RequestParam Optional<Long> fromDate,
+      @Parameter(name = "toDate", description = "The date to search to", example = "1680677547",
+      required = false) @RequestParam Optional<Long> toDate) {
     final Sort sort = Sort.by(new Order(Direction.ASC, "creationDate"));
     final Pageable pageable = PageRequest.of(page, limit, sort);
-    return workflowRunService.query(pageable, labels, status, phase, ids);
+    Optional<Date> from = Optional.empty();
+    Optional<Date> to = Optional.empty();
+    if (fromDate.isPresent()) {
+      from = Optional.of(new Date(fromDate.get()));
+    }
+    if (toDate.isPresent()) {
+      to = Optional.of(new Date(toDate.get()));
+    }
+    return workflowRunService.query(from, to, pageable, labels, status, phase, ids);
+  }
+  
+  @GetMapping(value = "/run/insight")
+  @Operation(summary = "Retrieve WorkflowRun Insights.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public WorkflowRunInsight workflowRunInsights(
+      @Parameter(name = "labels",
+      description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
+      required = false) @RequestParam(required = false) Optional<List<String>> labels,
+      @Parameter(name = "status",
+      description = "List of statuses to filter for. Defaults to all.", example = "succeeded,skipped",
+      required = false) @RequestParam(required = false)  Optional<List<String>> status,
+      @Parameter(name = "phase",
+      description = "List of phases to filter for. Defaults to all.", example = "completed,finalized",
+      required = false) @RequestParam(required = false)  Optional<List<String>> phase,
+      @Parameter(name = "ids",
+      description = "List of WorkflowRun IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
+      required = false) @RequestParam(required = false)  Optional<List<String>> ids,
+      @Parameter(name = "fromDate", description = "The date to search from", example = "1680677547",
+      required = false) @RequestParam Optional<Long> fromDate,
+      @Parameter(name = "toDate", description = "The date to search to", example = "1680677547",
+      required = false) @RequestParam Optional<Long> toDate) {
+
+    Optional<Date> from = Optional.empty();
+    Optional<Date> to = Optional.empty();
+    if (fromDate.isPresent()) {
+      from = Optional.of(new Date(fromDate.get()));
+    }
+    if (toDate.isPresent()) {
+      to = Optional.of(new Date(toDate.get()));
+    }
+
+    return workflowRunService.insights(from, to, labels, status, phase, ids);
   }
 
   @PostMapping(value = "/{workflowId}/run/submit")
