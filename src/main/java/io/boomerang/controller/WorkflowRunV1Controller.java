@@ -1,5 +1,6 @@
 package io.boomerang.controller;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -74,9 +75,9 @@ public class WorkflowRunV1Controller {
           required = true) @RequestParam(defaultValue = "10") int limit,
       @Parameter(name = "page", description = "Page Number", example = "0",
           required = true) @RequestParam(defaultValue = "0") int page,
-      @Parameter(name = "fromDate", description = "The date to search from", example = "1680677547",
+      @Parameter(name = "fromDate", description = "The unix timestamp / date to search from in milliseconds since epoch", example = "1677589200000",
       required = false) @RequestParam Optional<Long> fromDate,
-      @Parameter(name = "toDate", description = "The date to search to", example = "1680677547",
+      @Parameter(name = "toDate", description = "The unix timestamp / date to search to in milliseconds since epoch", example = "1680267600000",
       required = false) @RequestParam Optional<Long> toDate) {
     final Sort sort = Sort.by(new Order(Direction.ASC, "creationDate"));
     final Pageable pageable = PageRequest.of(page, limit, sort);
@@ -84,10 +85,10 @@ public class WorkflowRunV1Controller {
     Optional<Date> from = Optional.empty();
     Optional<Date> to = Optional.empty();
     if (fromDate.isPresent()) {
-      from = Optional.of(new Date(fromDate.get()*1000L));
+      from = Optional.of(new Date(fromDate.get()));
     }
     if (toDate.isPresent()) {
-      to = Optional.of(new Date(toDate.get()*1000L));
+      to = Optional.of(new Date(toDate.get()));
     }
     return workflowRunService.query(from, to, pageable, labels, status, phase, ids);
   }
@@ -103,18 +104,18 @@ public class WorkflowRunV1Controller {
       @Parameter(name = "ids",
       description = "List of WorkflowRun IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
       required = false) @RequestParam(required = false)  Optional<List<String>> ids,
-      @Parameter(name = "fromDate", description = "The unix timestamp / date to search from", example = "1680677547",
+      @Parameter(name = "fromDate", description = "The unix timestamp / date to search from in milliseconds since epoch", example = "1677589200000",
       required = false) @RequestParam Optional<Long> fromDate,
-      @Parameter(name = "toDate", description = "The unix timestamp / date to search to", example = "1680677547",
+      @Parameter(name = "toDate", description = "The unix timestamp / date to search to in milliseconds since epoch", example = "1680267600000",
       required = false) @RequestParam Optional<Long> toDate) {
 
     Optional<Date> from = Optional.empty();
     Optional<Date> to = Optional.empty();
     if (fromDate.isPresent()) {
-      from = Optional.of(new Date(fromDate.get()*1000L));
+      from = Optional.of(new Date(fromDate.get()));
     }
     if (toDate.isPresent()) {
-      to = Optional.of(new Date(toDate.get()*1000L));
+      to = Optional.of(new Date(toDate.get()));
     }
 
     return workflowRunService.insights(from, to, labels, ids);
