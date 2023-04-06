@@ -3,8 +3,6 @@ package io.boomerang.controller;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -82,13 +80,14 @@ public class WorkflowRunV1Controller {
       required = false) @RequestParam Optional<Long> toDate) {
     final Sort sort = Sort.by(new Order(Direction.ASC, "creationDate"));
     final Pageable pageable = PageRequest.of(page, limit, sort);
+    
     Optional<Date> from = Optional.empty();
     Optional<Date> to = Optional.empty();
     if (fromDate.isPresent()) {
-      from = Optional.of(new Date(fromDate.get()));
+      from = Optional.of(new Date(fromDate.get()*1000L));
     }
     if (toDate.isPresent()) {
-      to = Optional.of(new Date(toDate.get()));
+      to = Optional.of(new Date(toDate.get()*1000L));
     }
     return workflowRunService.query(from, to, pageable, labels, status, phase, ids);
   }
