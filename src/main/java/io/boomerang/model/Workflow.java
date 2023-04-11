@@ -254,5 +254,5 @@ public class Workflow {
 
   public void setRetries(Long retries) {
     this.retries = retries;
-  } 
+  }
 }

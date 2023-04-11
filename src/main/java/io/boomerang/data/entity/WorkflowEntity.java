@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.model.WorkflowToken;
 import io.boomerang.model.WorkflowTrigger;
-import io.boomerang.model.enums.WorkflowScope;
 import io.boomerang.model.enums.WorkflowStatus;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -31,7 +30,6 @@ public class WorkflowEntity {
   private Map<String, Object> annotations = new HashMap<>();
   private WorkflowTrigger triggers;
   private List<WorkflowToken> tokens;
-  private WorkflowScope scope = WorkflowScope.system;
 
   public String getId() {
     return id;
@@ -111,14 +109,6 @@ public class WorkflowEntity {
 
   public void setTriggers(WorkflowTrigger triggers) {
     this.triggers = triggers;
-  }
-
-  public WorkflowScope getScope() {
-    return scope;
-  }
-
-  public void setScope(WorkflowScope scope) {
-    this.scope = scope;
   }
 
   public List<WorkflowToken> getTokens() {
