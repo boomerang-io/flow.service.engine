@@ -33,7 +33,6 @@ import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
-import io.boomerang.model.enums.WorkflowScope;
 import io.boomerang.model.enums.WorkflowStatus;
 import io.boomerang.util.TaskMapper;
 
@@ -174,7 +173,6 @@ public class WorkflowServiceImpl implements WorkflowService {
     wfEntity.setAnnotations(workflow.getAnnotations());
     wfEntity.setStatus(WorkflowStatus.active);
     wfEntity.setTriggers(workflow.getTriggers() != null ? workflow.getTriggers() : new WorkflowTrigger());
-    wfEntity.setScope(WorkflowScope.system);
 
     WorkflowRevisionEntity wfRevisionEntity = createWorkflowRevisionEntity(workflow, 1);
     wfEntity = workflowRepository.save(wfEntity);

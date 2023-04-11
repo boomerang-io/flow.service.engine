@@ -7,6 +7,7 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.WorkflowRunRepository;
@@ -14,14 +15,12 @@ import io.boomerang.service.EventSinkService;
 
 @Aspect
 @Component
+@ConditionalOnProperty(name="flow.events.sink.enabled", havingValue="true", matchIfMissing = false)
 public class WorkflowRunEntityUpdateInterceptor {
   private static final Logger LOGGER = LogManager.getLogger();
 
   @Autowired
   WorkflowRunRepository workflowRunRepository;
-
-//  @Autowired
-//  private EventingService eventingService;
   
   @Autowired
   EventSinkService eventSinkService;
