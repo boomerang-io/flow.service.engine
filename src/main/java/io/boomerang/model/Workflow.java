@@ -35,6 +35,8 @@ public class Workflow {
   private Integer version = 1;
   
   private Date creationDate = new Date();
+
+  private ChangeLog changelog;
   
   private String icon;
 
@@ -134,6 +136,14 @@ public class Workflow {
 
   public void setCreationDate(Date creationDate) {
     this.creationDate = creationDate;
+  }
+
+  public ChangeLog getChangelog() {
+    return changelog;
+  }
+
+  public void setChangelog(ChangeLog changelog) {
+    this.changelog = changelog;
   }
 
   public String getIcon() {

@@ -80,7 +80,19 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     //I.e. if TaskTemplate is of type template, then it must include xyz
     
     taskTemplate.setVersion(1);
-    taskTemplate.setChangelog(new ChangeLog(CHANGELOG_INITIAL));
+    ChangeLog changelog = new ChangeLog(CHANGELOG_INITIAL);
+    if (taskTemplate.getChangelog() != null) {
+      if (taskTemplate.getChangelog().getAuthor() != null) {
+        changelog.setAuthor(taskTemplate.getChangelog().getAuthor());
+      }
+      if (taskTemplate.getChangelog().getReason() != null) {
+        changelog.setReason(taskTemplate.getChangelog().getReason());
+      }
+      if (taskTemplate.getChangelog().getDate() != null) {
+        changelog.setDate(taskTemplate.getChangelog().getDate());
+      }
+    }
+    taskTemplate.setChangelog(changelog);
     taskTemplate.setCreationDate(new Date());
     taskTemplateRepository.save(taskTemplate);
     
@@ -108,19 +120,26 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_SCOPE_CHANGE, taskTemplateEntity.get().getScope(), taskTemplate.getScope());
     }
     
-    //Override version, creation date, and check ChangeLog
+    //Override Id & version
     if (replace) {
       taskTemplate.setId(taskTemplateEntity.get().getId());
-      if (taskTemplate.getChangelog() == null || taskTemplate.getChangelog().getReason() != null) {
-        taskTemplate.setChangelog(new ChangeLog(taskTemplateEntity.get().getVersion().equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE));
-      }
     } else {
       taskTemplate.setId(null);
       taskTemplate.setVersion(taskTemplateEntity.get().getVersion() + 1);
-      if (taskTemplate.getChangelog() == null || taskTemplate.getChangelog().getReason() != null) {
-        taskTemplate.setChangelog(new ChangeLog(CHANGELOG_UPDATE));
+    }
+    ChangeLog changelog = new ChangeLog(taskTemplateEntity.get().getVersion().equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE);
+    if (taskTemplate.getChangelog() != null) {
+      if (taskTemplate.getChangelog().getAuthor() != null) {
+        changelog.setAuthor(taskTemplate.getChangelog().getAuthor());
+      }
+      if (taskTemplate.getChangelog().getReason() != null) {
+        changelog.setReason(taskTemplate.getChangelog().getReason());
+      }
+      if (taskTemplate.getChangelog().getDate() != null) {
+        changelog.setDate(taskTemplate.getChangelog().getDate());
       }
     }
+    taskTemplate.setChangelog(changelog);
     taskTemplate.setCreationDate(new Date());
     TaskTemplateEntity savedEntity = taskTemplateRepository.save(taskTemplate);
     TaskTemplate savedTemplate = new TaskTemplate(savedEntity);

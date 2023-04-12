@@ -189,7 +189,19 @@ public class WorkflowServiceImpl implements WorkflowService {
   private WorkflowRevisionEntity createWorkflowRevisionEntity(Workflow workflow, Integer version) {
     WorkflowRevisionEntity wfRevisionEntity = new WorkflowRevisionEntity();
     wfRevisionEntity.setVersion(version);
-    wfRevisionEntity.setChangelog(new ChangeLog(version.equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE));
+    ChangeLog changelog = new ChangeLog(version.equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE);
+    if (workflow.getChangelog() != null) {
+      if (workflow.getChangelog().getAuthor() != null) {
+        changelog.setAuthor(workflow.getChangelog().getAuthor());
+      }
+      if (workflow.getChangelog().getReason() != null) {
+        changelog.setReason(workflow.getChangelog().getReason());
+      }
+      if (workflow.getChangelog().getDate() != null) {
+        changelog.setDate(workflow.getChangelog().getDate());
+      }
+    }
+    wfRevisionEntity.setChangelog(changelog);
     wfRevisionEntity.setMarkdown(workflow.getMarkdown());
     wfRevisionEntity.setParams(workflow.getParams());
     wfRevisionEntity.setWorkspaces(workflow.getWorkspaces());
@@ -246,6 +258,9 @@ public class WorkflowServiceImpl implements WorkflowService {
     
     //Update the Workflow Entity with new details
     WorkflowEntity workflowEntity = workflowRepository.findById(workflow.getId()).get();
+    if (WorkflowStatus.deleted.equals(workflowEntity.getStatus())) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_DELETED);
+    }
     if (workflow.getName()!= null && !workflow.getName().isBlank()) {
       workflowEntity.setName(workflow.getName());
     }
@@ -300,6 +315,9 @@ public class WorkflowServiceImpl implements WorkflowService {
     return ResponseEntity.ok(appliedWorkflow);
   }
   
+  /*
+   * Marks the Workflow as 'active' status.
+   */
   @Override
   public ResponseEntity<?> enable(String workflowId) {
     if (workflowId == null || workflowId.isBlank()) {
@@ -309,6 +327,9 @@ public class WorkflowServiceImpl implements WorkflowService {
     return ResponseEntity.noContent().build();
   }
   
+  /*
+   * Marks the Workflow as 'inactive' status.
+   */
   @Override
   public ResponseEntity<?> disable(String workflowId) {
     if (workflowId == null || workflowId.isBlank()) {
@@ -318,6 +339,9 @@ public class WorkflowServiceImpl implements WorkflowService {
     return ResponseEntity.noContent().build();
   }
   
+  /*
+   * Marks the Workflow as 'deleted' status. This allows WorkflowRuns to still be visualised.
+   */
   @Override
   public ResponseEntity<?> delete(String workflowId) {
     if (workflowId == null || workflowId.isBlank()) {
