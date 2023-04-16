@@ -61,13 +61,13 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   @Override
   public ResponseEntity<TaskTemplate> create(TaskTemplate taskTemplate) {
     //Name Check
-    String regex = "^([0-9a-z\\-]+)$";
+    String regex = "^([0-9a-zA-Z\\-]+)$";
     if (!taskTemplate.getName().matches(regex)) {
       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, taskTemplate.getName());
     }
     
     //Unique Name Check
-    if (taskTemplateRepository.findByNameAndLatestVersion(taskTemplate.getName()).isPresent()) {
+    if (taskTemplateRepository.findByNameAndLatestVersion(taskTemplate.getName().toLowerCase()).isPresent()) {
       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_ALREADY_EXISTS, taskTemplate.getName());
     }
     
@@ -105,13 +105,13 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   @Override
   public ResponseEntity<TaskTemplate> apply(TaskTemplate taskTemplate, boolean replace) {
     //Name Check
-    String regex = "^([0-9a-z\\-]+)$";
+    String regex = "^([0-9a-zA-Z\\-]+)$";
     if (!taskTemplate.getName().matches(regex)) {
       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, taskTemplate.getName());
     }
     
     //Does it already exist?
-    Optional<TaskTemplateEntity> taskTemplateEntity = taskTemplateRepository.findByNameAndLatestVersion(taskTemplate.getName());
+    Optional<TaskTemplateEntity> taskTemplateEntity = taskTemplateRepository.findByNameAndLatestVersion(taskTemplate.getName().toLowerCase());
     if (!taskTemplateEntity.isPresent()) {
       return this.create(taskTemplate);
     }

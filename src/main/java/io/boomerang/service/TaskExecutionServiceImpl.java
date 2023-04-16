@@ -734,6 +734,11 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
   }
 
+  /*
+   * Creates an Action entity of Manual or Approval type
+   * 
+   * If of Approval type, will check for optional number of approvers and approverGroup
+   */
   private void createActionTask(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity,
       ActionType type) {
     ActionEntity actionEntity = new ActionEntity();
@@ -745,8 +750,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     actionEntity.setCreationDate(new Date());
     actionEntity.setNumberOfApprovers(1);
 
-    if (type.equals(ActionType.approval)) {
-      if (taskExecution.getParams() != null) {
+    if (taskExecution.getParams() != null) {
+      if (type.equals(ActionType.approval)) {
         if (ParameterUtil.containsName(taskExecution.getParams(), "approverGroupId")) {
           String approverGroupId =
               (String) ParameterUtil.getValue(taskExecution.getParams(), "approverGroupId");
@@ -760,6 +765,14 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
               (String) ParameterUtil.getValue(taskExecution.getParams(), "numberOfApprovers");
           if (numberOfApprovers != null && !numberOfApprovers.isBlank()) {
             actionEntity.setNumberOfApprovers(Integer.valueOf(numberOfApprovers));
+          }
+        }
+      } else if (type.equals(ActionType.manual)) {
+        if (ParameterUtil.containsName(taskExecution.getParams(), "instructions")) {
+          String instructions =
+              (String) ParameterUtil.getValue(taskExecution.getParams(), "instructions");
+          if (instructions != null && !instructions.isBlank()) {
+            actionEntity.setInstructions(instructions);
           }
         }
       }
