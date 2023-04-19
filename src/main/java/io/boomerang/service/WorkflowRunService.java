@@ -9,12 +9,13 @@ import org.springframework.http.ResponseEntity;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
+import io.boomerang.model.WorkflowRunSubmitRequest;
 
 public interface WorkflowRunService {
 
   ResponseEntity<WorkflowRun> get(String workflowRunId, boolean withTasks);
 
-  ResponseEntity<WorkflowRun> submit(String workflowId, Optional<Integer> version, boolean start, Optional<WorkflowRunRequest> runRequest);
+  ResponseEntity<WorkflowRun> submit(WorkflowRunSubmitRequest request, boolean start);
 
   ResponseEntity<WorkflowRun> start(String workflowRunId, Optional<WorkflowRunRequest> runRequest);
 

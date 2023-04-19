@@ -28,7 +28,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/v1/task/template")
+@RequestMapping("/api/v1/tasktemplate")
 @Tag(name = "Task Template Management",
 description = "Create and Manage the Task Templates, or Task Definitions.")
 public class TaskTemplateV1Controller {

@@ -134,7 +134,6 @@ public class DAGUtility {
           }
           taskRunEntity.setTemplateVersion(taskTemplate.get().getVersion());
           LOGGER.debug("[{}] Found Task Template: {} ({})", wfRunEntity.getId(), taskTemplate.get().getName(), taskTemplate.get().getId());
-          taskRunEntity.setTemplateResults(taskTemplate.get().getSpec().getResults());
           
           // Stack the labels based on label propagation
           // Task Template -> Workflow Task -> Run 
@@ -148,6 +147,9 @@ public class DAGUtility {
           annotations.put("io.boomerang/kind", "TaskRun");
           taskRunEntity.getAnnotations().putAll(annotations);
 
+          //TODO: validate this actually works - should template results just be merged into Run
+          taskRunEntity.setTemplateResults(taskTemplate.get().getSpec().getResults());
+          
           //Set Task RunParams
           if (taskTemplate.get().getSpec().getParams() != null && !taskTemplate.get().getSpec().getParams().isEmpty()) {
             LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(), taskTemplate.get().getSpec().getParams().toString());
@@ -165,7 +167,14 @@ public class DAGUtility {
             taskRunEntity.setTimeout(wfRevisionTask.getTimeout());
           }
           
-          //TODO: add in spec from TaskTemplate to TaskRunEntity
+          //Set TaskRun Spec from TaskTemplate Spec - Debug and Deletion come from an alternate source
+          taskRunEntity.getSpec().setImage(taskTemplate.get().getSpec().getImage());
+          taskRunEntity.getSpec().setCommand(taskTemplate.get().getSpec().getCommand());
+          taskRunEntity.getSpec().setArguments(taskTemplate.get().getSpec().getArguments());
+          taskRunEntity.getSpec().setEnvs(taskTemplate.get().getSpec().getEnvs());
+          taskRunEntity.getSpec().setScript(taskTemplate.get().getSpec().getScript());
+          taskRunEntity.getSpec().setWorkingDir(taskTemplate.get().getSpec().getWorkingDir());
+          taskRunEntity.getSpec().addAdditionalProperties(taskTemplate.get().getSpec().getAdditionalProperties());
         }
         taskRunRepository.save(taskRunEntity);
         LOGGER.debug("[{}] TaskRunEntity ({}) created for: {}", wfRunEntity.getId(), taskRunEntity.getId(),

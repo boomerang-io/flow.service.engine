@@ -32,7 +32,7 @@ import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
 import io.boomerang.model.TaskWorkspace;
 import io.boomerang.model.WorkflowRun;
-import io.boomerang.model.WorkflowRunRequest;
+import io.boomerang.model.WorkflowRunSubmitRequest;
 import io.boomerang.model.WorkflowWorkspaceSpec;
 import io.boomerang.model.enums.ActionStatus;
 import io.boomerang.model.enums.ActionType;
@@ -598,18 +598,19 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
   private void runWorkflow(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {
     if (taskExecution.getParams() != null) {
-      // TODO: need to add the ability to set Trigger
-      Optional<WorkflowRunRequest> wfRunRequest = Optional.of(new WorkflowRunRequest());
-
       String workflowId =
           ParameterUtil.getValue(taskExecution.getParams(), "workflowId").toString();
       List<RunParam> wfRunParamsRequest =
           ParameterUtil.removeEntry(taskExecution.getParams(), "workflowId");
-      wfRunRequest.get().setParams(wfRunParamsRequest);
       if (workflowId != null) {
+        // TODO: need to add the ability to set Trigger
+        WorkflowRunSubmitRequest request = new WorkflowRunSubmitRequest();
+        request.setTrigger("WorkflowRun");
+        request.setParams(wfRunParamsRequest);
         try {
+          request.setWorkflowRef(workflowId);
           WorkflowRun wfRunResponse = workflowRunService
-              .submit(workflowId, Optional.empty(), false, wfRunRequest).getBody();
+              .submit(request, false).getBody();
           List<RunResult> wfRunResultResponse = new LinkedList<>();
           RunResult runResult = new RunResult();
           runResult.setName("workflowRunRef");

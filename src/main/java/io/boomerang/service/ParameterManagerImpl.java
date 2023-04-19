@@ -143,7 +143,7 @@ public class ParameterManagerImpl implements ParameterManager {
    */
   private ParamLayers buildParameterLayering(Optional<List<RunParam>> wfRunParams,
       Optional<List<RunParam>> taskRunParams) {
-    ParamLayers parameterLayers = new ParamLayers();
+    ParamLayers paramLayers = new ParamLayers();
     // TODO: retrieve extended parameter layers from Workflow service if the application property /
     // URL has been provided
     // Map<String, String> systemProperties = parameterLayers.getSystemProperties();
@@ -160,13 +160,13 @@ public class ParameterManagerImpl implements ParameterManager {
     // buildTeamProperties(teamProperties, workflowId);
     // }
     if (wfRunParams.isPresent()) {
-      parameterLayers.setWorkflowProperties(ParameterUtil.runParamListToMap(wfRunParams.get()));
+      paramLayers.setWorkflowProperties(ParameterUtil.runParamListToMap(wfRunParams.get()));
     }
     if (taskRunParams.isPresent()) {
-      parameterLayers.setTaskInputProperties(ParameterUtil.runParamListToMap(taskRunParams.get()));
+      paramLayers.setTaskInputProperties(ParameterUtil.runParamListToMap(taskRunParams.get()));
     }
 
-    return parameterLayers;
+    return paramLayers;
   }
 
   /*

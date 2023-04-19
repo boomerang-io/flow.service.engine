@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
+import io.boomerang.model.WorkflowRunSubmitRequest;
 import io.boomerang.service.WorkflowRunService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,7 +32,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/v1/workflow")
+@RequestMapping("/api/v1/workflowrun")
 @Tag(name = "Workflow Run",
 description = "Submit, View, Start, End, and Update Status of your Workflow Runs.")
 public class WorkflowRunV1Controller {
@@ -39,7 +40,7 @@ public class WorkflowRunV1Controller {
   @Autowired
   private WorkflowRunService workflowRunService;
 
-  @GetMapping(value = "/run/{workflowRunId}")
+  @GetMapping(value = "/{workflowRunId}")
   @Operation(summary = "Retrieve a specific Workflow Run.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
@@ -53,7 +54,7 @@ public class WorkflowRunV1Controller {
     return workflowRunService.get(workflowRunId, withTasks);
   }
 
-  @GetMapping(value = "/run/query")
+  @GetMapping(value = "/query")
   @Operation(summary = "Search for Workflow Runs")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
@@ -92,7 +93,7 @@ public class WorkflowRunV1Controller {
     return workflowRunService.query(from, to, pageable, labels, status, phase, ids);
   }
   
-  @GetMapping(value = "/run/insight")
+  @GetMapping(value = "/insight")
   @Operation(summary = "Retrieve WorkflowRun Insights.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
@@ -120,25 +121,19 @@ public class WorkflowRunV1Controller {
     return workflowRunService.insights(from, to, labels, ids);
   }
 
-  @PostMapping(value = "/{workflowId}/run/submit")
+  @PostMapping(value = "/submit")
   @Operation(summary = "Submit a Workflow to be run. Will queue the Workflow Run ready for execution.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<WorkflowRun> submitWorkflowRun(
-      @Parameter(name = "workflowId",
-      description = "ID of Workflow to Request a Run for",
-      required = true) @PathVariable(required = true) String workflowId,
-      @Parameter(name = "version",
-      description = "Workflow Version",
-      required = false) @RequestParam(required = false) Optional<Integer> version,
       @Parameter(name = "start",
       description = "Start the Workflow Run immediately after submission",
       required = false) @RequestParam(required = false, defaultValue = "false") boolean start,
-      @RequestBody Optional<WorkflowRunRequest> runRequest) {
-    return workflowRunService.submit(workflowId, version, start, runRequest);
+      @RequestBody WorkflowRunSubmitRequest request) {
+    return workflowRunService.submit(request, start);
   }
 
-  @PutMapping(value = "/run/{workflowRunId}/start")
+  @PutMapping(value = "/{workflowRunId}/start")
   @Operation(summary = "Start Workflow Run execution. The Workflow Run has to already have been queued.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})

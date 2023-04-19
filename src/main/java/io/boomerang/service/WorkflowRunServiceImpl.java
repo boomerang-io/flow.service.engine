@@ -39,6 +39,7 @@ import io.boomerang.model.TaskRun;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
+import io.boomerang.model.WorkflowRunSubmitRequest;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.WorkflowStatus;
@@ -245,12 +246,12 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
    * TODO: implement Triggers && Status - triggers may only be a Workflow service concern (same as Relationship)
    */
   @Override
-  public ResponseEntity<WorkflowRun> submit(String workflowId, Optional<Integer> version, boolean start,
-      Optional<WorkflowRunRequest> optRunRequest) {
-    if (workflowId == null || workflowId.isBlank()) {
+  public ResponseEntity<WorkflowRun> submit(WorkflowRunSubmitRequest request, boolean start) {
+    logPayload(request);
+    if (request == null || request.getWorkflowRef() == null || request.getWorkflowRef().isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
-    final Optional<WorkflowEntity> optWorkflow = workflowRepository.findById(workflowId);
+    final Optional<WorkflowEntity> optWorkflow = workflowRepository.findById(request.getWorkflowRef());
     WorkflowEntity workflow = new WorkflowEntity();
     if (optWorkflow.isPresent()) {
       workflow = optWorkflow.get();
@@ -264,9 +265,9 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     }
     
     Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity;
-    if (version.isPresent()) {
+    if (request.getWorkflowVersion() != null) {
       optWorkflowRevisionEntity =
-          workflowRevisionRepository.findByWorkflowRefAndVersion(workflowId, version.get());
+          workflowRevisionRepository.findByWorkflowRefAndVersion(request.getWorkflowRef(), request.getWorkflowVersion());
       if (!optWorkflowRevisionEntity.isPresent()) {
         throw new BoomerangException(BoomerangError.WORKFLOW_REVISION_NOT_FOUND);
       }
@@ -274,7 +275,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       LOGGER.debug("Workflow Revision: " + optWorkflowRevisionEntity.get().toString());
     } else {
       optWorkflowRevisionEntity =
-          workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflowId);
+          workflowRevisionRepository.findByWorkflowRefAndLatestVersion(request.getWorkflowRef());
     }
     if (optWorkflowRevisionEntity.isPresent()) {
       WorkflowRevisionEntity wfRevision = optWorkflowRevisionEntity.get();
@@ -294,27 +295,30 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       }
 
       // Add values from Run Request if Present
-      if (optRunRequest.isPresent()) {
-        logPayload(optRunRequest.get());
-        wfRunEntity.putLabels(optRunRequest.get().getLabels());
-        wfRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
-        wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(), optRunRequest.get().getParams()));
-        wfRunEntity.getWorkspaces().addAll(optRunRequest.get().getWorkspaces());
-        if (!Objects.isNull(optRunRequest.get().getTimeout()) && optRunRequest.get().getTimeout() != 0) {
-          wfRunEntity.setTimeout(optRunRequest.get().getTimeout());
-        }
-        if (!Objects.isNull(optRunRequest.get().getRetries()) && optRunRequest.get().getRetries() != 0) {
-          wfRunEntity.setRetries(optRunRequest.get().getRetries());
-        }
+      if (request.getLabels() != null && !request.getLabels().isEmpty()) {
+        wfRunEntity.putLabels(request.getLabels());
       }
-
+      if (request.getAnnotations() != null && !request.getAnnotations().isEmpty()) {
+        wfRunEntity.putAnnotations(request.getAnnotations());
+      }
+      if (request.getParams() != null && !request.getParams().isEmpty()) {
+        wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(), request.getParams()));
+      }
+      if (request.getWorkspaces() != null && !request.getWorkspaces().isEmpty()) {
+        wfRunEntity.getWorkspaces().addAll(request.getWorkspaces());
+      }
+      if (!Objects.isNull(request.getTimeout()) && request.getTimeout() != 0) {
+        wfRunEntity.setTimeout(request.getTimeout());
+      }
+      if (!Objects.isNull(request.getRetries()) && request.getRetries() != 0) {
+        wfRunEntity.setRetries(request.getRetries());
+      }
       // Set Trigger
-      if (optRunRequest.get().getTrigger().isBlank()) {
-        wfRunEntity.setTrigger("api");
+      if (request.getTrigger().isBlank()) {
+        wfRunEntity.setTrigger("engine");
       } else {
-        wfRunEntity.setTrigger(optRunRequest.get().getTrigger());
+        wfRunEntity.setTrigger(request.getTrigger());
       }
-      
       //Add System Generated Annotations
       Map<String, Object> annotations = new HashMap<>();
       annotations.put("io.boomerang/generation", "4");
@@ -326,11 +330,6 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       wfRunEntity.getAnnotations().putAll(annotations);
 
       workflowRunRepository.save(wfRunEntity);
-
-      // TODO: Check if Workflow is active and triggers enabled
-      // Throws Execution exception if not able to
-      // workflowService.canExecuteWorkflow(workflowId);
-
       workflowExecutionClient.queue(workflowExecutionService, wfRunEntity);
 
       if (start) {

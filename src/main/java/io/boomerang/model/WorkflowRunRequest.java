@@ -20,6 +20,8 @@ public class WorkflowRunRequest {
   private Long retries;
   
   private String trigger;
+  
+  private Boolean debug;
 
   public Map<String, String> getLabels() {
     return labels;
@@ -75,5 +77,13 @@ public class WorkflowRunRequest {
 
   public void setTrigger(String trigger) {
     this.trigger = trigger;
+  }
+
+  public Boolean getDebug() {
+    return debug;
+  }
+
+  public void setDebug(Boolean debug) {
+    this.debug = debug;
   }
 }

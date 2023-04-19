@@ -16,6 +16,7 @@ import io.boomerang.model.RunResult;
 import io.boomerang.model.WorkflowWorkspace;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
+import io.boomerang.model.enums.TaskDeletion;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
@@ -38,6 +39,10 @@ public class WorkflowRunEntity   {
   private Long timeout;
   
   private Long retries;
+
+  private Boolean debug;
+
+  private TaskDeletion taskDeletion;
 
   private RunStatus status = RunStatus.notstarted;
   
@@ -127,6 +132,22 @@ public class WorkflowRunEntity   {
 
   public void setRetries(Long retries) {
     this.retries = retries;
+  }
+
+  public Boolean getDebug() {
+    return debug;
+  }
+
+  public void setDebug(Boolean debug) {
+    this.debug = debug;
+  }
+
+  public TaskDeletion getTaskDeletion() {
+    return taskDeletion;
+  }
+
+  public void setTaskDeletion(TaskDeletion deletion) {
+    this.taskDeletion = deletion;
   }
 
   public String getId() {

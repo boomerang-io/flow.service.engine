@@ -29,24 +29,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/v1/task/run")
+@RequestMapping("/api/v1/taskrun")
 @Tag(name = "Task Run",
 description = "View, Start, Stop, and Update Status of your Task Runs.")
 public class TaskRunV1Controller {
 
   @Autowired
   private TaskRunService taskRunService;
-
-  @GetMapping(value = "/{taskRunId}")
-  @Operation(summary = "Retrieve a specific Task Run.")
-  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
-      @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<TaskRun> getTaskRuns(
-      @Parameter(name = "taskRunId",
-      description = "ID of Task Run to Start",
-      required = true) @PathVariable(required = true) String taskRunId) {
-    return taskRunService.get(taskRunId);
-  }
 
   @GetMapping(value = "/query")
   @Operation(summary = "Search for Task Runs.")
@@ -69,6 +58,17 @@ public class TaskRunV1Controller {
     final Sort sort = Sort.by(new Order(Direction.ASC, "creationDate"));
     final Pageable pageable = PageRequest.of(page, limit, sort);
     return taskRunService.query(pageable, labels, status, phase);
+  }
+
+  @GetMapping(value = "/{taskRunId}")
+  @Operation(summary = "Retrieve a specific Task Run.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public ResponseEntity<TaskRun> getTaskRuns(
+      @Parameter(name = "taskRunId",
+      description = "ID of Task Run to Start",
+      required = true) @PathVariable(required = true) String taskRunId) {
+    return taskRunService.get(taskRunId);
   }
 
   @PutMapping(value = "/{taskRunId}/start")

@@ -1,6 +1,9 @@
 package io.boomerang.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.logging.log4j.LogManager;
@@ -17,117 +20,80 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 public class ParamLayers {
   private static final Logger LOGGER = LogManager.getLogger();
 
-  private boolean includeGlobalProperties = true;
+  private boolean includeGlobalParams = true;
+
+  private boolean includeContextParams = true;
 
   @JsonIgnore
-  private Map<String, Object> systemProperties = new HashMap<>();
+  private Map<String, Object> contextParams = new HashMap<>();
 
   @JsonIgnore
-  private Map<String, Object> globalProperties = new HashMap<>();
+  private Map<String, Object> globalParams = new HashMap<>();
 
   @JsonIgnore
-  private Map<String, Object> teamProperties = new HashMap<>();
+  private Map<String, Object> teamParams = new HashMap<>();
 
   @JsonIgnore
-  private Map<String, Object> workflowProperties = new HashMap<>();
+  private Map<String, Object> workflowParams = new HashMap<>();
 
   @JsonIgnore
-  private Map<String, Object> taskInputProperties = new HashMap<>();
-  
+  private Map<String, Object> taskParams = new HashMap<>();
+
   @JsonIgnore
-  private Map<String, Object> reservedProperties = new HashMap<>();
-
-
-  public Map<String, Object> getReservedProperties() {
-    return reservedProperties;
+  public Map<String, Object> getTaskParams() {
+    return taskParams;
   }
 
-  public void setReservedProperties(Map<String, Object> reservedProperties) {
-    this.reservedProperties = reservedProperties;
+  public void setTaskParams(Map<String, Object> taskInputProperties) {
+    this.taskParams = taskInputProperties;
   }
 
-  public Map<String, Object> getTaskInputProperties() {
-    return taskInputProperties;
+  public Map<String, Object> getGlobalParams() {
+    return globalParams;
   }
 
-  public void setTaskInputProperties(Map<String, Object> taskInputProperties) {
-    this.taskInputProperties = taskInputProperties;
+  public void setGlobalParams(Map<String, Object> globalProperties) {
+    this.globalParams = globalProperties;
   }
 
-  public Map<String, Object> getGlobalProperties() {
-    return globalProperties;
+  public Map<String, Object> getContextParams() {
+    return contextParams;
   }
 
-  public void setGlobalProperties(Map<String, Object> globalProperties) {
-    this.globalProperties = globalProperties;
+  public void setContextParams(Map<String, Object> contextParams) {
+    this.contextParams = contextParams;
   }
 
-  public Map<String, Object> getSystemProperties() {
-    return systemProperties;
+  public Map<String, Object> getTeamParams() {
+    return teamParams;
   }
 
-  public void setSystemProperties(Map<String, Object> systemProperties) {
-    this.systemProperties = systemProperties;
+  public void setTeamParams(Map<String, Object> teamProperties) {
+    this.teamParams = teamProperties;
   }
 
-  public Map<String, Object> getTeamProperties() {
-    return teamProperties;
+  public Map<String, Object> getWorkflowParams() {
+    return workflowParams;
   }
 
-  public void setTeamProperties(Map<String, Object> teamProperties) {
-    this.teamProperties = teamProperties;
+  public void setWorkflowParams(Map<String, Object> workflowProperties) {
+    this.workflowParams = workflowProperties;
   }
 
-  public Map<String, Object> getWorkflowProperties() {
-    return workflowProperties;
+  public boolean isIncludeGlobalParams() {
+    return includeGlobalParams;
   }
 
-  public void setWorkflowProperties(Map<String, Object> workflowProperties) {
-    this.workflowProperties = workflowProperties;
+  public void setIncludeGlobalParams(boolean includeGlobalParams) {
+    this.includeGlobalParams = includeGlobalParams;
   }
 
-  @JsonAnyGetter
-  public Map<String, Object> getMap(boolean includeScope) {
-
-    Map<String, Object> finalProperties = new TreeMap<>();
-
-    if (this.includeGlobalProperties) {
-      copyProperties(globalProperties, finalProperties, "global", includeScope);
-    }
-
-    copyProperties(teamProperties, finalProperties, "team", includeScope);
-    copyProperties(workflowProperties, finalProperties, "workflow", includeScope);
-    copyProperties(taskInputProperties, finalProperties, null, includeScope);
-    copyProperties(systemProperties, finalProperties, "system", includeScope);
-
-    copyProperties( this.getReservedProperties(), finalProperties, null, false);
-
-
-    return finalProperties;
+  public boolean isIncludeContextParams() {
+    return includeContextParams;
   }
 
-  public String getLayeredProperty(String key) {
-    Object val = this.getMap(false).get(key);
-    if (val instanceof Boolean) {
-      return String.valueOf(val);
-    } else {
-      return this.getMap(false).get(key).toString();
-    }
-  }
-
-  private void copyProperties(Map<String, Object> source, Map<String, Object> target, String prefix,
-      boolean inludeScope) {
-    for (Entry<String, Object> entry : source.entrySet()) {
-      LOGGER.debug("Parameter: " + entry.toString());
-      String key = entry.getKey();
-      Object value = entry.getValue();
-      if (value != null) {
-        if (inludeScope) {
-          target.put(prefix + "/" + key, value.toString());
-        }
-        target.put(key, value.toString());
-      }
-    }
+  public void setIncludeContextParams(boolean includeContextParams) {
+    this.includeContextParams = includeContextParams;
   }
 
   @JsonAnyGetter
@@ -135,22 +101,21 @@ public class ParamLayers {
 
     Map<String, Object> finalProperties = new TreeMap<>();
 
-    if (this.includeGlobalProperties) {
-      copyFlatProperties(globalProperties, finalProperties, "global");
+    if (this.includeGlobalParams) {
+      copyFlatParams(globalParams, finalProperties, "global");
     }
 
-    copyFlatProperties(teamProperties, finalProperties, "team");
-    copyFlatProperties(workflowProperties, finalProperties, "workflow");
-    copyFlatProperties(taskInputProperties, finalProperties, null);
-    copyFlatProperties(systemProperties, finalProperties, "system");
-
-    copyFlatProperties( this.getReservedProperties(), finalProperties, null);
-
+    copyFlatParams(teamParams, finalProperties, "team");
+    copyFlatParams(workflowParams, finalProperties, "workflow");
+    copyFlatParams(taskParams, finalProperties, null);
+    if (this.includeContextParams) {
+      copyFlatParams(contextParams, finalProperties, "context");
+    }
 
     return finalProperties;
   }
 
-  private void copyFlatProperties(Map<String, Object> source, Map<String, Object> target, String prefix) {
+  private void copyFlatParams(Map<String, Object> source, Map<String, Object> target, String prefix) {
     for (Entry<String, Object> entry : source.entrySet()) {
       LOGGER.debug("Parameter: " + entry.toString());
       String key = entry.getKey();
@@ -160,6 +125,38 @@ public class ParamLayers {
           target.put(prefix + ".params." + key, value);
         }
         target.put("params." + key, value);
+      }
+    }
+  }
+
+  @JsonAnyGetter
+  public List<String> getFlatKeys() {
+    HashSet<String> keys = new HashSet<>();
+
+    if (this.includeGlobalParams) {
+      copyFlatKeys(globalParams, keys, "global");
+    }
+
+    copyFlatKeys(teamParams, keys, "team");
+    copyFlatKeys(workflowParams, keys, "workflow");
+    copyFlatKeys(taskParams, keys, null);
+    if (this.includeContextParams) {
+      copyFlatKeys(contextParams, keys, "context");
+    }
+
+    return new ArrayList<String>(keys);
+  }
+
+  private void copyFlatKeys(Map<String, Object> source, HashSet<String> target, String prefix) {
+    for (Entry<String, Object> entry : source.entrySet()) {
+      LOGGER.debug("Parameter: " + entry.toString());
+      String key = entry.getKey();
+      Object value = entry.getValue();
+      if (value != null) {
+        if (prefix != null) {
+          target.add(prefix + ".params." + key);
+        }
+        target.add("params." + key);
       }
     }
   }
@@ -177,25 +174,15 @@ public class ParamLayers {
     return jsonResult;
   }
 
-
-  public boolean isIncludeGlobalProperties() {
-    return includeGlobalProperties;
-  }
-
-
-  public void setIncludeGlobalProperties(boolean includeGlobalProperties) {
-    this.includeGlobalProperties = includeGlobalProperties;
-  }
-
   public Map<String, Object> getMapForKey(String key) {
     if ("workflow".equals(key)) {
-      return this.getWorkflowProperties();
-    } else if ("system".equals(key)) {
-      return this.getSystemProperties();
+      return this.getWorkflowParams();
+    } else if ("context".equals(key)) {
+      return this.getContextParams();
     } else if ("team".equals(key)) {
-      return this.getTeamProperties();
+      return this.getTeamParams();
     } else if ("global".equals(key)) {
-      return this.getGlobalProperties();
+      return this.getGlobalParams();
     } else {
       return new HashMap<>();
     }
