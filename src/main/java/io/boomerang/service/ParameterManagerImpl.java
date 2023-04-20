@@ -1,18 +1,12 @@
 package io.boomerang.service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,7 +26,6 @@ import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.model.ParamLayers;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
-import io.boomerang.model.WorkflowRun;
 import io.boomerang.util.ParameterUtil;
 
 /*
@@ -122,7 +115,7 @@ public class ParameterManagerImpl implements ParameterManager {
     //Override particular context Parameters. Additional Context Params come from the Workflow service.
     Map<String, Object> contextParams = paramLayers.getContextParams();
     contextParams.put("workflowrun-trigger", wfRun.getTrigger());
-    contextParams.put("workflowrun-initiator", wfRun.getInitiatedByRef().isBlank() ? "" : wfRun.getInitiatedByRef());
+    contextParams.put("workflowrun-initiator", Objects.isNull(wfRun.getInitiatedByRef()) || wfRun.getInitiatedByRef().isBlank() ? "" : wfRun.getInitiatedByRef());
     contextParams.put("workflowrun-id", wfRun.getId());
     contextParams.put("workflow-id", wfRun.getWorkflowRef());
     contextParams.put("workflow-name", "");

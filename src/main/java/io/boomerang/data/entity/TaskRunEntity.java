@@ -54,7 +54,7 @@ public class TaskRunEntity {
   
   private List<TaskWorkspace> workspaces = new LinkedList<>();
   
-  private TaskRunSpec spec;
+  private TaskRunSpec spec = new TaskRunSpec();
 
   private RunStatus status;
   

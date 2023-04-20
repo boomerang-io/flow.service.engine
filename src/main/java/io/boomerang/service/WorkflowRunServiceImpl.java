@@ -314,7 +314,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         wfRunEntity.setRetries(request.getRetries());
       }
       // Set Trigger
-      if (request.getTrigger().isBlank()) {
+      if (Objects.isNull(request.getTrigger()) || request.getTrigger().isBlank()) {
         wfRunEntity.setTrigger("engine");
       } else {
         wfRunEntity.setTrigger(request.getTrigger());

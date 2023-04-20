@@ -165,16 +165,29 @@ public class DAGUtility {
           if (!Objects.isNull(wfRevisionTask.getTimeout())
               && wfRevisionTask.getTimeout() != 0) {
             taskRunEntity.setTimeout(wfRevisionTask.getTimeout());
-          }
-          
+          }          
           //Set TaskRun Spec from TaskTemplate Spec - Debug and Deletion come from an alternate source
-          taskRunEntity.getSpec().setImage(taskTemplate.get().getSpec().getImage());
-          taskRunEntity.getSpec().setCommand(taskTemplate.get().getSpec().getCommand());
-          taskRunEntity.getSpec().setArguments(taskTemplate.get().getSpec().getArguments());
-          taskRunEntity.getSpec().setEnvs(taskTemplate.get().getSpec().getEnvs());
-          taskRunEntity.getSpec().setScript(taskTemplate.get().getSpec().getScript());
-          taskRunEntity.getSpec().setWorkingDir(taskTemplate.get().getSpec().getWorkingDir());
-          taskRunEntity.getSpec().addAdditionalProperties(taskTemplate.get().getSpec().getAdditionalProperties());
+          if (!Objects.isNull(taskTemplate.get().getSpec().getImage())) {
+            taskRunEntity.getSpec().setImage(taskTemplate.get().getSpec().getImage());
+          }
+          if (!Objects.isNull(taskTemplate.get().getSpec().getCommand())) {
+            taskRunEntity.getSpec().setCommand(taskTemplate.get().getSpec().getCommand());
+          }
+          if (!Objects.isNull(taskTemplate.get().getSpec().getArguments())) {
+            taskRunEntity.getSpec().setArguments(taskTemplate.get().getSpec().getArguments());
+          }
+          if (!Objects.isNull(taskTemplate.get().getSpec().getEnvs())) {
+            taskRunEntity.getSpec().setEnvs(taskTemplate.get().getSpec().getEnvs());
+          }
+          if (!Objects.isNull(taskTemplate.get().getSpec().getScript())) {
+            taskRunEntity.getSpec().setScript(taskTemplate.get().getSpec().getScript());
+          }
+          if (!Objects.isNull(taskTemplate.get().getSpec().getWorkingDir())) {
+            taskRunEntity.getSpec().setWorkingDir(taskTemplate.get().getSpec().getWorkingDir());
+          }
+          if (!Objects.isNull(taskTemplate.get().getSpec().getAdditionalProperties())) {
+            taskRunEntity.getSpec().getAdditionalProperties().putAll(taskTemplate.get().getSpec().getAdditionalProperties());
+          }
         }
         taskRunRepository.save(taskRunEntity);
         LOGGER.debug("[{}] TaskRunEntity ({}) created for: {}", wfRunEntity.getId(), taskRunEntity.getId(),

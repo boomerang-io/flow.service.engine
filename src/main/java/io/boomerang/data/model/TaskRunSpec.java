@@ -81,11 +81,6 @@ public class TaskRunSpec {
     this.additionalProperties.put(name, value);
   }
 
-  @JsonAnySetter
-  public void addAdditionalProperties(Map<String, Object> additionalProperties) {
-    this.additionalProperties.putAll(additionalProperties);
-  }
-
   public Boolean getDebug() {
     return debug;
   }

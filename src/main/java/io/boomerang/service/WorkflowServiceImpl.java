@@ -356,7 +356,7 @@ public class WorkflowServiceImpl implements WorkflowService {
       wfRevisionEntity.getTasks().stream().forEach(t -> {
       Optional<TaskTemplateEntity> taskTemplate = taskTemplateRepository.findByNameAndLatestVersion(t.getTemplateRef());
       if (taskTemplate.isPresent()) {
-        if (t.getTemplateVersion() < taskTemplate.get().getVersion()) {
+        if (t.getTemplateVersion() != null && (t.getTemplateVersion() < taskTemplate.get().getVersion())) {
           workflow.setUpgradesAvailable(true);
           return;
         }
