@@ -124,8 +124,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     if (canRunTask) {
       // Resolve Parameter Substitutions
-      paramManager.resolveTaskRunParams(wfRunEntity.get().getId(), wfRunEntity.get().getParams(),
-          taskExecution.getParams());
+      paramManager.resolveParamLayers(wfRunEntity.get(), Optional.of(taskExecution));
 
       // Update Status and Phase
       updateStatusAndSaveTask(taskExecution, RunStatus.ready, RunPhase.pending, Optional.empty());

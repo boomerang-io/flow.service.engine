@@ -69,7 +69,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   public void queue(WorkflowRunEntity workflowExecution) {
     LOGGER.debug("[{}] Recieved queue Workflow request.", workflowExecution.getId());
     // Resolve Parameter Substitutions
-    paramManager.resolveWorkflowRunParams(workflowExecution.getId(), workflowExecution.getParams());
+    paramManager.resolveParamLayers(workflowExecution, Optional.empty());
 
     // TODO: do we move the dagUtility.validateWorkflow() here and validate earlier?
 
