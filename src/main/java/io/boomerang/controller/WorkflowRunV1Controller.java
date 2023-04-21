@@ -145,7 +145,7 @@ public class WorkflowRunV1Controller {
     return workflowRunService.start(workflowRunId, runRequest);
   }
 
-  @PutMapping(value = "/run/{workflowRunId}/finalize")
+  @PutMapping(value = "/{workflowRunId}/finalize")
   @Operation(summary = "End a Workflow Run")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
@@ -156,7 +156,7 @@ public class WorkflowRunV1Controller {
     return workflowRunService.finalize(workflowRunId);
   }
 
-  @DeleteMapping(value = "/run/{workflowRunId}/cancel")
+  @DeleteMapping(value = "/{workflowRunId}/cancel")
   @Operation(summary = "Cancel a Workflow Run")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
@@ -167,7 +167,7 @@ public class WorkflowRunV1Controller {
     return workflowRunService.cancel(workflowRunId);
   }
 
-  @PutMapping(value = "/run/{workflowRunId}/retry")
+  @PutMapping(value = "/{workflowRunId}/retry")
   @Operation(summary = "Retry Workflow Run execution.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
