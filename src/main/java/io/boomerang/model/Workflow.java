@@ -23,7 +23,7 @@ import io.boomerang.model.enums.WorkflowStatus;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
-@JsonPropertyOrder({"id", "name", "status", "version", "creationDate", "timeout", "retries", "description", "shortDescription", "labels", "annotations", "tasks" })
+@JsonPropertyOrder({"id", "name", "status", "version", "creationDate", "timeout", "retries", "description", "shortDescription", "labels", "annotations", "params", "tasks" })
 public class Workflow {
   
   private String id;
