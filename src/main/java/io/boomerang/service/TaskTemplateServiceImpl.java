@@ -20,13 +20,11 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateEntity;
-import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.TaskTemplate;
-import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.enums.TaskTemplateStatus;
 
 @Service
@@ -114,10 +112,6 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     Optional<TaskTemplateEntity> taskTemplateEntity = taskTemplateRepository.findByNameAndLatestVersion(taskTemplate.getName().toLowerCase());
     if (!taskTemplateEntity.isPresent()) {
       return this.create(taskTemplate);
-    }
-    
-    if (!taskTemplateEntity.get().getScope().equals(taskTemplate.getScope())) {
-      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_SCOPE_CHANGE, taskTemplateEntity.get().getScope(), taskTemplate.getScope());
     }
     
     //Override Id & version

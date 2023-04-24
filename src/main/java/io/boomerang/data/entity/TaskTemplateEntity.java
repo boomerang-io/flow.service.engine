@@ -12,7 +12,6 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.data.model.TaskTemplateSpec;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.TaskTemplateConfig;
-import io.boomerang.model.enums.TaskTemplateScope;
 import io.boomerang.model.enums.TaskTemplateStatus;
 import io.boomerang.model.enums.TaskType;
 
@@ -38,7 +37,6 @@ public class TaskTemplateEntity {
   private List<TaskTemplateConfig> config;
   private String icon;
   private boolean verified;
-  private TaskTemplateScope scope = TaskTemplateScope.global;
 
   public TaskTemplateEntity() {
     // Do nothing
@@ -154,14 +152,6 @@ public class TaskTemplateEntity {
 
   public void setVerified(boolean verified) {
     this.verified = verified;
-  }
-
-  public TaskTemplateScope getScope() {
-    return scope;
-  }
-
-  public void setScope(TaskTemplateScope scope) {
-    this.scope = scope;
   }
 
   public List<TaskTemplateConfig> getConfig() {
