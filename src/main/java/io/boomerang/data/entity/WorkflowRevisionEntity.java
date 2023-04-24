@@ -8,9 +8,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.data.model.WorkflowRevisionTask;
+import io.boomerang.model.AbstractParam;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.ParamSpec;
-import io.boomerang.model.WorkflowConfig;
 import io.boomerang.model.WorkflowWorkspace;
 
 /*
@@ -43,7 +43,7 @@ public class WorkflowRevisionEntity {
   
   private Long retries;
   
-  private List<WorkflowConfig> config;
+  private List<AbstractParam> config;
   
   @Override
   public String toString() {
@@ -132,11 +132,11 @@ public class WorkflowRevisionEntity {
     this.retries = retries;
   } 
 
-  public List<WorkflowConfig> getConfig() {
+  public List<AbstractParam> getConfig() {
     return config;
   }
 
-  public void setConfig(List<WorkflowConfig> config) {
+  public void setConfig(List<AbstractParam> config) {
     this.config = config;
   }
 }

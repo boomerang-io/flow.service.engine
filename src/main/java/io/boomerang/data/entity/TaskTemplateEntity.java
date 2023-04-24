@@ -1,4 +1,4 @@
-package io.boomerang.data.entity;
+ package io.boomerang.data.entity;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -9,9 +9,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.data.model.TaskTemplateSpec;
+import io.boomerang.model.AbstractParam;
 import io.boomerang.model.ChangeLog;
-import io.boomerang.model.TaskTemplateConfig;
+import io.boomerang.model.TaskTemplateSpec;
 import io.boomerang.model.enums.TaskTemplateStatus;
 import io.boomerang.model.enums.TaskType;
 
@@ -34,7 +34,7 @@ public class TaskTemplateEntity {
   private TaskType type;
   private TaskTemplateSpec spec;
   private TaskTemplateStatus status;
-  private List<TaskTemplateConfig> config;
+  private List<AbstractParam> config;
   private String icon;
   private boolean verified;
 
@@ -154,11 +154,11 @@ public class TaskTemplateEntity {
     this.verified = verified;
   }
 
-  public List<TaskTemplateConfig> getConfig() {
+  public List<AbstractParam> getConfig() {
     return config;
   }
 
-  public void setConfig(List<TaskTemplateConfig> config) {
+  public void setConfig(List<AbstractParam> config) {
     this.config = config;
   }
 
