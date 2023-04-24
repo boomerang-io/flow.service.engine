@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import io.boomerang.data.entity.TaskTemplateEntity;
-import io.boomerang.data.model.TaskTemplateStatus;
+import io.boomerang.model.enums.TaskTemplateStatus;
 
 public interface TaskTemplateRepository
     extends MongoRepository<TaskTemplateEntity, String> {

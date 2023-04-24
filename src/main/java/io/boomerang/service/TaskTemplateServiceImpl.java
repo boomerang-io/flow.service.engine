@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.EnumUtils;
@@ -19,12 +20,14 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateEntity;
-import io.boomerang.data.model.TaskTemplateStatus;
+import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.TaskTemplate;
+import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.enums.TaskTemplateStatus;
 
 @Service
 public class TaskTemplateServiceImpl implements TaskTemplateService {
@@ -95,9 +98,6 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     taskTemplate.setChangelog(changelog);
     taskTemplate.setCreationDate(new Date());
     taskTemplateRepository.save(taskTemplate);
-    
-    // taskTemplateEntity = taskTemplateRepository.save(taskTemplateEntity);
-    // taskTemplate.setId(taskTemplateEntity.getId());
     return ResponseEntity.ok(taskTemplate);
   }
   
@@ -147,12 +147,12 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   }
 
   @Override
-  public Page<TaskTemplateEntity> query(Pageable pageable, Optional<List<String>> labels,
-      Optional<List<String>> status) {
+  public Page<TaskTemplate> query(Pageable pageable, Optional<List<String>> queryLabels,
+      Optional<List<String>> queryStatus, Optional<List<String>> queryNames) {
       List<Criteria> criteriaList = new ArrayList<>();
 
-      if (labels.isPresent()) {
-        labels.get().stream().forEach(l -> {
+      if (queryLabels.isPresent()) {
+        queryLabels.get().stream().forEach(l -> {
           String decodedLabel = "";
           try {
             decodedLabel = URLDecoder.decode(l, "UTF-8");
@@ -167,14 +167,19 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
         });
       }
 
-      if (status.isPresent()) {
-        if (status.get().stream()
+      if (queryStatus.isPresent()) {
+        if (queryStatus.get().stream()
             .allMatch(q -> EnumUtils.isValidEnumIgnoreCase(TaskTemplateStatus.class, q))) {
-          Criteria criteria = Criteria.where("status").in(status.get());
+          Criteria criteria = Criteria.where("status").in(queryStatus.get());
           criteriaList.add(criteria);
         } else {
           throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "status");
         }
+      }
+      
+      if (queryNames.isPresent()) {
+        Criteria criteria = Criteria.where("name").in(queryNames.get());
+        criteriaList.add(criteria);
       }
 
       Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);
@@ -184,254 +189,30 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
       }
       Query query = new Query(allCriteria);
       query.with(pageable);
+      
+      List<TaskTemplateEntity> taskTemplateEntities = mongoTemplate.find(query.with(pageable), TaskTemplateEntity.class);
+      
+      List<TaskTemplate> taskTemplates = new LinkedList<>();
+      taskTemplateEntities.forEach(e -> taskTemplates.add(new TaskTemplate(e)));
 
-      Page<TaskTemplateEntity> pages = PageableExecutionUtils.getPage(
-          mongoTemplate.find(query.with(pageable), TaskTemplateEntity.class), pageable,
+      Page<TaskTemplate> pages = PageableExecutionUtils.getPage(
+          taskTemplates, pageable,
           () -> mongoTemplate.count(query, TaskTemplateEntity.class));
 
       return pages;
   }
-
-  // @Override
-  // public List<FlowTaskTemplate> getAllTaskTemplates(TemplateScope scope, String teamId) {
-  // List<FlowTaskTemplate> templates = new LinkedList<>();
-  //
-  // if (scope == TemplateScope.global || scope == null) {
-  // templates = flowTaskTemplateService.getAllGlobalTasks().stream().map(FlowTaskTemplate::new)
-  // .collect(Collectors.toList());
-  // } else if (scope == TemplateScope.team) {
-  // templates = flowTaskTemplateService.getTaskTemplatesforTeamId(teamId).stream()
-  // .map(FlowTaskTemplate::new).collect(Collectors.toList());
-  // } else if (scope == TemplateScope.system) {
-  // templates = flowTaskTemplateService.getAllSystemTasks().stream().map(FlowTaskTemplate::new)
-  // .collect(Collectors.toList());
-  // }
-  //
-  // updateTemplateListUserNames(templates);
-  // return templates;
-  // }
-  //
-  // private void updateTemplateListUserNames(List<FlowTaskTemplate> templates) {
-  // for (FlowTaskTemplate template : templates) {
-  // for (Revision revision : template.getRevisions()) {
-  // if (revision.getChangelog() != null && revision.getChangelog().getUserId() != null) {
-  // FlowUserEntity user =
-  // userIdentityService.getUserByID(revision.getChangelog().getUserId());
-  // if (revision.getChangelog() != null && user != null
-  // && revision.getChangelog().getUserName() == null) {
-  // revision.getChangelog().setUserName(user.getName());
-  // }
-  // }
-  // }
-  // }
-  // }
-  //
-  // @Override
-  // public FlowTaskTemplate insertTaskTemplate(FlowTaskTemplate flowTaskTemplateEntity) {
-  // FlowUserEntity user = userIdentityService.getCurrentUser();
-  //
-  // if (user.getType() == UserType.admin || user.getType() == UserType.operator) {
-  //
-  // Date creationDate = new Date();
-  //
-  // flowTaskTemplateEntity.setCreatedDate(creationDate);
-  // flowTaskTemplateEntity.setLastModified(creationDate);
-  // flowTaskTemplateEntity.setVerified(false);
-  //
-  // updateChangeLog(flowTaskTemplateEntity);
-  //
-  // return new FlowTaskTemplate(
-  // flowTaskTemplateService.insertTaskTemplate(flowTaskTemplateEntity));
-  //
-  // } else {
-  // throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-  // }
-  //
-  // }
-  //
-  // @Override
-  // public FlowTaskTemplate updateTaskTemplate(FlowTaskTemplate flowTaskTemplateEntity) {
-  // FlowUserEntity user = userIdentityService.getCurrentUser();
-  //
-  // if (user.getType() == UserType.admin || user.getType() == UserType.operator) {
-  //
-  // updateChangeLog(flowTaskTemplateEntity);
-  //
-  // flowTaskTemplateEntity.setLastModified(new Date());
-  // flowTaskTemplateEntity.setVerified(flowTaskTemplateService
-  // .getTaskTemplateWithId(flowTaskTemplateEntity.getId()).isVerified());
-  // return new FlowTaskTemplate(
-  // flowTaskTemplateService.updateTaskTemplate(flowTaskTemplateEntity));
-  //
-  // } else {
-  // throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-  // }
-  // }
-  //
-  // @Override
-  // public void deleteTaskTemplateWithId(String id) {
-  // FlowUserEntity user = userIdentityService.getCurrentUser();
-  //
-  // if (user.getType() == UserType.admin || user.getType() == UserType.operator) {
-  // flowTaskTemplateService.deleteTaskTemplate(flowTaskTemplateService.getTaskTemplateWithId(id));
-  // } else {
-  // throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-  // }
-  // }
-  //
-  // @Override
-  // public void activateTaskTemplate(String id) {
-  // flowTaskTemplateService.activateTaskTemplate(flowTaskTemplateService.getTaskTemplateWithId(id));
-  //
-  // }
-  //
-  // private void updateChangeLog(FlowTaskTemplate flowTaskTemplateEntity) {
-  // List<Revision> revisions = flowTaskTemplateEntity.getRevisions();
-  // final FlowUserEntity user = userIdentityService.getCurrentUser();
-  //
-  // if (revisions != null) {
-  // for (Revision revision : revisions) {
-  // ChangeLog changelog = revision.getChangelog();
-  // if (changelog != null && changelog.getUserId() == null) {
-  // changelog.setUserId(user.getId());
-  // changelog.setDate(new Date());
-  // changelog.setUserName(user.getName());
-  // }
-  // }
-  // }
-  // }
-  //
-  // @Override
-  // public TektonTask getTaskTemplateYamlWithId(String id) {
-  // FlowTaskTemplateEntity template = flowTaskTemplateService.getTaskTemplateWithId(id);
-  // return TektonConverter.convertFlowTaskToTekton(template, Optional.empty());
-  // }
-  //
-  // @Override
-  // public TektonTask getTaskTemplateYamlWithIdAndRevision(String id, Integer revisionNumber) {
-  // FlowTaskTemplateEntity template = flowTaskTemplateService.getTaskTemplateWithId(id);
-  // return TektonConverter.convertFlowTaskToTekton(template, Optional.of(revisionNumber));
-  // }
-  //
-  // @Override
-  // public FlowTaskTemplate insertTaskTemplateYaml(TektonTask tektonTask, TemplateScope scope,
-  // String teamId) {
-  // FlowTaskTemplateEntity template = TektonConverter.convertTektonTaskToNewFlowTask(tektonTask);
-  // template.setStatus(FlowTaskTemplateStatus.active);
-  // template.setScope(scope);
-  // template.setFlowTeamId(teamId);
-  //
-  // flowTaskTemplateService.insertTaskTemplate(template);
-  // return new FlowTaskTemplate(template);
-  // }
-  //
-  // @Override
-  // public FlowTaskTemplate updateTaskTemplateWithYaml(String id, TektonTask tektonTask) {
-  // FlowTaskTemplateEntity tektonTemplate =
-  // TektonConverter.convertTektonTaskToNewFlowTask(tektonTask);
-  // FlowTaskTemplateEntity dbTemplate = flowTaskTemplateService.getTaskTemplateWithId(id);
-  //
-  // if (tektonTemplate.getName() != null && !tektonTemplate.getName().isBlank()) {
-  // dbTemplate.setName(tektonTemplate.getName());
-  // }
-  // if (tektonTemplate.getCategory() != null && !tektonTemplate.getCategory().isBlank()) {
-  // dbTemplate.setCategory(tektonTemplate.getCategory());
-  // }
-  //
-  // if (tektonTemplate.getDescription() != null && !tektonTemplate.getDescription().isBlank()) {
-  // dbTemplate.setDescription(tektonTemplate.getDescription());
-  // }
-  //
-  // List<Revision> revisions = tektonTemplate.getRevisions();
-  // if (revisions.size() == 1) {
-  // Revision revision = revisions.get(0);
-  //
-  // final FlowUserEntity user = userIdentityService.getCurrentUser();
-  // if (user != null) {
-  // ChangeLog changelog = revision.getChangelog();
-  // changelog.setUserId(user.getId());
-  // changelog.setDate(new Date());
-  // }
-  //
-  //
-  // List<Revision> existingRevisions = dbTemplate.getRevisions();
-  // int count = existingRevisions.size();
-  // revision.setVersion(count + 1);
-  // existingRevisions.add(revision);
-  // }
-  // dbTemplate.setLastModified(new Date());
-  // flowTaskTemplateService.updateTaskTemplate(dbTemplate);
-  // return this.getTaskTemplateWithId(id);
-  // }
-  //
-  // @Override
-  // public FlowTaskTemplate updateTaskTemplateWithYaml(String id, TektonTask tektonTask,
-  // Integer revisionId, String comment) {
-  // FlowTaskTemplateEntity tektonTemplate =
-  // TektonConverter.convertTektonTaskToNewFlowTask(tektonTask);
-  // FlowTaskTemplateEntity dbTemplate = flowTaskTemplateService.getTaskTemplateWithId(id);
-  //
-  // if (tektonTemplate.getName() != null && !tektonTemplate.getName().isBlank()) {
-  // dbTemplate.setName(tektonTemplate.getName());
-  // }
-  // if (tektonTemplate.getCategory() != null && !tektonTemplate.getCategory().isBlank()) {
-  // dbTemplate.setCategory(tektonTemplate.getCategory());
-  // }
-  //
-  // if (tektonTemplate.getDescription() != null && !tektonTemplate.getDescription().isBlank()) {
-  // dbTemplate.setDescription(tektonTemplate.getDescription());
-  // }
-  //
-  // List<Revision> revisions = tektonTemplate.getRevisions();
-  // if (revisions.size() == 1) {
-  // Revision revision = revisions.get(0);
-  // revision.setVersion(revisionId);
-  //
-  // final FlowUserEntity user = userIdentityService.getCurrentUser();
-  // if (user != null) {
-  // ChangeLog changelog = revision.getChangelog();
-  // changelog.setUserId(user.getId());
-  // changelog.setDate(new Date());
-  // changelog.setReason(comment);
-  // }
-  //
-  // List<Revision> existingRevisions = dbTemplate.getRevisions();
-  //
-  // Revision oldRevision = existingRevisions.stream()
-  // .filter(a -> a.getVersion().equals(revisionId)).findFirst().orElse(null);
-  // if (oldRevision != null) {
-  // existingRevisions.remove(oldRevision);
-  //
-  // }
-  // existingRevisions.add(revision);
-  // }
-  // dbTemplate.setLastModified(new Date());
-  // flowTaskTemplateService.updateTaskTemplate(dbTemplate);
-  // return this.getTaskTemplateWithId(id);
-  // }
-  //
-  // @Override
-  // public List<FlowTaskTemplate> getAllTaskTemplatesForWorkfow(String workflowId) {
-  // List<FlowTaskTemplate> templates = new LinkedList<>();
-  //
-  // WorkflowSummary workflow = this.workflowService.getWorkflow(workflowId);
-  // String flowTeamId = workflow.getFlowTeamId();
-  // if (workflow.getScope() == WorkflowScope.team || workflow.getScope() == null) {
-  // templates = flowTaskTemplateService.getAllTaskTemplatesforTeamId(flowTeamId).stream()
-  // .map(FlowTaskTemplate::new).collect(Collectors.toList());
-  // } else if (workflow.getScope() == WorkflowScope.system || workflow.getScope() ==
-  // WorkflowScope.user || workflow.getScope() == WorkflowScope.template) {
-  // templates = flowTaskTemplateService.getAllTaskTemplatesForSystem().stream()
-  // .map(FlowTaskTemplate::new).collect(Collectors.toList());
-  // }
-  //
-  // return templates;
-  // }
-  //
-  // @Override
-  // public FlowTaskTemplate validateTaskTemplate(TektonTask tektonTask) {
-  // FlowTaskTemplateEntity template = TektonConverter.convertTektonTaskToNewFlowTask(tektonTask);
-  // template.setStatus(FlowTaskTemplateStatus.active);
-  // return new FlowTaskTemplate(template);
-  // }
+  
+   @Override
+   public void enable(String name) {
+     TaskTemplateEntity taskTemplateEntity = this.get(name, Optional.empty());
+     taskTemplateEntity.setStatus(TaskTemplateStatus.active);
+     taskTemplateRepository.save(taskTemplateEntity);
+   }
+  
+   @Override
+   public void disable(String name) {
+     TaskTemplateEntity taskTemplateEntity = this.get(name, Optional.empty());
+     taskTemplateEntity.setStatus(TaskTemplateStatus.inactive);
+     taskTemplateRepository.save(taskTemplateEntity);
+   }
 }

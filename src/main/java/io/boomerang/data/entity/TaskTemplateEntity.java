@@ -10,10 +10,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.data.model.TaskTemplateSpec;
-import io.boomerang.data.model.TaskTemplateStatus;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.TaskTemplateConfig;
 import io.boomerang.model.enums.TaskTemplateScope;
+import io.boomerang.model.enums.TaskTemplateStatus;
 import io.boomerang.model.enums.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)

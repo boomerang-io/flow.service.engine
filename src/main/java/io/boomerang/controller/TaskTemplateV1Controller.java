@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import io.boomerang.data.entity.TaskTemplateEntity;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.service.TaskTemplateService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,20 +53,23 @@ public class TaskTemplateV1Controller {
   @Operation(summary = "Search for Task Templates")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public Page<TaskTemplateEntity> queryTaskTemplates(
+  public Page<TaskTemplate> queryTaskTemplates(
       @Parameter(name = "labels",
       description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
       required = false) @RequestParam(required = false) Optional<List<String>> labels,
       @Parameter(name = "status",
       description = "List of statuses to filter for.", example = "inactive",
       required = false) @RequestParam(required = false, defaultValue = "active")  Optional<List<String>> status,
+      @Parameter(name = "names",
+      description = "List of TaskTemplate Names  to filter for. Defaults to all.", example = "switch,event-wait",
+      required = false) @RequestParam(required = false)  Optional<List<String>> names,
       @Parameter(name = "limit", description = "Result Size", example = "10",
           required = true) @RequestParam(defaultValue = "10") int limit,
       @Parameter(name = "page", description = "Page Number", example = "0",
           required = true) @RequestParam(defaultValue = "0") int page) {
     final Sort sort = Sort.by(new Order(Direction.ASC, "creationDate"));
     final Pageable pageable = PageRequest.of(page, limit, sort);
-    return taskTemplateService.query(pageable, labels, status);
+    return taskTemplateService.query(pageable, labels, status, names);
   }
 
   @PostMapping(value = "/")
@@ -89,5 +91,27 @@ public class TaskTemplateV1Controller {
       description = "Replace existing version",
       required = false) @RequestParam(required = false, defaultValue = "false") boolean replace) {
     return taskTemplateService.apply(taskTemplate, replace);
+  }
+
+  @PutMapping(value = "/{name}/enable")
+  @Operation(summary = "Enable a TaskTemplate")
+  @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public void enableWorkflow(
+      @Parameter(name = "name",
+      description = "Name of Task Template",
+      required = true) @PathVariable String name) {
+    taskTemplateService.enable(name);
+  }
+
+  @PutMapping(value = "/{name}/disable")
+  @Operation(summary = "Disable a TaskTemplate")
+  @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public void disableWorkflow(
+      @Parameter(name = "name",
+      description = "Name of Task Template",
+      required = true) @PathVariable String name) {
+    taskTemplateService.disable(name);
   }
 }

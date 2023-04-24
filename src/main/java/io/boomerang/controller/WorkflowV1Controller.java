@@ -30,14 +30,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/v1/workflow")
 @Tag(name = "Workflow Management",
-description = "Create, List, and Manage your workflows.")
+description = "Create, List, and Manage your Workflows.")
 public class WorkflowV1Controller {
 
   @Autowired
   private WorkflowService workflowService;
 
   @GetMapping(value = "/{workflowId}")
-  @Operation(summary = "Retrieve a version of the workflow. Defaults to latest.")
+  @Operation(summary = "Retrieve a version of the Workflow. Defaults to latest.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<Workflow> getWorkflow(
@@ -76,7 +76,7 @@ public class WorkflowV1Controller {
   }
 
   @PostMapping(value = "/")
-  @Operation(summary = "Create a new workflow")
+  @Operation(summary = "Create a new Workflow")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<Workflow> createWorkflow(@RequestBody Workflow workflow) {
@@ -95,35 +95,35 @@ public class WorkflowV1Controller {
   }
 
   @PutMapping(value = "/{workflowId}/enable")
-  @Operation(summary = "Enable a workflow")
+  @Operation(summary = "Enable a Workflow")
   @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<?> enableWorkflow(
+  public void enableWorkflow(
       @Parameter(name = "workflowId",
       description = "ID of Workflow",
       required = true) @PathVariable String workflowId) {
-    return workflowService.enable(workflowId);
+    workflowService.enable(workflowId);
   }
 
   @PutMapping(value = "/{workflowId}/disable")
-  @Operation(summary = "Disable a workflow")
+  @Operation(summary = "Disable a Workflow")
   @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<?> disableWorkflow(
+  public void disableWorkflow(
       @Parameter(name = "workflowId",
       description = "ID of Workflow",
       required = true) @PathVariable String workflowId) {
-    return workflowService.disable(workflowId);
+    workflowService.disable(workflowId);
   }
 
   @DeleteMapping(value = "/{workflowId}")
-  @Operation(summary = "Delete a workflow")
+  @Operation(summary = "Delete a Workflow")
   @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<?> archiveWorkflow(
+  public void archiveWorkflow(
       @Parameter(name = "workflowId",
       description = "ID of Workflow",
       required = true) @PathVariable String workflowId) {
-    return workflowService.delete(workflowId);
+    workflowService.delete(workflowId);
   }
 }
