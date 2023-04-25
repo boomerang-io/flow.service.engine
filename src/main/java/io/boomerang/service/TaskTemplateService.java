@@ -5,6 +5,8 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import io.boomerang.data.entity.TaskTemplateEntity;
+import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.model.TaskTemplate;
 
 public interface TaskTemplateService {
@@ -21,4 +23,6 @@ public interface TaskTemplateService {
   void disable(String name);
 
   void enable(String name);
+
+  Optional<TaskTemplateEntity> retrieveAndValidateTaskTemplate(WorkflowRevisionTask wfRevisionTask);
 }

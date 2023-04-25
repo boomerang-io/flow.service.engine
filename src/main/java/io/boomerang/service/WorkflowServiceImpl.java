@@ -32,6 +32,7 @@ import io.boomerang.model.ChangeLog;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.enums.RunStatus;
+import io.boomerang.model.enums.TaskTemplateStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.model.enums.WorkflowStatus;
 import io.boomerang.util.TaskMapper;
@@ -58,6 +59,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
   @Autowired
   private MongoTemplate mongoTemplate;
+  
+  @Autowired
+  private TaskTemplateService taskTemplateService;
 
   @Override
   public ResponseEntity<Workflow> get(String workflowId, Optional<Integer> version, boolean withTasks) {
@@ -225,23 +229,8 @@ public class WorkflowServiceImpl implements WorkflowService {
       if (!TaskType.start.equals(wfRevisionTask.getType())
           && !TaskType.end.equals(wfRevisionTask.getType())) {
 
-        //Should separate into a shared utility with DAGUtility:115
-        String templateRef = wfRevisionTask.getTemplateRef();
-        Optional<TaskTemplateEntity> taskTemplate;
-        if (wfRevisionTask.getTemplateVersion() != null) {
-          taskTemplate = taskTemplateRepository.findByNameAndVersion(templateRef,
-              wfRevisionTask.getTemplateVersion());
-          if (taskTemplate.isEmpty()) {
-            throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
-                wfRevisionTask.getTemplateVersion());
-          }
-        } else {
-          taskTemplate = taskTemplateRepository.findByNameAndLatestVersion(templateRef);
-          if (taskTemplate.isEmpty()) {
-            throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
-                "latest");
-          }
-        }
+        //Shared utility with DAGUtility
+        taskTemplateService.retrieveAndValidateTaskTemplate(wfRevisionTask);
       }
     }
     return wfRevisionEntity;

@@ -20,6 +20,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateEntity;
+import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
@@ -208,5 +209,33 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
      TaskTemplateEntity taskTemplateEntity = this.get(name, Optional.empty());
      taskTemplateEntity.setStatus(TaskTemplateStatus.inactive);
      taskTemplateRepository.save(taskTemplateEntity);
+   }
+
+   @Override
+   public Optional<TaskTemplateEntity> retrieveAndValidateTaskTemplate(
+       final WorkflowRevisionTask wfRevisionTask) {
+     String templateRef = wfRevisionTask.getTemplateRef();
+     Optional<TaskTemplateEntity> taskTemplate;
+     if (wfRevisionTask.getTemplateVersion() != null) {
+       taskTemplate = taskTemplateRepository.findByNameAndVersion(templateRef,
+           wfRevisionTask.getTemplateVersion());
+       if (taskTemplate.isEmpty()) {
+         throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
+             wfRevisionTask.getTemplateVersion());
+       } else if (TaskTemplateStatus.inactive.equals(taskTemplate.get().getStatus())) {
+         throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INACTIVE_STATUS, templateRef,
+             wfRevisionTask.getTemplateVersion());
+       }
+     } else {
+       taskTemplate = taskTemplateRepository.findByNameAndLatestVersion(templateRef);
+       if (taskTemplate.isEmpty()) {
+         throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
+             "latest");
+       } else if (TaskTemplateStatus.inactive.equals(taskTemplate.get().getStatus())) {
+         throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INACTIVE_STATUS, templateRef,
+             "latest");
+       }
+     }
+     return taskTemplate;
    }
 }

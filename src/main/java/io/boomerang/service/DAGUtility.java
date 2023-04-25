@@ -29,7 +29,6 @@ import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.data.repository.TaskRunRepository;
-import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.TaskDependency;
@@ -48,7 +47,7 @@ public class DAGUtility {
   private TaskRunRepository taskRunRepository;
 
   @Autowired
-  private TaskTemplateRepository taskTemplateRepository;
+  private TaskTemplateService taskTemplateService;
 
   public boolean validateWorkflow(WorkflowRunEntity wfRunEntity, List<TaskRunEntity> tasks) {
     final TaskRunEntity start =
@@ -115,23 +114,9 @@ public class DAGUtility {
         if (!TaskType.start.equals(wfRevisionTask.getType())
             && !TaskType.end.equals(wfRevisionTask.getType())) {
 
-          String templateRef = wfRevisionTask.getTemplateRef();
-          taskRunEntity.setTemplateRef(templateRef);
-          Optional<TaskTemplateEntity> taskTemplate;
-          if (wfRevisionTask.getTemplateVersion() != null) {
-            taskTemplate = taskTemplateRepository.findByNameAndVersion(templateRef,
-                wfRevisionTask.getTemplateVersion());
-            if (taskTemplate.isEmpty()) {
-              throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
-                  wfRevisionTask.getTemplateVersion());
-            }
-          } else {
-            taskTemplate = taskTemplateRepository.findByNameAndLatestVersion(templateRef);
-            if (taskTemplate.isEmpty()) {
-              throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
-                  "latest");
-            }
-          }
+          Optional<TaskTemplateEntity> taskTemplate =
+              taskTemplateService.retrieveAndValidateTaskTemplate(wfRevisionTask);
+          taskRunEntity.setTemplateRef(wfRevisionTask.getTemplateRef());
           taskRunEntity.setTemplateVersion(taskTemplate.get().getVersion());
           LOGGER.debug("[{}] Found Task Template: {} ({})", wfRunEntity.getId(), taskTemplate.get().getName(), taskTemplate.get().getId());
           
