@@ -23,7 +23,7 @@ public interface WorkflowRunService {
 
   Page<WorkflowRun> query(Optional<Date> from, Optional<Date> to, Pageable pageable, Optional<List<String>> queryLabels,
       Optional<List<String>> queryStatus, Optional<List<String>> queryPhase,
-      Optional<List<String>> ids);
+      Optional<List<String>> ids, Optional<List<String>> workflows);
 
   ResponseEntity<WorkflowRun> cancel(String workflowRunId);
 
@@ -31,6 +31,6 @@ public interface WorkflowRunService {
 
   ResponseEntity<WorkflowRun> timeout(String workflowRunId, boolean taskRunTimeout);
 
-  ResponseEntity<WorkflowRunInsight> insights(Optional<Date> from, Optional<Date> to, Optional<List<String>> labels, Optional<List<String>> status);
+  ResponseEntity<WorkflowRunInsight> insights(Optional<Date> from, Optional<Date> to, Optional<List<String>> labels, Optional<List<String>> status, Optional<List<String>> workflows);
   
 }

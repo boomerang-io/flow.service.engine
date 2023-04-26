@@ -44,7 +44,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Retrieve a specific Workflow Run.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<WorkflowRun> getTaskRuns(
+  public ResponseEntity<WorkflowRun> getWorkflowRuns(
       @Parameter(name = "workflowRunId",
       description = "ID of Workflow Run",
       required = true) @PathVariable String workflowRunId,
@@ -68,9 +68,12 @@ public class WorkflowRunV1Controller {
       @Parameter(name = "phase",
       description = "List of phases to filter for. Defaults to all.", example = "completed,finalized",
       required = false) @RequestParam(required = false)  Optional<List<String>> phase,
-      @Parameter(name = "ids",
-      description = "List of WorkflowRun IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
-      required = false) @RequestParam(required = false)  Optional<List<String>> ids,
+      @Parameter(name = "workflowruns",
+      description = "List of Workflowrun IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
+      required = false) @RequestParam(required = false)  Optional<List<String>> workflowruns,
+      @Parameter(name = "workflows",
+      description = "List of Workflow IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
+      required = false) @RequestParam(required = false)  Optional<List<String>> workflows,
       @Parameter(name = "limit", description = "Result Size", example = "10",
           required = true) @RequestParam(defaultValue = "10") int limit,
       @Parameter(name = "page", description = "Page Number", example = "0",
@@ -90,7 +93,7 @@ public class WorkflowRunV1Controller {
     if (toDate.isPresent()) {
       to = Optional.of(new Date(toDate.get()));
     }
-    return workflowRunService.query(from, to, pageable, labels, status, phase, ids);
+    return workflowRunService.query(from, to, pageable, labels, status, phase, workflowruns, workflows);
   }
   
   @GetMapping(value = "/insight")
@@ -101,9 +104,12 @@ public class WorkflowRunV1Controller {
       @Parameter(name = "labels",
       description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
       required = false) @RequestParam(required = false) Optional<List<String>> labels,
-      @Parameter(name = "ids",
-      description = "List of WorkflowRun IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
-      required = false) @RequestParam(required = false)  Optional<List<String>> ids,
+      @Parameter(name = "workflowruns",
+      description = "List of Workflowrun IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
+      required = false) @RequestParam(required = false)  Optional<List<String>> workflowruns,
+      @Parameter(name = "workflows",
+      description = "List of Workflow IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
+      required = false) @RequestParam(required = false)  Optional<List<String>> workflows,
       @Parameter(name = "fromDate", description = "The unix timestamp / date to search from in milliseconds since epoch", example = "1677589200000",
       required = false) @RequestParam Optional<Long> fromDate,
       @Parameter(name = "toDate", description = "The unix timestamp / date to search to in milliseconds since epoch", example = "1680267600000",
@@ -118,7 +124,7 @@ public class WorkflowRunV1Controller {
       to = Optional.of(new Date(toDate.get()));
     }
 
-    return workflowRunService.insights(from, to, labels, ids);
+    return workflowRunService.insights(from, to, labels, workflowruns, workflows);
   }
 
   @PostMapping(value = "/submit")
