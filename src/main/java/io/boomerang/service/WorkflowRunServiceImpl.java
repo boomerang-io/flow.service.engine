@@ -44,6 +44,7 @@ import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.WorkflowRunSubmitRequest;
+import io.boomerang.model.WorkflowRunSummary;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.WorkflowStatus;
@@ -94,7 +95,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
   @Override
   public Page<WorkflowRun> query(Optional<Date> from, Optional<Date> to, Optional<Integer> queryLimit, Optional<Integer> queryPage, Optional<Direction> querySort, Optional<List<String>> queryLabels,
-      Optional<List<String>> queryStatus, Optional<List<String>> queryPhase, Optional<List<String>> queryIds) {
+      Optional<List<String>> queryStatus, Optional<List<String>> queryPhase, Optional<List<String>> queryWorkflowRuns, Optional<List<String>> queryWorkflows) {
     Pageable pageable = Pageable.unpaged();
     final Sort sort = Sort.by(new Order(querySort.orElse(Direction.ASC), "creationDate"));
     if (queryLimit.isPresent()) {
@@ -150,8 +151,13 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       }
     }
     
-    if (queryIds.isPresent()) {
-      Criteria criteria = Criteria.where("id").in(queryIds.get());
+    if (queryWorkflowRuns.isPresent()) {
+      Criteria criteria = Criteria.where("id").in(queryWorkflowRuns.get());
+      criteriaList.add(criteria);
+    }
+    
+    if (queryWorkflows.isPresent()) {
+      Criteria criteria = Criteria.where("workflowRef").in(queryWorkflows.get());
       criteriaList.add(criteria);
     }
 
@@ -184,7 +190,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
    */
   @Override
   public ResponseEntity<WorkflowRunInsight> insights(Optional<Date> from, Optional<Date> to,
-      Optional<List<String>> labels, Optional<List<String>> ids) {
+      Optional<List<String>> labels, Optional<List<String>> queryWorkflowRuns, Optional<List<String>> queryWorkflows) {
     List<Criteria> criteriaList = new ArrayList<>();
 
     if (from.isPresent() && !to.isPresent()) {
@@ -215,8 +221,13 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       });
     }
     
-    if (ids.isPresent()) {
-      Criteria criteria = Criteria.where("id").in(ids.get());
+    if (queryWorkflowRuns.isPresent()) {
+      Criteria criteria = Criteria.where("id").in(queryWorkflowRuns.get());
+      criteriaList.add(criteria);
+    }
+    
+    if (queryWorkflows.isPresent()) {
+      Criteria criteria = Criteria.where("workflowRef").in(queryWorkflows.get());
       criteriaList.add(criteria);
     }
 
@@ -250,6 +261,9 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     } else {
       wfRunInsight.setMedianDuration(0L);
     }
+    List<WorkflowRunSummary> runs = new LinkedList<>();
+    wfRunEntities.forEach(e -> runs.add(new WorkflowRunSummary(e)));
+    wfRunInsight.setRuns(runs);
     return ResponseEntity.ok(wfRunInsight);
   }
 

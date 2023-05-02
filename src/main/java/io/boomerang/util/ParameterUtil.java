@@ -11,6 +11,7 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ParamSpec;
 import io.boomerang.model.RunParam;
+import io.boomerang.model.enums.ParamType;
 
 public class ParameterUtil {
   
@@ -22,7 +23,7 @@ public class ParameterUtil {
    * @return the parameter list
    */
   public static List<RunParam> paramSpecToRunParam(List<ParamSpec> parameterList) {
-    return parameterList.stream().map(p -> new RunParam(p.getName(), p.getDefaultValue()))
+    return parameterList.stream().map(p -> new RunParam(p.getName(), p.getDefaultValue(), p.getType() != null ? p.getType() : ParamType.string))
         .collect(Collectors.toList());
   }
 

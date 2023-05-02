@@ -6,53 +6,37 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public abstract class AbstractConfigurationProperty {
+public class AbstractParam {
 
-  @JsonProperty("description")
-  private String description;
-
-  @JsonProperty("key")
   private String key;
-
-  @JsonProperty("label")
+  private String description;
   private String label;
-
-  @JsonProperty("type")
   private String type;
-
-  @JsonProperty("minValueLength")
   private Integer minValueLength;
-
-  @JsonProperty("maxValueLength")
   private Integer maxValueLength;
-
-  @JsonProperty("options")
   private List<KeyValuePair> options;
-
   private Boolean required;
   private String placeholder;
-
   @JsonProperty("helperText")
   private String helpertext;
-
-	private Boolean hiddenValue;
-
-	public Boolean isHiddenValue() {
-		return hiddenValue;
-	}
-
-	public void setHiddenValue(Boolean hiddenValue) {
-		this.hiddenValue = hiddenValue;
-	}
-
-	private String language;
-	private Boolean disabled;
-  private Object defaultValue;
-
-  private Object value;
-
+  private String language;
+  private Boolean disabled;
+  private String defaultValue;
+  private String value;
+  private List<String> values;
   private boolean readOnly;
+  private Boolean hiddenValue;
 
+  public AbstractParam() {
+  }
+
+  public Boolean isHiddenValue() {
+    return hiddenValue;
+  }
+
+  public void setHiddenValue(Boolean hiddenValue) {
+    this.hiddenValue = hiddenValue;
+  }
 
   public boolean isReadOnly() {
     return readOnly;
@@ -150,30 +134,36 @@ public abstract class AbstractConfigurationProperty {
     this.disabled = disabled;
   }
 
-  public Object getValue() {
+  public String getValue() {
     return value;
   }
 
-  public void setValue(Object value) {
+  public void setValue(String value) {
     this.value = value;
+  }
+
+  public List<String> getValues() {
+    return values;
+  }
+
+  public void setValues(List<String> values) {
+    this.values = values;
   }
 
   @JsonIgnore
   public boolean getBooleanValue() {
     if ("boolean".equals(this.getType())) {
-      return Boolean.parseBoolean(this.getValue().toString());
+      return Boolean.parseBoolean(this.getValue());
     } else {
       throw new IllegalArgumentException("Configuration object is not of type boolean.");
     }
   }
-  
-  //TODO: add extra helper value methods
 
-  public Object getDefaultValue() {
+  public String getDefaultValue() {
     return defaultValue;
   }
 
-  public void setDefaultValue(Object defaultValue) {
+  public void setDefaultValue(String defaultValue) {
     this.defaultValue = defaultValue;
   }
 

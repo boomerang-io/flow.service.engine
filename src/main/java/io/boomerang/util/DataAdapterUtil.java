@@ -2,7 +2,7 @@ package io.boomerang.util;
 
 import java.util.List;
 import java.util.Optional;
-import io.boomerang.model.AbstractConfigurationProperty;
+import io.boomerang.model.AbstractParam;
 
 public class DataAdapterUtil {
 	public enum FieldType {
@@ -29,11 +29,11 @@ public class DataAdapterUtil {
 	 * @param fieldType
 	 * @return
 	 */
-	public static List<? extends AbstractConfigurationProperty> filterValueByFieldType(
-			List<? extends AbstractConfigurationProperty> properties, boolean isDefaultValue, String fieldType) {
+	public static List<? extends AbstractParam> filterValueByFieldType(
+			List<? extends AbstractParam> properties, boolean isDefaultValue, String fieldType) {
 		if (properties == null || fieldType == null)
 			return null;
-		Optional<? extends AbstractConfigurationProperty> passProp = properties.stream()
+		Optional<? extends AbstractParam> passProp = properties.stream()
 				.filter(f -> fieldType.equals(f.getType())
 						&& (isDefaultValue ? f.getDefaultValue() != null : f.getValue() != null))
 				.findAny();

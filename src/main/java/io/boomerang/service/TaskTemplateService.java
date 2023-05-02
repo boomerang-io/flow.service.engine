@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import io.boomerang.data.entity.TaskTemplateEntity;
+import io.boomerang.data.model.WorkflowRevisionTask;
 import io.boomerang.model.TaskTemplate;
 
 public interface TaskTemplateService {
@@ -14,32 +15,14 @@ public interface TaskTemplateService {
 
   ResponseEntity<TaskTemplate> create(TaskTemplate taskTemplate);
 
-  Page<TaskTemplateEntity> query(Optional<Integer> queryLimit, Optional<Integer> queryPage,
-      Optional<Direction> querySort, Optional<List<String>> labels, Optional<List<String>> status);
+  Page<TaskTemplate> query(Optional<Integer> queryLimit, Optional<Integer> queryPage,
+      Optional<Direction> querySort, Optional<List<String>> labels, Optional<List<String>> status, Optional<List<String>> queryNames);
 
   ResponseEntity<TaskTemplate> apply(TaskTemplate taskTemplate, boolean replace);
 
-//  TektonTask getTaskTemplateYamlWithId(String id);
-//  
-//  List<FlowTaskTemplate> getAllTaskTemplates(TemplateScope scope, String teamId);
-//
-//  FlowTaskTemplate insertTaskTemplate(FlowTaskTemplate flowTaskTemplateEntity);
-//
-//  FlowTaskTemplate updateTaskTemplate(FlowTaskTemplate flowTaskTemplateEntity);
-//
-//  void deleteTaskTemplateWithId(String id);
-//
-//  void activateTaskTemplate(String id);
-//
-//  TektonTask getTaskTemplateYamlWithIdAndRevision(String id, Integer revisionNumber);
-//
-//  FlowTaskTemplate insertTaskTemplateYaml(TektonTask tektonTask,TemplateScope scope, String teamId);
-//
-//  FlowTaskTemplate updateTaskTemplateWithYaml(String id, TektonTask tektonTask);
-//
-//  FlowTaskTemplate updateTaskTemplateWithYaml(String id, TektonTask tektonTask, Integer revision, String comment);
-//
-//  List<FlowTaskTemplate> getAllTaskTemplatesForWorkfow(String workflowId);
-//
-//  FlowTaskTemplate validateTaskTemplate(TektonTask tektonTask);
+  void disable(String name);
+
+  void enable(String name);
+
+  Optional<TaskTemplateEntity> retrieveAndValidateTaskTemplate(WorkflowRevisionTask wfRevisionTask);
 }

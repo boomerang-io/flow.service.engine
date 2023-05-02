@@ -19,13 +19,11 @@ public interface WorkflowService {
 
   ResponseEntity<Workflow> apply(Workflow workflow, Boolean replace);
 
-  ResponseEntity<?> enable(String workflowId);
+  void enable(String workflowId);
 
-  ResponseEntity<?> disable(String workflowId);
+  void disable(String workflowId);
 
-  ResponseEntity<?> delete(String workflowId);
-//
-//  WorkflowSummary updateWorkflow(WorkflowSummary summary);
+  void delete(String workflowId);
 //
 //  WorkflowSummary updateWorkflowProperties(String workflowId, List<WorkflowProperty> properties);
 //

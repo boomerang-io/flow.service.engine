@@ -1,4 +1,4 @@
-package io.boomerang.data.model;
+package io.boomerang.model.enums;
 
 public enum TaskDeletionEnum {
 	Never, OnSuccess, Always

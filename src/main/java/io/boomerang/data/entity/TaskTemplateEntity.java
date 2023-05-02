@@ -1,4 +1,4 @@
-package io.boomerang.data.entity;
+ package io.boomerang.data.entity;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -9,11 +9,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.data.model.TaskTemplateSpec;
-import io.boomerang.data.model.TaskTemplateStatus;
+import io.boomerang.model.AbstractParam;
 import io.boomerang.model.ChangeLog;
-import io.boomerang.model.TaskTemplateConfig;
-import io.boomerang.model.enums.TaskTemplateScope;
+import io.boomerang.model.TaskTemplateSpec;
+import io.boomerang.model.enums.TaskTemplateStatus;
 import io.boomerang.model.enums.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -26,6 +25,7 @@ public class TaskTemplateEntity {
   private String name;
   private String displayName;
   private String description;
+  private TaskTemplateStatus status = TaskTemplateStatus.active;
   private Map<String, String> labels = new HashMap<>();
   private Map<String, Object> annotations = new HashMap<>();
   private Integer version;
@@ -34,11 +34,9 @@ public class TaskTemplateEntity {
   private String category;
   private TaskType type;
   private TaskTemplateSpec spec;
-  private TaskTemplateStatus status;
-  private List<TaskTemplateConfig> config;
+  private List<AbstractParam> config;
   private String icon;
   private boolean verified;
-  private TaskTemplateScope scope = TaskTemplateScope.global;
 
   public TaskTemplateEntity() {
     // Do nothing
@@ -156,19 +154,11 @@ public class TaskTemplateEntity {
     this.verified = verified;
   }
 
-  public TaskTemplateScope getScope() {
-    return scope;
-  }
-
-  public void setScope(TaskTemplateScope scope) {
-    this.scope = scope;
-  }
-
-  public List<TaskTemplateConfig> getConfig() {
+  public List<AbstractParam> getConfig() {
     return config;
   }
 
-  public void setConfig(List<TaskTemplateConfig> config) {
+  public void setConfig(List<AbstractParam> config) {
     this.config = config;
   }
 

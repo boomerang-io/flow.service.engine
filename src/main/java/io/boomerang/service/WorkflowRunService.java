@@ -21,10 +21,11 @@ public interface WorkflowRunService {
 
   ResponseEntity<WorkflowRun> finalize(String workflowRunId);
 
-  Page<WorkflowRun> query(Optional<Date> from, Optional<Date> to, Optional<Integer> queryLimit,
-      Optional<Integer> queryPage, Optional<Direction> querySort,
+  Page<WorkflowRun> query(Optional<Date> from, Optional<Date> to,
+      Optional<Integer> queryLimit, Optional<Integer> queryPage, Optional<Direction> querySort,
       Optional<List<String>> queryLabels, Optional<List<String>> queryStatus,
-      Optional<List<String>> queryPhase, Optional<List<String>> queryIds);
+      Optional<List<String>> queryPhase, Optional<List<String>> queryWorkflowRuns,
+      Optional<List<String>> queryWorkflows);
 
   ResponseEntity<WorkflowRun> cancel(String workflowRunId);
 
@@ -32,6 +33,6 @@ public interface WorkflowRunService {
 
   ResponseEntity<WorkflowRun> timeout(String workflowRunId, boolean taskRunTimeout);
 
-  ResponseEntity<WorkflowRunInsight> insights(Optional<Date> from, Optional<Date> to, Optional<List<String>> labels, Optional<List<String>> status);
+  ResponseEntity<WorkflowRunInsight> insights(Optional<Date> from, Optional<Date> to, Optional<List<String>> labels, Optional<List<String>> status, Optional<List<String>> workflows);
   
 }

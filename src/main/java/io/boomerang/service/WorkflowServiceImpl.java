@@ -62,6 +62,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
   @Autowired
   private MongoTemplate mongoTemplate;
+  
+  @Autowired
+  private TaskTemplateService taskTemplateService;
 
   @Override
   public ResponseEntity<Workflow> get(String workflowId, Optional<Integer> version, boolean withTasks) {
@@ -238,23 +241,8 @@ public class WorkflowServiceImpl implements WorkflowService {
       if (!TaskType.start.equals(wfRevisionTask.getType())
           && !TaskType.end.equals(wfRevisionTask.getType())) {
 
-        //Should separate into a shared utility with DAGUtility:115
-        String templateRef = wfRevisionTask.getTemplateRef();
-        Optional<TaskTemplateEntity> taskTemplate;
-        if (wfRevisionTask.getTemplateVersion() != null) {
-          taskTemplate = taskTemplateRepository.findByNameAndVersion(templateRef,
-              wfRevisionTask.getTemplateVersion());
-          if (taskTemplate.isEmpty()) {
-            throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
-                wfRevisionTask.getTemplateVersion());
-          }
-        } else {
-          taskTemplate = taskTemplateRepository.findByNameAndLatestVersion(templateRef);
-          if (taskTemplate.isEmpty()) {
-            throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
-                "latest");
-          }
-        }
+        //Shared utility with DAGUtility
+        taskTemplateService.retrieveAndValidateTaskTemplate(wfRevisionTask);
       }
     }
     return wfRevisionEntity;
@@ -332,36 +320,33 @@ public class WorkflowServiceImpl implements WorkflowService {
    * Marks the Workflow as 'active' status.
    */
   @Override
-  public ResponseEntity<?> enable(String workflowId) {
+  public void enable(String workflowId) {
     if (workflowId == null || workflowId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
     updateWorkflowStatus(workflowId, WorkflowStatus.active);
-    return ResponseEntity.noContent().build();
   }
   
   /*
    * Marks the Workflow as 'inactive' status.
    */
   @Override
-  public ResponseEntity<?> disable(String workflowId) {
+  public void disable(String workflowId) {
     if (workflowId == null || workflowId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
     updateWorkflowStatus(workflowId, WorkflowStatus.inactive);
-    return ResponseEntity.noContent().build();
   }
   
   /*
    * Marks the Workflow as 'deleted' status. This allows WorkflowRuns to still be visualised.
    */
   @Override
-  public ResponseEntity<?> delete(String workflowId) {
+  public void delete(String workflowId) {
     if (workflowId == null || workflowId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
     updateWorkflowStatus(workflowId, WorkflowStatus.deleted);
-    return ResponseEntity.noContent().build();
   }
 
   private void areTemplateUpgradesAvailable(WorkflowRevisionEntity wfRevisionEntity,
@@ -380,6 +365,10 @@ public class WorkflowServiceImpl implements WorkflowService {
   private void updateWorkflowStatus(String workflowId, WorkflowStatus workflowStatus) {
     try {
       WorkflowEntity wfEntity = workflowRepository.findById(workflowId).get();
+      if (WorkflowStatus.deleted.equals(wfEntity.getStatus())) {
+        //TODO: better status to say invalid status. Once deleted you can't move to not deleted.
+        throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
+      }
       wfEntity.setStatus(workflowStatus);
       workflowRepository.save(wfEntity);
     } catch (Exception e) {
