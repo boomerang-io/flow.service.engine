@@ -94,15 +94,18 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   }
 
   @Override
-  public Page<WorkflowRun> query(Optional<Date> from, Optional<Date> to, Optional<Integer> queryLimit, Optional<Integer> queryPage, Optional<Direction> querySort, Optional<List<String>> queryLabels,
-      Optional<List<String>> queryStatus, Optional<List<String>> queryPhase, Optional<List<String>> queryWorkflowRuns, Optional<List<String>> queryWorkflows) {
+  public Page<WorkflowRun> query(Optional<Date> from, Optional<Date> to,
+      Optional<Integer> queryLimit, Optional<Integer> queryPage, Optional<Direction> querySort,
+      Optional<List<String>> queryLabels, Optional<List<String>> queryStatus,
+      Optional<List<String>> queryPhase, Optional<List<String>> queryWorkflowRuns,
+      Optional<List<String>> queryWorkflows) {
     Pageable pageable = Pageable.unpaged();
     final Sort sort = Sort.by(new Order(querySort.orElse(Direction.ASC), "creationDate"));
     if (queryLimit.isPresent()) {
       pageable = PageRequest.of(queryPage.get(), queryLimit.get(), sort);
     }
     List<Criteria> criteriaList = new ArrayList<>();
-    
+
     if (from.isPresent() && !to.isPresent()) {
       Criteria criteria = Criteria.where("creationDate").gte(from.get());
       criteriaList.add(criteria);
@@ -114,7 +117,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       criteriaList.add(criteria);
     }
 
-    //TODO add the ability to OR labels not just AND
+    // TODO add the ability to OR labels not just AND
     if (queryLabels.isPresent()) {
       queryLabels.get().stream().forEach(l -> {
         String decodedLabel = "";
@@ -150,12 +153,12 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "phase");
       }
     }
-    
+
     if (queryWorkflowRuns.isPresent()) {
       Criteria criteria = Criteria.where("id").in(queryWorkflowRuns.get());
       criteriaList.add(criteria);
     }
-    
+
     if (queryWorkflows.isPresent()) {
       Criteria criteria = Criteria.where("workflowRef").in(queryWorkflows.get());
       criteriaList.add(criteria);
@@ -172,14 +175,13 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     } else {
       query.with(sort);
     }
-    
+
     List<WorkflowRunEntity> wfRunEntities = mongoTemplate.find(query, WorkflowRunEntity.class);
-    
+
     List<WorkflowRun> wfRuns = new LinkedList<>();
     wfRunEntities.forEach(e -> wfRuns.add(new WorkflowRun(e)));
 
-    Page<WorkflowRun> pages = PageableExecutionUtils.getPage(
-        wfRuns, pageable,
+    Page<WorkflowRun> pages = PageableExecutionUtils.getPage(wfRuns, pageable,
         () -> mongoTemplate.count(query, WorkflowRunEntity.class));
 
     return pages;
@@ -190,7 +192,8 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
    */
   @Override
   public ResponseEntity<WorkflowRunInsight> insights(Optional<Date> from, Optional<Date> to,
-      Optional<List<String>> labels, Optional<List<String>> queryWorkflowRuns, Optional<List<String>> queryWorkflows) {
+      Optional<List<String>> labels, Optional<List<String>> queryWorkflowRuns,
+      Optional<List<String>> queryWorkflows) {
     List<Criteria> criteriaList = new ArrayList<>();
 
     if (from.isPresent() && !to.isPresent()) {
@@ -204,7 +207,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       criteriaList.add(criteria);
     }
 
-    //TODO add the ability to OR labels not just AND
+    // TODO add the ability to OR labels not just AND
     if (labels.isPresent()) {
       labels.get().stream().forEach(l -> {
         String decodedLabel = "";
@@ -220,12 +223,12 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         criteriaList.add(labelsCriteria);
       });
     }
-    
+
     if (queryWorkflowRuns.isPresent()) {
       Criteria criteria = Criteria.where("id").in(queryWorkflowRuns.get());
       criteriaList.add(criteria);
     }
-    
+
     if (queryWorkflows.isPresent()) {
       Criteria criteria = Criteria.where("workflowRef").in(queryWorkflows.get());
       criteriaList.add(criteria);
@@ -237,9 +240,9 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       allCriteria.andOperator(criteriaArray);
     }
     Query query = new Query(allCriteria);
-    
+
     List<WorkflowRunEntity> wfRunEntities = mongoTemplate.find(query, WorkflowRunEntity.class);
-    
+
     // Collect the Stats
     Long totalDuration = 0L;
     Long duration;
@@ -249,12 +252,13 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       if (duration != null) {
         totalDuration += duration;
       }
-//      addActivityDetail(executions, activity);
+      // addActivityDetail(executions, activity);
     }
-    
+
     WorkflowRunInsight wfRunInsight = new WorkflowRunInsight();
     wfRunInsight.setTotalRuns(Long.valueOf(wfRunEntities.size()));
-    wfRunInsight.setConcurrentRuns(wfRunEntities.stream().filter(run -> RunPhase.running.equals(run.getPhase())).count());
+    wfRunInsight.setConcurrentRuns(
+        wfRunEntities.stream().filter(run -> RunPhase.running.equals(run.getPhase())).count());
     wfRunInsight.setTotalDuration(totalDuration);
     if (wfRunEntities.size() != 0) {
       wfRunInsight.setMedianDuration(totalDuration / wfRunEntities.size());
@@ -270,7 +274,8 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   /*
    * Queues the Workflow to be executed (and optionally starts the execution)
    * 
-   * TODO: implement Triggers && Status - triggers may only be a Workflow service concern (same as Relationship)
+   * TODO: implement Triggers && Status - triggers may only be a Workflow service concern (same as
+   * Relationship)
    */
   @Override
   public ResponseEntity<WorkflowRun> submit(WorkflowRunSubmitRequest request, boolean start) {
@@ -278,23 +283,24 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     if (request == null || request.getWorkflowRef() == null || request.getWorkflowRef().isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
-    final Optional<WorkflowEntity> optWorkflow = workflowRepository.findById(request.getWorkflowRef());
+    final Optional<WorkflowEntity> optWorkflow =
+        workflowRepository.findById(request.getWorkflowRef());
     WorkflowEntity workflow = new WorkflowEntity();
     if (optWorkflow.isPresent()) {
       workflow = optWorkflow.get();
     } else {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
-    
+
     // Ensure Workflow is active to be able to be executed
     if (!WorkflowStatus.active.equals(workflow.getStatus())) {
       throw new BoomerangException(BoomerangError.WORKFLOW_NOT_ACTIVE);
     }
-    
+
     Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity;
     if (request.getWorkflowVersion() != null) {
-      optWorkflowRevisionEntity =
-          workflowRevisionRepository.findByWorkflowRefAndVersion(request.getWorkflowRef(), request.getWorkflowVersion());
+      optWorkflowRevisionEntity = workflowRevisionRepository
+          .findByWorkflowRefAndVersion(request.getWorkflowRef(), request.getWorkflowVersion());
       if (!optWorkflowRevisionEntity.isPresent()) {
         throw new BoomerangException(BoomerangError.WORKFLOW_REVISION_NOT_FOUND);
       }
@@ -329,7 +335,8 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         wfRunEntity.putAnnotations(request.getAnnotations());
       }
       if (request.getParams() != null && !request.getParams().isEmpty()) {
-        wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(), request.getParams()));
+        wfRunEntity
+            .setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(), request.getParams()));
       }
       if (request.getWorkspaces() != null && !request.getWorkspaces().isEmpty()) {
         wfRunEntity.getWorkspaces().addAll(request.getWorkspaces());
@@ -346,12 +353,12 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       } else {
         wfRunEntity.setTrigger(request.getTrigger());
       }
-      //Add System Generated Annotations
+      // Add System Generated Annotations
       Map<String, Object> annotations = new HashMap<>();
       annotations.put("io.boomerang/generation", "4");
       annotations.put("io.boomerang/kind", "WorkflowRun");
       if (start) {
-        //Add annotation to know this was created with ?start=true
+        // Add annotation to know this was created with ?start=true
         wfRunEntity.getAnnotations().put("io.boomerang/submit-with-start", "true");
       }
       wfRunEntity.getAnnotations().putAll(annotations);
@@ -385,15 +392,15 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         logPayload(optRunRequest.get());
         wfRunEntity.putLabels(optRunRequest.get().getLabels());
         wfRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
-        wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(), optRunRequest.get().getParams()));
+        wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(),
+            optRunRequest.get().getParams()));
         wfRunEntity.getWorkspaces().addAll(optRunRequest.get().getWorkspaces());
         workflowRunRepository.save(wfRunEntity);
       }
       workflowExecutionClient.start(workflowExecutionService, wfRunEntity);
-      
-      //Retrieve the refreshed status
-      WorkflowRunEntity updatedWfRunEntity = 
-          workflowRunRepository.findById(workflowRunId).get();
+
+      // Retrieve the refreshed status
+      WorkflowRunEntity updatedWfRunEntity = workflowRunRepository.findById(workflowRunId).get();
       final WorkflowRun response = new WorkflowRun(updatedWfRunEntity);
       return ResponseEntity.ok(response);
     } else {
@@ -449,7 +456,8 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         workflowRunRepository.findById(workflowRunId);
     if (optWfRunEntity.isPresent()) {
       WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
-      wfRunEntity.getAnnotations().put("io.boomerang/timeout-cause", taskRunTimeout ? "TaskRun" : "WorkflowRun");
+      wfRunEntity.getAnnotations().put("io.boomerang/timeout-cause",
+          taskRunTimeout ? "TaskRun" : "WorkflowRun");
       wfRunEntity.setStatus(RunStatus.timedout);
       workflowRunRepository.save(wfRunEntity);
       workflowExecutionClient.timeout(workflowExecutionService, wfRunEntity);
@@ -481,7 +489,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       if (!wfRunEntity.getAnnotations().containsKey("io.boomerang/retry-of")) {
         wfRunEntity.getAnnotations().put("io.boomerang/retry-of", workflowRunId);
         wfRunEntity.getLabels().put("io.boomerang/retry-of", workflowRunId);
-      }      
+      }
       workflowRunRepository.save(wfRunEntity);
 
       workflowExecutionClient.queue(workflowExecutionService, wfRunEntity);

@@ -88,7 +88,7 @@ public class WorkflowRunV1Controller {
     if (toDate.isPresent()) {
       to = Optional.of(new Date(toDate.get()));
     }
-    return workflowRunService.query(from, to, limit, page, sort, labels, status, workflowruns, workflows);
+    return workflowRunService.query(from, to, limit, page, sort, labels, status, phase, workflowruns, workflows);
   }
   
   @GetMapping(value = "/insight")
