@@ -4,11 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
-import org.springframework.data.domain.Sort.Order;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -67,12 +63,12 @@ public class WorkflowV1Controller {
       description = "List of Workflow IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
       required = false) @RequestParam(required = false)  Optional<List<String>> ids,
       @Parameter(name = "limit", description = "Result Size", example = "10",
-          required = true) @RequestParam(defaultValue = "10") int limit,
+          required = true) @RequestParam(required = false) Optional<Integer> limit,
       @Parameter(name = "page", description = "Page Number", example = "0",
-          required = true) @RequestParam(defaultValue = "0") int page) {
-    final Sort sort = Sort.by(new Order(Direction.ASC, "creationDate"));
-    final Pageable pageable = PageRequest.of(page, limit, sort);
-    return workflowService.query(pageable, labels, status, ids);
+          required = true) @RequestParam(defaultValue = "0") Optional<Integer> page,
+      @Parameter(name = "sort", description = "Ascending (ASC) or Descending (DESC) sort on creationDate", example = "ASC",
+      required = true) @RequestParam(defaultValue = "ASC") Optional<Direction> sort) {
+    return workflowService.query(limit, page, sort, labels, status, ids);
   }
 
   @PostMapping(value = "/")

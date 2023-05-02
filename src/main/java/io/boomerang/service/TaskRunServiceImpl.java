@@ -3,6 +3,8 @@ package io.boomerang.service;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -12,7 +14,11 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -66,10 +72,25 @@ public class TaskRunServiceImpl implements TaskRunService {
   }
 
   @Override
-  //TODO: change this to return TaskRuns
-  public Page<TaskRunEntity> query(Pageable pageable, Optional<List<String>> queryLabels,
+  public Page<TaskRun> query(Optional<Date> from, Optional<Date> to, Optional<Integer> queryLimit, Optional<Integer> queryPage, Optional<Direction> querySort, Optional<List<String>> queryLabels,
       Optional<List<String>> queryStatus, Optional<List<String>> queryPhase) {
+    Pageable pageable = Pageable.unpaged();
+    final Sort sort = Sort.by(new Order(querySort.orElse(Direction.ASC), "creationDate"));
+    if (queryLimit.isPresent()) {
+      pageable = PageRequest.of(queryPage.get(), queryLimit.get(), sort);
+    }
     List<Criteria> criteriaList = new ArrayList<>();
+    
+    if (from.isPresent() && !to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").gte(from.get());
+      criteriaList.add(criteria);
+    } else if (!from.isPresent() && to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").lt(to.get());
+      criteriaList.add(criteria);
+    } else if (from.isPresent() && to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").gte(from.get()).lt(to.get());
+      criteriaList.add(criteria);
+    }
 
     //TODO: centralize the checks in a common filter class
     if (queryLabels.isPresent()) {
@@ -113,10 +134,19 @@ public class TaskRunServiceImpl implements TaskRunService {
       allCriteria.andOperator(criteriaArray);
     }
     Query query = new Query(allCriteria);
-    query.with(pageable);
+    if (queryLimit.isPresent()) {
+      query.with(pageable);
+    } else {
+      query.with(sort);
+    }
+    
+    List<TaskRunEntity> taskRunEntities = mongoTemplate.find(query, TaskRunEntity.class);
+    
+    List<TaskRun> taskRuns = new LinkedList<>();
+    taskRunEntities.forEach(e -> taskRuns.add(new TaskRun(e)));
 
-    Page<TaskRunEntity> pages = PageableExecutionUtils.getPage(
-        mongoTemplate.find(query.with(pageable), TaskRunEntity.class), pageable,
+    Page<TaskRun> pages = PageableExecutionUtils.getPage(
+        taskRuns, pageable,
         () -> mongoTemplate.count(query, TaskRunEntity.class));
     
     return pages;

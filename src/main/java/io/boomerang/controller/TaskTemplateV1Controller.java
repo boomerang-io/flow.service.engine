@@ -62,12 +62,12 @@ public class TaskTemplateV1Controller {
       description = "List of statuses to filter for.", example = "inactive",
       required = false) @RequestParam(required = false, defaultValue = "active")  Optional<List<String>> status,
       @Parameter(name = "limit", description = "Result Size", example = "10",
-          required = true) @RequestParam(defaultValue = "10") int limit,
+          required = true) @RequestParam(required = false) Optional<Integer> limit,
       @Parameter(name = "page", description = "Page Number", example = "0",
-          required = true) @RequestParam(defaultValue = "0") int page) {
-    final Sort sort = Sort.by(new Order(Direction.ASC, "creationDate"));
-    final Pageable pageable = PageRequest.of(page, limit, sort);
-    return taskTemplateService.query(pageable, labels, status);
+          required = true) @RequestParam(defaultValue = "0") Optional<Integer> page,
+      @Parameter(name = "sort", description = "Ascending (ASC) or Descending (DESC) sort on creationDate", example = "ASC",
+      required = true) @RequestParam(defaultValue = "ASC") Optional<Direction> sort) {
+    return taskTemplateService.query(limit, page, sort, labels, status);
   }
 
   @PostMapping(value = "/")

@@ -3,7 +3,7 @@ package io.boomerang.service;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import io.boomerang.model.Workflow;
 
@@ -13,8 +13,9 @@ public interface WorkflowService {
 
   ResponseEntity<Workflow> create(Workflow workflow, boolean useId);
 
-  Page<Workflow> query(Pageable pageable, Optional<List<String>> labels,
-      Optional<List<String>> status, Optional<List<String>> ids);
+  Page<Workflow> query(Optional<Integer> queryLimit, Optional<Integer> queryPage,
+      Optional<Direction> querySort, Optional<List<String>> queryLabels,
+      Optional<List<String>> queryStatus, Optional<List<String>> queryIds);
 
   ResponseEntity<Workflow> apply(Workflow workflow, Boolean replace);
 

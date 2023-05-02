@@ -16,7 +16,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -89,8 +93,13 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   }
 
   @Override
-  public Page<WorkflowRun> query(Optional<Date> from, Optional<Date> to, Pageable pageable, Optional<List<String>> queryLabels,
+  public Page<WorkflowRun> query(Optional<Date> from, Optional<Date> to, Optional<Integer> queryLimit, Optional<Integer> queryPage, Optional<Direction> querySort, Optional<List<String>> queryLabels,
       Optional<List<String>> queryStatus, Optional<List<String>> queryPhase, Optional<List<String>> queryIds) {
+    Pageable pageable = Pageable.unpaged();
+    final Sort sort = Sort.by(new Order(querySort.orElse(Direction.ASC), "creationDate"));
+    if (queryLimit.isPresent()) {
+      pageable = PageRequest.of(queryPage.get(), queryLimit.get(), sort);
+    }
     List<Criteria> criteriaList = new ArrayList<>();
     
     if (from.isPresent() && !to.isPresent()) {
@@ -152,9 +161,13 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       allCriteria.andOperator(criteriaArray);
     }
     Query query = new Query(allCriteria);
-    query.with(pageable);
+    if (queryLimit.isPresent()) {
+      query.with(pageable);
+    } else {
+      query.with(sort);
+    }
     
-    List<WorkflowRunEntity> wfRunEntities = mongoTemplate.find(query.with(pageable), WorkflowRunEntity.class);
+    List<WorkflowRunEntity> wfRunEntities = mongoTemplate.find(query, WorkflowRunEntity.class);
     
     List<WorkflowRun> wfRuns = new LinkedList<>();
     wfRunEntities.forEach(e -> wfRuns.add(new WorkflowRun(e)));

@@ -1,9 +1,10 @@
 package io.boomerang.service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.model.TaskRun;
@@ -12,8 +13,10 @@ import io.boomerang.model.TaskRunStartRequest;
 
 public interface TaskRunService {
 
-  Page<TaskRunEntity> query(Pageable pageable, Optional<List<String>> labels,
-      Optional<List<String>> status, Optional<List<String>> phase);
+  Page<TaskRun> query(Optional<Date> from, Optional<Date> to, Optional<Integer> queryLimit,
+      Optional<Integer> queryPage, Optional<Direction> querySort,
+      Optional<List<String>> queryLabels, Optional<List<String>> queryStatus,
+      Optional<List<String>> queryPhase);
 
   ResponseEntity<TaskRun> start(String taskRunId, Optional<TaskRunStartRequest> taskRunRequest);
 

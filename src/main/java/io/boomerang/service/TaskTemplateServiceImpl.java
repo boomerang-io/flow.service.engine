@@ -11,7 +11,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -147,8 +151,13 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   }
 
   @Override
-  public Page<TaskTemplateEntity> query(Pageable pageable, Optional<List<String>> labels,
+  public Page<TaskTemplateEntity> query(Optional<Integer> queryLimit, Optional<Integer> queryPage, Optional<Direction> querySort, Optional<List<String>> labels,
       Optional<List<String>> status) {
+    Pageable pageable = Pageable.unpaged();
+    final Sort sort = Sort.by(new Order(querySort.orElse(Direction.ASC), "creationDate"));
+    if (queryLimit.isPresent()) {
+      pageable = PageRequest.of(queryPage.get(), queryLimit.get(), sort);
+    }
       List<Criteria> criteriaList = new ArrayList<>();
 
       if (labels.isPresent()) {
@@ -183,10 +192,14 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
         allCriteria.andOperator(criteriaArray);
       }
       Query query = new Query(allCriteria);
-      query.with(pageable);
+      if (queryLimit.isPresent()) {
+        query.with(pageable);
+      } else {
+        query.with(sort);
+      }
 
       Page<TaskTemplateEntity> pages = PageableExecutionUtils.getPage(
-          mongoTemplate.find(query.with(pageable), TaskTemplateEntity.class), pageable,
+          mongoTemplate.find(query, TaskTemplateEntity.class), pageable,
           () -> mongoTemplate.count(query, TaskTemplateEntity.class));
 
       return pages;

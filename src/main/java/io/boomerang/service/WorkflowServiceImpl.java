@@ -12,7 +12,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -92,8 +96,13 @@ public class WorkflowServiceImpl implements WorkflowService {
   }
 
   @Override
-  public Page<Workflow> query(Pageable pageable, Optional<List<String>> queryLabels,
+  public Page<Workflow> query(Optional<Integer> queryLimit, Optional<Integer> queryPage, Optional<Direction> querySort, Optional<List<String>> queryLabels,
       Optional<List<String>> queryStatus, Optional<List<String>> queryIds) {
+    Pageable pageable = Pageable.unpaged();
+    final Sort sort = Sort.by(new Order(querySort.orElse(Direction.ASC), "creationDate"));
+    if (queryLimit.isPresent()) {
+      pageable = PageRequest.of(queryPage.get(), queryLimit.get(), sort);
+    }
     List<Criteria> criteriaList = new ArrayList<>();
 
     if (queryLabels.isPresent()) {
@@ -133,9 +142,13 @@ public class WorkflowServiceImpl implements WorkflowService {
       allCriteria.andOperator(criteriaArray);
     }
     Query query = new Query(allCriteria);
-    query.with(pageable);
+    if (queryLimit.isPresent()) {
+      query.with(pageable);
+    } else {
+      query.with(sort);
+    }
     
-    List<WorkflowEntity> wfEntities = mongoTemplate.find(query.with(pageable), WorkflowEntity.class);
+    List<WorkflowEntity> wfEntities = mongoTemplate.find(query, WorkflowEntity.class);
     
     List<Workflow> workflows = new LinkedList<>();
     wfEntities.forEach(e -> {

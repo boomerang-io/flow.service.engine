@@ -3,7 +3,7 @@ package io.boomerang.service;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import io.boomerang.data.entity.TaskTemplateEntity;
 import io.boomerang.model.TaskTemplate;
@@ -14,8 +14,8 @@ public interface TaskTemplateService {
 
   ResponseEntity<TaskTemplate> create(TaskTemplate taskTemplate);
 
-  Page<TaskTemplateEntity> query(Pageable pageable, Optional<List<String>> labels,
-      Optional<List<String>> status);
+  Page<TaskTemplateEntity> query(Optional<Integer> queryLimit, Optional<Integer> queryPage,
+      Optional<Direction> querySort, Optional<List<String>> labels, Optional<List<String>> status);
 
   ResponseEntity<TaskTemplate> apply(TaskTemplate taskTemplate, boolean replace);
 
