@@ -151,24 +151,27 @@ public class WorkflowServiceImpl implements WorkflowService {
       query.with(sort);
     }
     
+    LOGGER.debug("Query: " + query.toString());
     List<WorkflowEntity> wfEntities = mongoTemplate.find(query, WorkflowEntity.class);
     
     List<Workflow> workflows = new LinkedList<>();
     wfEntities.forEach(e -> {
+      LOGGER.debug("Workflow: " + e.toString());
       Optional<WorkflowRevisionEntity> optWfRevisionEntity =
           workflowRevisionRepository.findByWorkflowRefAndLatestVersion(e.getId());
       if (optWfRevisionEntity.isPresent()) {
+        LOGGER.debug("Revision: " + optWfRevisionEntity.get().toString());
         Workflow w = new Workflow(e, optWfRevisionEntity.get());
         // Determine if there are template upgrades available
         areTemplateUpgradesAvailable(optWfRevisionEntity.get(), w);
         workflows.add(w);
       }
     });
-
+    
     Page<Workflow> pages = PageableExecutionUtils.getPage(
         workflows, pageable,
         () -> mongoTemplate.count(query, WorkflowEntity.class));
-
+    LOGGER.debug(pages.toString());
     return pages;
   }
 

@@ -240,7 +240,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       allCriteria.andOperator(criteriaArray);
     }
     Query query = new Query(allCriteria);
-
+    LOGGER.debug("Query: " + query.toString());
     List<WorkflowRunEntity> wfRunEntities = mongoTemplate.find(query, WorkflowRunEntity.class);
 
     // Collect the Stats

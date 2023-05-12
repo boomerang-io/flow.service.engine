@@ -4,10 +4,10 @@ import java.util.List;
 
 public class WorkflowRunInsight {
 
-  private Long totalRuns;
-  private Long concurrentRuns;
-  private Long totalDuration;
-  private Long medianDuration;
+  private Long totalRuns = 0L;
+  private Long concurrentRuns = 0L;
+  private Long totalDuration = 0L;
+  private Long medianDuration = 0L;
   private List<WorkflowRunSummary> runs;
 
   public Long getTotalRuns() {
