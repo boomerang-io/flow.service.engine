@@ -56,9 +56,6 @@ public class WorkflowTemplateV1Controller {
       @Parameter(name = "labels",
       description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
       required = false) @RequestParam(required = false) Optional<List<String>> labels,
-      @Parameter(name = "status",
-      description = "List of statuses to filter for.", example = "inactive",
-      required = false) @RequestParam(required = false, defaultValue = "active")  Optional<List<String>> status,
       @Parameter(name = "names",
       description = "List of WorkflowTemplate names to filter for. Defaults to all.", example = "mongodb-email-query-results",
       required = false) @RequestParam(required = false)  Optional<List<String>> names,
@@ -68,7 +65,7 @@ public class WorkflowTemplateV1Controller {
           required = true) @RequestParam(defaultValue = "0") Optional<Integer> page,
       @Parameter(name = "sort", description = "Ascending (ASC) or Descending (DESC) sort on creationDate", example = "ASC",
       required = true) @RequestParam(defaultValue = "ASC") Optional<Direction> sort) {
-    return workflowTemplateService.query(limit, page, sort, labels, status, names);
+    return workflowTemplateService.query(limit, page, sort, labels, names);
   }
 
   @PostMapping(value = "/")

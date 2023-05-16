@@ -12,7 +12,7 @@ public interface WorkflowTemplateService {
 
   Page<WorkflowTemplate> query(Optional<Integer> queryLimit, Optional<Integer> queryPage,
       Optional<Direction> querySort, Optional<List<String>> queryLabels,
-      Optional<List<String>> queryStatus, Optional<List<String>> queryNames);
+      Optional<List<String>> queryNames);
 
   WorkflowTemplate create(WorkflowTemplate request);
 

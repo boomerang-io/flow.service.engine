@@ -89,7 +89,7 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
    */
   @Override
   public Page<WorkflowTemplate> query(Optional<Integer> queryLimit, Optional<Integer> queryPage, Optional<Direction> querySort, Optional<List<String>> queryLabels,
-      Optional<List<String>> queryStatus, Optional<List<String>> queryNames) {
+      Optional<List<String>> queryNames) {
     Pageable pageable = Pageable.unpaged();
     final Sort sort = Sort.by(new Order(querySort.orElse(Direction.ASC), "creationDate"));
     if (queryLimit.isPresent()) {
@@ -111,16 +111,6 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
               Criteria.where("labels." + label[0].replace(".", "#")).is(label[1]);
           criteriaList.add(labelsCriteria);
         });
-      }
-
-      if (queryStatus.isPresent()) {
-        if (queryStatus.get().stream()
-            .allMatch(q -> EnumUtils.isValidEnumIgnoreCase(WorkflowStatus.class, q))) {
-          Criteria criteria = Criteria.where("status").in(queryStatus.get());
-          criteriaList.add(criteria);
-        } else {
-          throw new BoomerangException(BoomerangError.QUERY_INVALID_FILTERS, "status");
-        }
       }
       
       if (queryNames.isPresent()) {
