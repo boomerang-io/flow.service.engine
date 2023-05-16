@@ -24,7 +24,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateEntity;
-import io.boomerang.data.model.WorkflowRevisionTask;
+import io.boomerang.data.model.WorkflowTask;
 import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
@@ -39,6 +39,8 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   private static final String CHANGELOG_INITIAL = "Initial Task Template";
   
   private static final String CHANGELOG_UPDATE = "Updated Task Template";
+  
+  private static final String NAME_REGEX = "^([0-9a-zA-Z\\\\-]+)$";
 
   @Autowired
   private TaskTemplateRepository taskTemplateRepository;
@@ -67,8 +69,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   @Override
   public ResponseEntity<TaskTemplate> create(TaskTemplate taskTemplate) {
     //Name Check
-    String regex = "^([0-9a-zA-Z\\-]+)$";
-    if (!taskTemplate.getName().matches(regex)) {
+    if (!taskTemplate.getName().matches(NAME_REGEX)) {
       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, taskTemplate.getName());
     }
     
@@ -108,8 +109,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   @Override
   public ResponseEntity<TaskTemplate> apply(TaskTemplate taskTemplate, boolean replace) {
     //Name Check
-    String regex = "^([0-9a-zA-Z\\-]+)$";
-    if (!taskTemplate.getName().matches(regex)) {
+    if (!taskTemplate.getName().matches(NAME_REGEX)) {
       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, taskTemplate.getName());
     }
     
@@ -226,7 +226,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
 
    @Override
    public Optional<TaskTemplateEntity> retrieveAndValidateTaskTemplate(
-       final WorkflowRevisionTask wfRevisionTask) {
+       final WorkflowTask wfRevisionTask) {
      String templateRef = wfRevisionTask.getTemplateRef();
      Optional<TaskTemplateEntity> taskTemplate;
      if (wfRevisionTask.getTemplateVersion() != null) {

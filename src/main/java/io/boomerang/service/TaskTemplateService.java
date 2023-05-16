@@ -6,7 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import io.boomerang.data.entity.TaskTemplateEntity;
-import io.boomerang.data.model.WorkflowRevisionTask;
+import io.boomerang.data.model.WorkflowTask;
 import io.boomerang.model.TaskTemplate;
 
 public interface TaskTemplateService {
@@ -24,5 +24,5 @@ public interface TaskTemplateService {
 
   void enable(String name);
 
-  Optional<TaskTemplateEntity> retrieveAndValidateTaskTemplate(WorkflowRevisionTask wfRevisionTask);
+  Optional<TaskTemplateEntity> retrieveAndValidateTaskTemplate(WorkflowTask wfRevisionTask);
 }

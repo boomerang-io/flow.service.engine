@@ -3,34 +3,34 @@ package io.boomerang.util;
 import java.util.LinkedList;
 import java.util.List;
 import org.springframework.beans.BeanUtils;
-import io.boomerang.data.model.WorkflowRevisionTask;
+import io.boomerang.data.model.WorkflowTask;
 import io.boomerang.model.Task;
 
 public class TaskMapper {
 
   /*
-   * Converts a Task List a WorkflowRevisionTask List. For storage into MongoDB
+   * Converts a Task List a WorkflowTask List. For storage into MongoDB
    * 
    * @param tasks
    * 
-   * @return list of WorkflowRevisionTasks
+   * @return list of WorkflowTasks
    */
-  public static List<WorkflowRevisionTask> tasksToListOfRevisionTasks(List<Task> tasks) {
-    List<WorkflowRevisionTask> wfRevisionTasks = new LinkedList<>();
+  public static List<WorkflowTask> tasksToListOfWorkflowTasks(List<Task> tasks) {
+    List<WorkflowTask> wfTasks = new LinkedList<>();
     if (tasks != null) {
       for (Task t : tasks) {
-        WorkflowRevisionTask wfRevisionTask = new WorkflowRevisionTask();
+        WorkflowTask wfRevisionTask = new WorkflowTask();
         BeanUtils.copyProperties(t, wfRevisionTask);
-        wfRevisionTasks.add(wfRevisionTask);
+        wfTasks.add(wfRevisionTask);
       }
     }
-    return wfRevisionTasks;
+    return wfTasks;
   }
   
-  public static List<Task> revisionTasksToListOfTasks(List<WorkflowRevisionTask> wfRevisionTasks) {
+  public static List<Task> workflowTasksToListOfTasks(List<WorkflowTask> wfTasks) {
     List<Task> tasks = new LinkedList<>();
-    if (wfRevisionTasks != null) {
-      for (WorkflowRevisionTask t : wfRevisionTasks) {
+    if (wfTasks != null) {
+      for (WorkflowTask t : wfTasks) {
         Task task = new Task();
         BeanUtils.copyProperties(t, task);
         tasks.add(task);

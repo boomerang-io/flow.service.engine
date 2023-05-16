@@ -27,7 +27,7 @@ import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.TaskTemplateEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.data.model.WorkflowRevisionTask;
+import io.boomerang.data.model.WorkflowTask;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
@@ -87,7 +87,7 @@ public class DAGUtility {
   public List<TaskRunEntity> createTaskList(WorkflowRevisionEntity wfRevisionEntity,
       WorkflowRunEntity wfRunEntity) {
     final List<TaskRunEntity> taskList = new LinkedList<>();
-    for (final WorkflowRevisionTask wfRevisionTask : wfRevisionEntity.getTasks()) {
+    for (final WorkflowTask wfRevisionTask : wfRevisionEntity.getTasks()) {
       Optional<TaskRunEntity> existingTaskRunEntity =
           taskRunRepository.findFirstByNameAndWorkflowRunRef(wfRevisionTask.getName(), wfRunEntity.getId());
       if (existingTaskRunEntity.isPresent() && existingTaskRunEntity.get() != null) {
