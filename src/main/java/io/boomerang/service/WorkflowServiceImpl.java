@@ -186,7 +186,6 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
     wfEntity.setName(workflow.getName());
     wfEntity.setIcon(workflow.getIcon());
-    wfEntity.setShortDescription(workflow.getShortDescription());
     wfEntity.setDescription(workflow.getDescription());
     wfEntity.setLabels(workflow.getLabels());
     wfEntity.setAnnotations(workflow.getAnnotations());
@@ -273,9 +272,6 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
     if (workflow.getDescription()!= null && !workflow.getDescription().isBlank()) {
       workflowEntity.setDescription(workflow.getDescription());
-    }
-    if (workflow.getShortDescription()!= null && !workflow.getShortDescription().isBlank()) {
-      workflowEntity.setShortDescription(workflow.getShortDescription());
     }
     if (workflow.getLabels()!= null && !workflow.getLabels().isEmpty()) {
       if (replace) {

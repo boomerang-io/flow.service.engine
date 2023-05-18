@@ -23,53 +23,31 @@ import io.boomerang.model.enums.WorkflowStatus;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
-@JsonPropertyOrder({"id", "name", "status", "version", "creationDate", "timeout", "retries", "description", "shortDescription", "labels", "annotations", "params", "tasks" })
+@JsonPropertyOrder({"id", "name", "status", "version", "creationDate", "timeout", "retries", "description", "labels", "annotations", "params", "tasks" })
 public class Workflow {
   
   private String id;
-
   private String name;
-
   private WorkflowStatus status = WorkflowStatus.active;
-  
   private Integer version = 1;
-  
   private Date creationDate = new Date();
-
   private ChangeLog changelog;
-  
   private String icon;
-
   private String description;
-
-  private String shortDescription;
-  
   private String markdown;
-
   private Map<String, String> labels = new HashMap<>();
-  
   private Map<String, Object> annotations = new HashMap<>();
-  
   private Long timeout;
-  
   private Long retries;
-  
   private boolean upgradesAvailable = false;
-
   //TODO: adjust the triggers model
   private WorkflowTrigger triggers;
-  
   //TODO: revisit tokens implementation
   private List<WorkflowToken> tokens;
-  
   private List<Task> tasks = new LinkedList<>();
-
   private List<ParamSpec> params = new LinkedList<>();
-  
-  private List<WorkflowWorkspace> workspaces = new LinkedList<>();
-  
+  private List<WorkflowWorkspace> workspaces = new LinkedList<>();  
   private List<AbstractParam> config;
-
   private Map<String, Object> unknownFields = new HashMap<>();
 
   @JsonAnyGetter
@@ -160,14 +138,6 @@ public class Workflow {
 
   public void setDescription(String description) {
     this.description = description;
-  }
-
-  public String getShortDescription() {
-    return shortDescription;
-  }
-
-  public void setShortDescription(String shortDescription) {
-    this.shortDescription = shortDescription;
   }
   
   public String getMarkdown() {

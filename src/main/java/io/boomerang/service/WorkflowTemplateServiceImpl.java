@@ -170,7 +170,6 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
       wfTemplateEntity.setDisplayName(request.getName());
     }
     wfTemplateEntity.setIcon(request.getIcon());
-    wfTemplateEntity.setShortDescription(request.getShortDescription());
     wfTemplateEntity.setDescription(request.getDescription());
     wfTemplateEntity.setLabels(request.getLabels());
     wfTemplateEntity.setAnnotations(request.getAnnotations());
@@ -267,9 +266,6 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
     wfTemplateEntity.setChangelog(changelog);
     if (request.getDescription()!= null && !request.getDescription().isBlank()) {
       wfTemplateEntity.setDescription(request.getDescription());
-    }
-    if (request.getShortDescription()!= null && !request.getShortDescription().isBlank()) {
-      wfTemplateEntity.setShortDescription(request.getShortDescription());
     }
     if (request.getLabels()!= null && !request.getLabels().isEmpty()) {
       if (replace) {
