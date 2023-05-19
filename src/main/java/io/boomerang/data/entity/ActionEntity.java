@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.boomerang.model.Audit;
+import io.boomerang.model.Actioner;
 import io.boomerang.model.enums.ActionStatus;
 import io.boomerang.model.enums.ActionType;
 
@@ -24,7 +24,7 @@ public class ActionEntity {
   private String workflowRef;
   private String workflowRunRef;
   private String taskRunRef;
-  private List<Audit> actioners;
+  private List<Actioner> actioners;
   private ActionStatus status;
   private ActionType type;
   private String instructions;
@@ -56,10 +56,10 @@ public class ActionEntity {
   public void setTaskRunRef(String taskRunRef) {
     this.taskRunRef = taskRunRef;
   }
-  public List<Audit> getActioners() {
+  public List<Actioner> getActioners() {
     return actioners;
   }
-  public void setActioners(List<Audit> actioners) {
+  public void setActioners(List<Actioner> actioners) {
     this.actioners = actioners;
   }
   public ActionStatus getStatus() {

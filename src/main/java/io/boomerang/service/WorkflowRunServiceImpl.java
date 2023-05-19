@@ -266,7 +266,15 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       wfRunInsight.setMedianDuration(0L);
     }
     List<WorkflowRunSummary> runs = new LinkedList<>();
-    wfRunEntities.forEach(e -> runs.add(new WorkflowRunSummary(e)));
+    wfRunEntities.forEach(e -> {
+      WorkflowRunSummary summary = new WorkflowRunSummary(e);
+      final Optional<WorkflowEntity> optWorkflow =
+          workflowRepository.findById(e.getWorkflowRef());
+      if (optWorkflow.isPresent()) {
+        summary.setWorkflowName(optWorkflow.get().getName());
+      }
+      runs.add(summary);
+    });
     wfRunInsight.setRuns(runs);
     return ResponseEntity.ok(wfRunInsight);
   }
