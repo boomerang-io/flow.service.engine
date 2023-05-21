@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.WorkflowRunCount;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.WorkflowRunSubmitRequest;
@@ -120,6 +121,33 @@ public class WorkflowRunV1Controller {
     }
 
     return workflowRunService.insights(from, to, labels, workflowruns, workflows);
+  }
+  
+  @GetMapping(value = "/count")
+  @Operation(summary = "Retrieve a count of WorkflowRuns by Status.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public ResponseEntity<WorkflowRunCount> count(
+      @Parameter(name = "labels",
+      description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
+      required = false) @RequestParam(required = false) Optional<List<String>> labels,
+      @Parameter(name = "workflows",
+      description = "List of Workflow IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
+      required = false) @RequestParam(required = false)  Optional<List<String>> workflows,
+      @Parameter(name = "fromDate", description = "The unix timestamp / date to search from in milliseconds since epoch", example = "1677589200000",
+      required = false) @RequestParam Optional<Long> fromDate,
+      @Parameter(name = "toDate", description = "The unix timestamp / date to search to in milliseconds since epoch", example = "1680267600000",
+      required = false) @RequestParam Optional<Long> toDate) {
+    Optional<Date> from = Optional.empty();
+    Optional<Date> to = Optional.empty();
+    if (fromDate.isPresent()) {
+      from = Optional.of(new Date(fromDate.get()));
+    }
+    if (toDate.isPresent()) {
+      to = Optional.of(new Date(toDate.get()));
+    }
+
+    return workflowRunService.count(from, to, labels, workflows);
   }
 
   @PostMapping(value = "/submit")

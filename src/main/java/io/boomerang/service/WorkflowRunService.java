@@ -2,11 +2,13 @@ package io.boomerang.service;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.WorkflowRunCount;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.WorkflowRunSubmitRequest;
@@ -34,5 +36,8 @@ public interface WorkflowRunService {
   ResponseEntity<WorkflowRun> timeout(String workflowRunId, boolean taskRunTimeout);
 
   ResponseEntity<WorkflowRunInsight> insights(Optional<Date> from, Optional<Date> to, Optional<List<String>> labels, Optional<List<String>> status, Optional<List<String>> workflows);
+
+  ResponseEntity<WorkflowRunCount> count(Optional<Date> from, Optional<Date> to,
+      Optional<List<String>> labels, Optional<List<String>> workflows);
   
 }

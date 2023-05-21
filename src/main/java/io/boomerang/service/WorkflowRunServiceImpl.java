@@ -1,8 +1,10 @@
 package io.boomerang.service;
 
+import static java.util.stream.Collectors.groupingBy;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -41,6 +43,7 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.TaskRun;
 import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.WorkflowRunCount;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.WorkflowRunSubmitRequest;
@@ -277,6 +280,72 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     });
     wfRunInsight.setRuns(runs);
     return ResponseEntity.ok(wfRunInsight);
+  }
+  
+  /*
+   * Generates stats / insights for a given set of filters
+   */
+  @Override
+  public ResponseEntity<WorkflowRunCount> count(Optional<Date> from, Optional<Date> to,
+      Optional<List<String>> labels, Optional<List<String>> queryWorkflows) {
+    List<Criteria> criteriaList = new ArrayList<>();
+
+    if (from.isPresent() && !to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").gte(from.get());
+      criteriaList.add(criteria);
+    } else if (!from.isPresent() && to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").lt(to.get());
+      criteriaList.add(criteria);
+    } else if (from.isPresent() && to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").gte(from.get()).lt(to.get());
+      criteriaList.add(criteria);
+    }
+
+    // TODO add the ability to OR labels not just AND
+    if (labels.isPresent()) {
+      labels.get().stream().forEach(l -> {
+        String decodedLabel = "";
+        try {
+          decodedLabel = URLDecoder.decode(l, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+          throw new BoomerangException(e, BoomerangError.QUERY_INVALID_FILTERS, "labels");
+        }
+        LOGGER.debug(decodedLabel.toString());
+        String[] label = decodedLabel.split("[=]+");
+        Criteria labelsCriteria =
+            Criteria.where("labels." + label[0].replace(".", "#")).is(label[1]);
+        criteriaList.add(labelsCriteria);
+      });
+    }
+
+    if (queryWorkflows.isPresent()) {
+      Criteria criteria = Criteria.where("workflowRef").in(queryWorkflows.get());
+      criteriaList.add(criteria);
+    }
+
+    Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);
+    Criteria allCriteria = new Criteria();
+    if (criteriaArray.length > 0) {
+      allCriteria.andOperator(criteriaArray);
+    }
+    Query query = new Query(allCriteria);
+    LOGGER.debug("Query: " + query.toString());
+    List<WorkflowRunEntity> wfRunEntities = mongoTemplate.find(query, WorkflowRunEntity.class);
+
+    // Collate by Status run count
+    Map<String, Long> result = wfRunEntities.stream()
+        .collect(groupingBy(v -> getStatusValue(v), Collectors.counting())); // NOSONAR
+    result.put("all", Long.valueOf(wfRunEntities.size()));
+
+    Arrays.stream(RunStatus.values()).forEach(v -> result.putIfAbsent(v.getStatus(), 0L));
+    
+    WorkflowRunCount wfRunCount = new WorkflowRunCount();
+    wfRunCount.setStatus(result);
+    return ResponseEntity.ok(wfRunCount);
+  }
+  
+  private String getStatusValue(WorkflowRunEntity v) {
+    return v.getStatus() == null ? "no_status" : v.getStatus().getStatus();
   }
 
   /*
