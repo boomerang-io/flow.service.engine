@@ -71,6 +71,8 @@ public class WorkflowRunV1Controller {
       @Parameter(name = "workflows",
       description = "List of Workflow IDs  to filter for. Does not validate the IDs provided. Defaults to all.", example = "63d3656ca845957db7d25ef0,63a3e732b0496509a7f1d763",
       required = false) @RequestParam(required = false)  Optional<List<String>> workflows,
+      @Parameter(name = "triggers", description = "List of Triggers to filter for.", 
+      required = false) @RequestParam(required = false) Optional<List<String>> triggers,
       @Parameter(name = "limit", description = "Result Size", example = "10",
           required = true) @RequestParam(required = false) Optional<Integer> limit,
       @Parameter(name = "page", description = "Page Number", example = "0",
@@ -89,7 +91,7 @@ public class WorkflowRunV1Controller {
     if (toDate.isPresent()) {
       to = Optional.of(new Date(toDate.get()));
     }
-    return workflowRunService.query(from, to, limit, page, sort, labels, status, phase, workflowruns, workflows);
+    return workflowRunService.query(from, to, limit, page, sort, labels, status, phase, workflowruns, workflows, triggers);
   }
   
   @GetMapping(value = "/insight")

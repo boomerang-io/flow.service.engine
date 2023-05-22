@@ -2,7 +2,6 @@ package io.boomerang.service;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort.Direction;
@@ -27,7 +26,7 @@ public interface WorkflowRunService {
       Optional<Integer> queryLimit, Optional<Integer> queryPage, Optional<Direction> querySort,
       Optional<List<String>> queryLabels, Optional<List<String>> queryStatus,
       Optional<List<String>> queryPhase, Optional<List<String>> queryWorkflowRuns,
-      Optional<List<String>> queryWorkflows);
+      Optional<List<String>> queryWorkflows, Optional<List<String>> queryTriggers);
 
   ResponseEntity<WorkflowRun> cancel(String workflowRunId);
 

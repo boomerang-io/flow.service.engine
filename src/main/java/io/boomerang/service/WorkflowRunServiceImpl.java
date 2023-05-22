@@ -87,6 +87,11 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     Optional<WorkflowRunEntity> workflowRunEntity = workflowRunRepository.findById(workflowRunId);
     if (workflowRunEntity.isPresent()) {
       WorkflowRun wfRun = new WorkflowRun(workflowRunEntity.get());
+      final Optional<WorkflowEntity> optWorkflow =
+          workflowRepository.findById(workflowRunEntity.get().getWorkflowRef());
+      if (optWorkflow.isPresent()) {
+        wfRun.setWorkflowName(optWorkflow.get().getName());
+      }
       if (withTasks) {
         wfRun.setTasks(getTaskRuns(workflowRunId));
       }
@@ -101,7 +106,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       Optional<Integer> queryLimit, Optional<Integer> queryPage, Optional<Direction> querySort,
       Optional<List<String>> queryLabels, Optional<List<String>> queryStatus,
       Optional<List<String>> queryPhase, Optional<List<String>> queryWorkflowRuns,
-      Optional<List<String>> queryWorkflows) {
+      Optional<List<String>> queryWorkflows, Optional<List<String>> queryTriggers) {
     Pageable pageable = Pageable.unpaged();
     final Sort sort = Sort.by(new Order(querySort.orElse(Direction.ASC), "creationDate"));
     if (queryLimit.isPresent()) {
@@ -167,6 +172,11 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       criteriaList.add(criteria);
     }
 
+    if (queryTriggers.isPresent()) {
+      Criteria criteria = Criteria.where("trigger").in(queryTriggers.get());
+      criteriaList.add(criteria);
+    }
+
     Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);
     Criteria allCriteria = new Criteria();
     if (criteriaArray.length > 0) {
@@ -181,8 +191,17 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
     List<WorkflowRunEntity> wfRunEntities = mongoTemplate.find(query, WorkflowRunEntity.class);
 
+    // Convert to WorkflowRun and add Workflow Name
     List<WorkflowRun> wfRuns = new LinkedList<>();
-    wfRunEntities.forEach(e -> wfRuns.add(new WorkflowRun(e)));
+    wfRunEntities.forEach(e -> {
+      WorkflowRun wfRun = new WorkflowRun(e);
+      final Optional<WorkflowEntity> optWorkflow =
+          workflowRepository.findById(e.getWorkflowRef());
+      if (optWorkflow.isPresent()) {
+        wfRun.setWorkflowName(optWorkflow.get().getName());
+      }
+      wfRuns.add(wfRun);
+    });
 
     Page<WorkflowRun> pages = PageableExecutionUtils.getPage(wfRuns, pageable,
         () -> mongoTemplate.count(query, WorkflowRunEntity.class));
