@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.WorkflowTemplate;
 import io.boomerang.service.WorkflowTemplateService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,7 +67,7 @@ public class WorkflowTemplateV1Controller {
     return workflowTemplateService.query(limit, page, sort, labels, names);
   }
 
-  @PostMapping(value = "/")
+  @PostMapping(value = "")
   @Operation(summary = "Create a new Workflow Template",
             description = "The name needs to be unique and must only contain alphanumeric and - characeters.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
@@ -77,7 +76,7 @@ public class WorkflowTemplateV1Controller {
     return workflowTemplateService.create(request);
   }
 
-  @PutMapping(value = "/")
+  @PutMapping(value = "")
   @Operation(summary = "Update, replace, or create new, Task Template",
             description = "The name must only contain alphanumeric and - characeters. If the name exists, apply will create a new version.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),

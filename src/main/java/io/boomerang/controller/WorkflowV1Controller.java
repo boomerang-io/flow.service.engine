@@ -67,11 +67,13 @@ public class WorkflowV1Controller {
       @Parameter(name = "page", description = "Page Number", example = "0",
           required = true) @RequestParam(defaultValue = "0") Optional<Integer> page,
       @Parameter(name = "sort", description = "Ascending (ASC) or Descending (DESC) sort on creationDate", example = "ASC",
-      required = true) @RequestParam(defaultValue = "ASC") Optional<Direction> sort) {
+      required = true) @RequestParam(defaultValue = "ASC") Optional<Direction> sort,
+      @Parameter(name = "summary", description = "Only return a summary of each Workflow",
+      required = false) @RequestParam(required = false, defaultValue = "false") Boolean summary) {
     return workflowService.query(limit, page, sort, labels, status, ids);
   }
 
-  @PostMapping(value = "/")
+  @PostMapping(value = "")
   @Operation(summary = "Create a new Workflow")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
@@ -79,7 +81,7 @@ public class WorkflowV1Controller {
     return workflowService.create(workflow, false);
   }
 
-  @PutMapping(value = "/")
+  @PutMapping(value = "")
   @Operation(summary = "Update, replace, or create new, Workflow")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})

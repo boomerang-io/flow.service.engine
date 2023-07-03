@@ -68,7 +68,7 @@ public class TaskTemplateV1Controller {
     return taskTemplateService.query(limit, page, sort, labels, status, names);
   }
 
-  @PostMapping(value = "/")
+  @PostMapping(value = "")
   @Operation(summary = "Create a new Task Template",
             description = "The name needs to be unique and must only contain alphanumeric and - characeters.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
@@ -77,7 +77,7 @@ public class TaskTemplateV1Controller {
     return taskTemplateService.create(taskTemplate);
   }
 
-  @PutMapping(value = "/")
+  @PutMapping(value = "")
   @Operation(summary = "Update, replace, or create new, Task Template",
             description = "The name must only contain alphanumeric and - characeters. If the name exists, apply will create a new version.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
