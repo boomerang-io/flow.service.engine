@@ -41,6 +41,9 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   private static final String CHANGELOG_UPDATE = "Updated Task Template";
   
   private static final String NAME_REGEX = "^([0-9a-zA-Z\\\\-]+)$";
+  
+  private static final String ANNOTATION_GENERATION = "4";
+  private static final String ANNOTATION_KIND = "TaskTemplate";
 
   @Autowired
   private TaskTemplateRepository taskTemplateRepository;
@@ -82,23 +85,17 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     if (taskTemplate.getDisplayName() == null || taskTemplate.getDisplayName().isBlank()) {
       taskTemplate.setDisplayName(taskTemplate.getName());
     }
+
+    //Set System Generated Annotations
+    taskTemplate.getAnnotations().put("io.boomerang/generation", ANNOTATION_GENERATION);
+    taskTemplate.getAnnotations().put("io.boomerang/kind", ANNOTATION_KIND);
     
     //TODO additional checks for mandatory fields
     //I.e. if TaskTemplate is of type template, then it must include xyz
     
     taskTemplate.setVersion(1);
     ChangeLog changelog = new ChangeLog(CHANGELOG_INITIAL);
-    if (taskTemplate.getChangelog() != null) {
-      if (taskTemplate.getChangelog().getAuthor() != null) {
-        changelog.setAuthor(taskTemplate.getChangelog().getAuthor());
-      }
-      if (taskTemplate.getChangelog().getReason() != null) {
-        changelog.setReason(taskTemplate.getChangelog().getReason());
-      }
-      if (taskTemplate.getChangelog().getDate() != null) {
-        changelog.setDate(taskTemplate.getChangelog().getDate());
-      }
-    }
+    updateChangeLog(taskTemplate, changelog);
     taskTemplate.setChangelog(changelog);
     taskTemplate.setCreationDate(new Date());
     taskTemplateRepository.save(taskTemplate);
@@ -126,23 +123,32 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
       taskTemplate.setId(null);
       taskTemplate.setVersion(taskTemplateEntity.get().getVersion() + 1);
     }
+
+    //Set System Generated Annotations
+    taskTemplate.getAnnotations().put("io.boomerang/generation", ANNOTATION_GENERATION);
+    taskTemplate.getAnnotations().put("io.boomerang/kind", ANNOTATION_KIND);
+    
     ChangeLog changelog = new ChangeLog(taskTemplateEntity.get().getVersion().equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE);
+    updateChangeLog(taskTemplate, changelog);
+    taskTemplate.setChangelog(changelog);
+    taskTemplate.setCreationDate(new Date());
+    TaskTemplateEntity savedEntity = taskTemplateRepository.save(taskTemplate);
+    TaskTemplate savedTemplate = new TaskTemplate(savedEntity);
+    return ResponseEntity.ok(savedTemplate);
+  }
+
+  private void updateChangeLog(TaskTemplate taskTemplate, ChangeLog changelog) {
     if (taskTemplate.getChangelog() != null) {
-      if (taskTemplate.getChangelog().getAuthor() != null) {
+      if (taskTemplate.getChangelog().getAuthor() != null && !taskTemplate.getChangelog().getAuthor().isBlank()) {
         changelog.setAuthor(taskTemplate.getChangelog().getAuthor());
       }
-      if (taskTemplate.getChangelog().getReason() != null) {
+      if (taskTemplate.getChangelog().getReason() != null && !taskTemplate.getChangelog().getReason().isBlank()) {
         changelog.setReason(taskTemplate.getChangelog().getReason());
       }
       if (taskTemplate.getChangelog().getDate() != null) {
         changelog.setDate(taskTemplate.getChangelog().getDate());
       }
     }
-    taskTemplate.setChangelog(changelog);
-    taskTemplate.setCreationDate(new Date());
-    TaskTemplateEntity savedEntity = taskTemplateRepository.save(taskTemplate);
-    TaskTemplate savedTemplate = new TaskTemplate(savedEntity);
-    return ResponseEntity.ok(savedTemplate);
   }
 
   @Override

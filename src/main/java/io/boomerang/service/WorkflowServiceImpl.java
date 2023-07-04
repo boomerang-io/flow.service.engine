@@ -50,6 +50,9 @@ public class WorkflowServiceImpl implements WorkflowService {
   private static final String CHANGELOG_INITIAL = "Initial Workflow";
   
   private static final String CHANGELOG_UPDATE = "Updated Workflow";
+  
+  private static final String ANNOTATION_GENERATION = "4";
+  private static final String ANNOTATION_KIND = "Workflow";
 
   @Autowired
   private WorkflowRepository workflowRepository;
@@ -188,6 +191,9 @@ public class WorkflowServiceImpl implements WorkflowService {
     wfEntity.setIcon(workflow.getIcon());
     wfEntity.setDescription(workflow.getDescription());
     wfEntity.setLabels(workflow.getLabels());
+    // Add System Generated Annotations
+    workflow.getAnnotations().put("io.boomerang/generation", ANNOTATION_GENERATION);
+    workflow.getAnnotations().put("io.boomerang/kind", ANNOTATION_KIND);
     wfEntity.setAnnotations(workflow.getAnnotations());
     wfEntity.setStatus(WorkflowStatus.active);
     wfEntity.setTriggers(workflow.getTriggers() != null ? workflow.getTriggers() : new WorkflowTrigger());
@@ -287,6 +293,9 @@ public class WorkflowServiceImpl implements WorkflowService {
         workflowEntity.getAnnotations().putAll(workflow.getAnnotations());
       }
     }
+    // Add System Generated Annotations
+    workflowEntity.getAnnotations().put("io.boomerang/generation", ANNOTATION_GENERATION);
+    workflowEntity.getAnnotations().put("io.boomerang/kind", ANNOTATION_KIND);
     if (workflow.getTriggers() != null) {
       workflowEntity.getTriggers();
     }
