@@ -87,8 +87,8 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     }
 
     //Set System Generated Annotations
-    taskTemplate.getAnnotations().put("io.boomerang/generation", ANNOTATION_GENERATION);
-    taskTemplate.getAnnotations().put("io.boomerang/kind", ANNOTATION_KIND);
+    taskTemplate.getAnnotations().put("boomerang.io/generation", ANNOTATION_GENERATION);
+    taskTemplate.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
     
     //TODO additional checks for mandatory fields
     //I.e. if TaskTemplate is of type template, then it must include xyz
@@ -125,8 +125,8 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     }
 
     //Set System Generated Annotations
-    taskTemplate.getAnnotations().put("io.boomerang/generation", ANNOTATION_GENERATION);
-    taskTemplate.getAnnotations().put("io.boomerang/kind", ANNOTATION_KIND);
+    taskTemplate.getAnnotations().put("boomerang.io/generation", ANNOTATION_GENERATION);
+    taskTemplate.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
     
     ChangeLog changelog = new ChangeLog(taskTemplateEntity.get().getVersion().equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE);
     updateChangeLog(taskTemplate, changelog);

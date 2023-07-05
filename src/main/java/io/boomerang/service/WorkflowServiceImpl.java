@@ -192,8 +192,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     wfEntity.setDescription(workflow.getDescription());
     wfEntity.setLabels(workflow.getLabels());
     // Add System Generated Annotations
-    workflow.getAnnotations().put("io.boomerang/generation", ANNOTATION_GENERATION);
-    workflow.getAnnotations().put("io.boomerang/kind", ANNOTATION_KIND);
+    workflow.getAnnotations().put("boomerang.io/generation", ANNOTATION_GENERATION);
+    workflow.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
     wfEntity.setAnnotations(workflow.getAnnotations());
     wfEntity.setStatus(WorkflowStatus.active);
     wfEntity.setTriggers(workflow.getTriggers() != null ? workflow.getTriggers() : new WorkflowTrigger());
@@ -294,8 +294,8 @@ public class WorkflowServiceImpl implements WorkflowService {
       }
     }
     // Add System Generated Annotations
-    workflowEntity.getAnnotations().put("io.boomerang/generation", ANNOTATION_GENERATION);
-    workflowEntity.getAnnotations().put("io.boomerang/kind", ANNOTATION_KIND);
+    workflowEntity.getAnnotations().put("boomerang.io/generation", ANNOTATION_GENERATION);
+    workflowEntity.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
     if (workflow.getTriggers() != null) {
       workflowEntity.getTriggers();
     }

@@ -210,10 +210,10 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
           long duration = new Date().getTime() - wfRunEntity.getStartTime().getTime();
           wfRunEntity.setDuration(duration);
           String statusMessage = "The WorkflowRun exceeded the timeout. Timeout was set to {} minutes";
-          if (wfRunEntity.getAnnotations().containsKey("io.boomerang/timeout-cause") && "TaskRun".equals(wfRunEntity.getAnnotations().get("io.boomerang/timeout-cause"))) {
+          if (wfRunEntity.getAnnotations().containsKey("boomerang.io/timeout-cause") && "TaskRun".equals(wfRunEntity.getAnnotations().get("boomerang.io/timeout-cause"))) {
             statusMessage = "A TaskRun exceeded it's timeout.";
           } else {
-            wfRunEntity.getAnnotations().put("io.boomerang/timeout-cause", "WorkflowRun");
+            wfRunEntity.getAnnotations().put("boomerang.io/timeout-cause", "WorkflowRun");
           }
           updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.timedout, RunPhase.completed,
               Optional.of(statusMessage),
@@ -249,12 +249,12 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
           if (!Objects.isNull(wfRunEntity.getRetries()) && wfRunEntity.getRetries() != -1
               && wfRunEntity.getRetries() != 0) {
             long retryCount = 0;
-            if (wfRunEntity.getAnnotations().containsKey("io.boomerang/retry-count")) {
-              retryCount = (long) wfRunEntity.getAnnotations().get("io.boomerang/retry-count");
+            if (wfRunEntity.getAnnotations().containsKey("boomerang.io/retry-count")) {
+              retryCount = (long) wfRunEntity.getAnnotations().get("boomerang.io/retry-count");
             }
             if (retryCount < wfRunEntity.getRetries()) {
               boolean start = false;
-              if (wfRunEntity.getAnnotations().containsKey("io.boomerang/submit-with-start")) {
+              if (wfRunEntity.getAnnotations().containsKey("boomerang.io/submit-with-start")) {
                 start = true;
               }
               retryCount++;

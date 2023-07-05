@@ -128,8 +128,8 @@ public class DAGUtility {
           
           //Add System Generated Annotations
           Map<String, Object> annotations = new HashMap<>();
-          annotations.put("io.boomerang/generation", "4");
-          annotations.put("io.boomerang/kind", "TaskRun");
+          annotations.put("boomerang.io/generation", "4");
+          annotations.put("boomerang.io/kind", "TaskRun");
           taskRunEntity.getAnnotations().putAll(annotations);
 
           //TODO: validate this actually works - should template results just be merged into Run

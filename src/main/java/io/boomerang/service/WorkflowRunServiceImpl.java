@@ -451,11 +451,11 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       }
       // Add System Generated Annotations
       Map<String, Object> annotations = new HashMap<>();
-      annotations.put("io.boomerang/generation", "4");
-      annotations.put("io.boomerang/kind", "WorkflowRun");
+      annotations.put("boomerang.io/generation", "4");
+      annotations.put("boomerang.io/kind", "WorkflowRun");
       if (start) {
         // Add annotation to know this was created with ?start=true
-        wfRunEntity.getAnnotations().put("io.boomerang/submit-with-start", "true");
+        wfRunEntity.getAnnotations().put("boomerang.io/submit-with-start", "true");
       }
       wfRunEntity.getAnnotations().putAll(annotations);
 
@@ -552,7 +552,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         workflowRunRepository.findById(workflowRunId);
     if (optWfRunEntity.isPresent()) {
       WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
-      wfRunEntity.getAnnotations().put("io.boomerang/timeout-cause",
+      wfRunEntity.getAnnotations().put("boomerang.io/timeout-cause",
           taskRunTimeout ? "TaskRun" : "WorkflowRun");
       wfRunEntity.setStatus(RunStatus.timedout);
       workflowRunRepository.save(wfRunEntity);
@@ -580,11 +580,11 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       wfRunEntity.setStatusMessage(null);
       wfRunEntity.setDuration(0);
       wfRunEntity.setStartTime(null);
-      wfRunEntity.getAnnotations().put("io.boomerang/retry-count", retryCount);
-      wfRunEntity.getAnnotations().remove("io.boomerang/timeout-cause");
-      if (!wfRunEntity.getAnnotations().containsKey("io.boomerang/retry-of")) {
-        wfRunEntity.getAnnotations().put("io.boomerang/retry-of", workflowRunId);
-        wfRunEntity.getLabels().put("io.boomerang/retry-of", workflowRunId);
+      wfRunEntity.getAnnotations().put("boomerang.io/retry-count", retryCount);
+      wfRunEntity.getAnnotations().remove("boomerang.io/timeout-cause");
+      if (!wfRunEntity.getAnnotations().containsKey("boomerang.io/retry-of")) {
+        wfRunEntity.getAnnotations().put("boomerang.io/retry-of", workflowRunId);
+        wfRunEntity.getLabels().put("boomerang.io/retry-of", workflowRunId);
       }
       workflowRunRepository.save(wfRunEntity);
 
