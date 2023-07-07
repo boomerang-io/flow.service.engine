@@ -217,17 +217,17 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   }
   
    @Override
-   public void enable(String name) {
+   public TaskTemplate enable(String name) {
      TaskTemplateEntity taskTemplateEntity = this.get(name, Optional.empty());
      taskTemplateEntity.setStatus(TaskTemplateStatus.active);
-     taskTemplateRepository.save(taskTemplateEntity);
+     return new TaskTemplate(taskTemplateRepository.save(taskTemplateEntity));
    }
   
    @Override
-   public void disable(String name) {
+   public TaskTemplate disable(String name) {
      TaskTemplateEntity taskTemplateEntity = this.get(name, Optional.empty());
      taskTemplateEntity.setStatus(TaskTemplateStatus.inactive);
-     taskTemplateRepository.save(taskTemplateEntity);
+     return new TaskTemplate(taskTemplateRepository.save(taskTemplateEntity));
    }
 
    @Override

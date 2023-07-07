@@ -20,9 +20,9 @@ public interface TaskTemplateService {
 
   ResponseEntity<TaskTemplate> apply(TaskTemplate taskTemplate, boolean replace);
 
-  void disable(String name);
+  TaskTemplate disable(String name);
 
-  void enable(String name);
+  TaskTemplate enable(String name);
 
   Optional<TaskTemplateEntity> retrieveAndValidateTaskTemplate(WorkflowTask wfRevisionTask);
 }
