@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
+import io.boomerang.model.ChangeLogVersion;
 import io.boomerang.model.Workflow;
 
 public interface WorkflowService {
@@ -24,6 +25,8 @@ public interface WorkflowService {
   void disable(String workflowId);
 
   void delete(String workflowId);
+
+  ResponseEntity<List<ChangeLogVersion>> changelog(String workflowId);
 //
 //  WorkflowSummary updateWorkflowProperties(String workflowId, List<WorkflowProperty> properties);
 //

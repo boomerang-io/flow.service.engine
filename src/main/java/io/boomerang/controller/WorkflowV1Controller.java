@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import io.boomerang.model.ChangeLogVersion;
 import io.boomerang.model.Workflow;
 import io.boomerang.service.WorkflowService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -90,6 +91,16 @@ public class WorkflowV1Controller {
       description = "Replace existing version",
       required = false) @RequestParam(required = false, defaultValue = "false") boolean replace) {
     return workflowService.apply(workflow, replace);
+  }
+  
+  @GetMapping(value = "/{workflowId}/changelog")
+  @Operation(summary = "Retrieve the changlog", description = "Retrieves each versions changelog and returns them all as a list.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public ResponseEntity<List<ChangeLogVersion>> getChangelog(
+      @Parameter(name = "workflowId", description = "ID of Workflow",
+          required = true) @PathVariable String workflowId) {
+    return workflowService.changelog(workflowId);
   }
 
   @PutMapping(value = "/{workflowId}/enable")

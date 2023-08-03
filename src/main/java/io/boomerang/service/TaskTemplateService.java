@@ -24,5 +24,5 @@ public interface TaskTemplateService {
 
   TaskTemplate enable(String name);
 
-  Optional<TaskTemplateEntity> retrieveAndValidateTaskTemplate(WorkflowTask wfRevisionTask);
+  TaskTemplateEntity retrieveAndValidateTaskTemplate(WorkflowTask wfRevisionTask);
 }

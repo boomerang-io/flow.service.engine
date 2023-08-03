@@ -33,6 +33,7 @@ import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
+import io.boomerang.model.ChangeLogVersion;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.enums.RunStatus;
@@ -245,12 +246,13 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     // Check Task Template references are valid
-    for (final WorkflowTask wfRevisionTask : wfRevisionEntity.getTasks()) {
+    for (WorkflowTask wfRevisionTask : wfRevisionEntity.getTasks()) {
       if (!TaskType.start.equals(wfRevisionTask.getType())
           && !TaskType.end.equals(wfRevisionTask.getType())) {
 
         //Shared utility with DAGUtility
-        taskTemplateService.retrieveAndValidateTaskTemplate(wfRevisionTask);
+        TaskTemplateEntity taskTemplate = taskTemplateService.retrieveAndValidateTaskTemplate(wfRevisionTask);
+        wfRevisionTask.setTemplateVersion(taskTemplate.getVersion());
       }
     }
     return wfRevisionEntity;
@@ -322,6 +324,34 @@ public class WorkflowServiceImpl implements WorkflowService {
     // Determine if there are template upgrades available
     workflow.setUpgradesAvailable(areTemplateUpgradesAvailable(newWorkflowRevisionEntity));
     return ResponseEntity.ok(appliedWorkflow);
+  }
+  
+  /*
+   * Retrieve all the changelogs and return by version
+   */
+  public ResponseEntity<List<ChangeLogVersion>> changelog(String workflowId) {
+    if (workflowId == null || workflowId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
+    }
+    final Optional<WorkflowEntity> optWfEntity = workflowRepository.findById(workflowId);
+    if (optWfEntity.isPresent()) {
+      List<WorkflowRevisionEntity> wfRevisionEntities = workflowRevisionRepository.findByWorkflowRef(workflowId);
+      if (wfRevisionEntities.isEmpty()) {
+        throw new BoomerangException(BoomerangError.WORKFLOW_REVISION_NOT_FOUND);
+      }
+      List<ChangeLogVersion> changelogs = new LinkedList<>();
+      wfRevisionEntities.forEach(wfRevision -> {
+        ChangeLogVersion cl = new ChangeLogVersion();
+        cl.setVersion(wfRevision.getVersion());
+        cl.setAuthor(wfRevision.getChangelog().getAuthor());
+        cl.setReason(wfRevision.getChangelog().getReason());
+        cl.setDate(wfRevision.getChangelog().getDate());
+        changelogs.add(cl);
+      });
+      return ResponseEntity.ok(changelogs);
+    }
+
+    throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
   }
   
   /*

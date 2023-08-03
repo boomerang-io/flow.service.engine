@@ -231,7 +231,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
    }
 
    @Override
-   public Optional<TaskTemplateEntity> retrieveAndValidateTaskTemplate(
+   public TaskTemplateEntity retrieveAndValidateTaskTemplate(
        final WorkflowTask wfRevisionTask) {
      String templateRef = wfRevisionTask.getTemplateRef();
      Optional<TaskTemplateEntity> taskTemplate;

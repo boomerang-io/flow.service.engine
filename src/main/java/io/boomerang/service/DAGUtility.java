@@ -114,15 +114,15 @@ public class DAGUtility {
         if (!TaskType.start.equals(wfRevisionTask.getType())
             && !TaskType.end.equals(wfRevisionTask.getType())) {
 
-          Optional<TaskTemplateEntity> taskTemplate =
+          TaskTemplateEntity taskTemplate =
               taskTemplateService.retrieveAndValidateTaskTemplate(wfRevisionTask);
           taskRunEntity.setTemplateRef(wfRevisionTask.getTemplateRef());
-          taskRunEntity.setTemplateVersion(taskTemplate.get().getVersion());
-          LOGGER.debug("[{}] Found Task Template: {} ({})", wfRunEntity.getId(), taskTemplate.get().getName(), taskTemplate.get().getId());
+          taskRunEntity.setTemplateVersion(taskTemplate.getVersion());
+          LOGGER.debug("[{}] Found Task Template: {} ({})", wfRunEntity.getId(), taskTemplate.getName(), taskTemplate.getId());
           
           // Stack the labels based on label propagation
           // Task Template -> Workflow Task -> Run 
-          taskRunEntity.getLabels().putAll(taskTemplate.get().getLabels());
+          taskRunEntity.getLabels().putAll(taskTemplate.getLabels());
           taskRunEntity.getLabels().putAll(wfRevisionTask.getLabels());
           taskRunEntity.getLabels().putAll(wfRunEntity.getLabels());
           
@@ -133,14 +133,14 @@ public class DAGUtility {
           taskRunEntity.getAnnotations().putAll(annotations);
 
           //TODO: validate this actually works - should template results just be merged into Run
-          taskRunEntity.setTemplateResults(taskTemplate.get().getSpec().getResults());
+          taskRunEntity.setTemplateResults(taskTemplate.getSpec().getResults());
           
           //Set Task RunParams
-          if (taskTemplate.get().getSpec().getParams() != null && !taskTemplate.get().getSpec().getParams().isEmpty()) {
-            LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(), taskTemplate.get().getSpec().getParams().toString());
+          if (taskTemplate.getSpec().getParams() != null && !taskTemplate.getSpec().getParams().isEmpty()) {
+            LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(), taskTemplate.getSpec().getParams().toString());
             LOGGER.debug("[{}] Revision Task Params: {}", wfRunEntity.getId(), wfRevisionTask.getParams().toString());
             taskRunEntity.setParams(ParameterUtil.addUniqueParams(
-                ParameterUtil.paramSpecToRunParam(taskTemplate.get().getSpec().getParams()),
+                ParameterUtil.paramSpecToRunParam(taskTemplate.getSpec().getParams()),
                 wfRevisionTask.getParams()));
           } else {
             LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(), wfRevisionTask.getParams().toString());
@@ -152,26 +152,26 @@ public class DAGUtility {
             taskRunEntity.setTimeout(wfRevisionTask.getTimeout());
           }          
           //Set TaskRun Spec from TaskTemplate Spec - Debug and Deletion come from an alternate source
-          if (!Objects.isNull(taskTemplate.get().getSpec().getImage())) {
-            taskRunEntity.getSpec().setImage(taskTemplate.get().getSpec().getImage());
+          if (!Objects.isNull(taskTemplate.getSpec().getImage())) {
+            taskRunEntity.getSpec().setImage(taskTemplate.getSpec().getImage());
           }
-          if (!Objects.isNull(taskTemplate.get().getSpec().getCommand())) {
-            taskRunEntity.getSpec().setCommand(taskTemplate.get().getSpec().getCommand());
+          if (!Objects.isNull(taskTemplate.getSpec().getCommand())) {
+            taskRunEntity.getSpec().setCommand(taskTemplate.getSpec().getCommand());
           }
-          if (!Objects.isNull(taskTemplate.get().getSpec().getArguments())) {
-            taskRunEntity.getSpec().setArguments(taskTemplate.get().getSpec().getArguments());
+          if (!Objects.isNull(taskTemplate.getSpec().getArguments())) {
+            taskRunEntity.getSpec().setArguments(taskTemplate.getSpec().getArguments());
           }
-          if (!Objects.isNull(taskTemplate.get().getSpec().getEnvs())) {
-            taskRunEntity.getSpec().setEnvs(taskTemplate.get().getSpec().getEnvs());
+          if (!Objects.isNull(taskTemplate.getSpec().getEnvs())) {
+            taskRunEntity.getSpec().setEnvs(taskTemplate.getSpec().getEnvs());
           }
-          if (!Objects.isNull(taskTemplate.get().getSpec().getScript())) {
-            taskRunEntity.getSpec().setScript(taskTemplate.get().getSpec().getScript());
+          if (!Objects.isNull(taskTemplate.getSpec().getScript())) {
+            taskRunEntity.getSpec().setScript(taskTemplate.getSpec().getScript());
           }
-          if (!Objects.isNull(taskTemplate.get().getSpec().getWorkingDir())) {
-            taskRunEntity.getSpec().setWorkingDir(taskTemplate.get().getSpec().getWorkingDir());
+          if (!Objects.isNull(taskTemplate.getSpec().getWorkingDir())) {
+            taskRunEntity.getSpec().setWorkingDir(taskTemplate.getSpec().getWorkingDir());
           }
-          if (!Objects.isNull(taskTemplate.get().getSpec().getAdditionalProperties())) {
-            taskRunEntity.getSpec().getAdditionalProperties().putAll(taskTemplate.get().getSpec().getAdditionalProperties());
+          if (!Objects.isNull(taskTemplate.getSpec().getAdditionalProperties())) {
+            taskRunEntity.getSpec().getAdditionalProperties().putAll(taskTemplate.getSpec().getAdditionalProperties());
           }
         }
         taskRunRepository.save(taskRunEntity);
