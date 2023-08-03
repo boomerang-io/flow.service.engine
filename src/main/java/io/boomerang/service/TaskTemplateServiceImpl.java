@@ -255,6 +255,6 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
              "latest");
        }
      }
-     return taskTemplate;
+     return taskTemplate.get();
    }
 }
