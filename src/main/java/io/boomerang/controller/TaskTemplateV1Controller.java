@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import io.boomerang.model.ChangeLogVersion;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.service.TaskTemplateService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -73,7 +74,7 @@ public class TaskTemplateV1Controller {
             description = "The name needs to be unique and must only contain alphanumeric and - characeters.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<TaskTemplate> createTaskTemplate(@RequestBody TaskTemplate taskTemplate) {
+  public TaskTemplate createTaskTemplate(@RequestBody TaskTemplate taskTemplate) {
     return taskTemplateService.create(taskTemplate);
   }
 
@@ -82,32 +83,21 @@ public class TaskTemplateV1Controller {
             description = "The name must only contain alphanumeric and - characeters. If the name exists, apply will create a new version.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<TaskTemplate> applyTaskTemplate(@RequestBody TaskTemplate taskTemplate,
+  public TaskTemplate applyTaskTemplate(@RequestBody TaskTemplate taskTemplate,
       @Parameter(name = "replace",
       description = "Replace existing version",
       required = false) @RequestParam(required = false, defaultValue = "false") boolean replace) {
     return taskTemplateService.apply(taskTemplate, replace);
   }
-
-  @PutMapping(value = "/{name}/enable")
-  @Operation(summary = "Enable a TaskTemplate")
-  @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
+  
+  @GetMapping(value = "/{name}/changelog")
+  @Operation(summary = "Retrieve the changlog", description = "Retrieves each versions changelog and returns them all as a list.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public TaskTemplate enableWorkflow(
+  public List<ChangeLogVersion> getChangelog(
       @Parameter(name = "name",
       description = "Name of Task Template",
       required = true) @PathVariable String name) {
-    return taskTemplateService.enable(name);
-  }
-
-  @PutMapping(value = "/{name}/disable")
-  @Operation(summary = "Disable a TaskTemplate")
-  @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
-      @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public TaskTemplate disableWorkflow(
-      @Parameter(name = "name",
-      description = "Name of Task Template",
-      required = true) @PathVariable String name) {
-    return taskTemplateService.disable(name);
+    return taskTemplateService.changelog(name);
   }
 }

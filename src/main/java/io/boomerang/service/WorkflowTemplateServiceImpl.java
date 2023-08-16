@@ -8,7 +8,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.EnumUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,17 +22,16 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Service;
-import io.boomerang.data.entity.TaskTemplateEntity;
+import io.boomerang.data.entity.TaskTemplateRevisionEntity;
 import io.boomerang.data.entity.WorkflowTemplateEntity;
 import io.boomerang.data.model.WorkflowTask;
-import io.boomerang.data.repository.TaskTemplateRepository;
+import io.boomerang.data.repository.TaskTemplateRevisionRepository;
 import io.boomerang.data.repository.WorkflowTemplateRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.WorkflowTemplate;
 import io.boomerang.model.enums.TaskType;
-import io.boomerang.model.enums.WorkflowStatus;
 
 /*
  * This service implements the CRUD operations on a WorkflowTemplate
@@ -57,9 +55,9 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
   
   @Autowired
   private TaskTemplateService taskTemplateService;
-
+  
   @Autowired
-  private TaskTemplateRepository taskTemplateRepository;
+  private TaskTemplateRevisionRepository taskTemplateRevisionRepository;
 
   /*
    * Get WorklfowTemplate
@@ -137,7 +135,7 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
 
       Page<WorkflowTemplate> pages = PageableExecutionUtils.getPage(
           wfTemplates, pageable,
-          () -> mongoTemplate.count(query, WorkflowTemplateEntity.class));
+          () -> wfTemplates.size());
 
       return pages;
   }
@@ -326,8 +324,8 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
 
   private boolean areTemplateUpgradesAvailable(WorkflowTemplateEntity entity) {
     for (WorkflowTask t : entity.getTasks()) {
-      Optional<TaskTemplateEntity> taskTemplate =
-          taskTemplateRepository.findByNameAndLatestVersion(t.getTemplateRef());
+      Optional<TaskTemplateRevisionEntity> taskTemplate =
+          taskTemplateRevisionRepository.findByParentAndLatestVersion(t.getTemplateRef());
       if (taskTemplate.isPresent()) {
         if (t.getTemplateVersion() != null
             && (t.getTemplateVersion() < taskTemplate.get().getVersion())) {

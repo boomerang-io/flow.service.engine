@@ -204,7 +204,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     });
 
     Page<WorkflowRun> pages = PageableExecutionUtils.getPage(wfRuns, pageable,
-        () -> mongoTemplate.count(query, WorkflowRunEntity.class));
+        () -> wfRuns.size());
 
     return pages;
   }

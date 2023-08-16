@@ -3,13 +3,13 @@ package io.boomerang.service;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,14 +24,25 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateEntity;
+import io.boomerang.data.entity.TaskTemplateRevisionEntity;
+import io.boomerang.data.entity.WorkflowEntity;
+import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.model.WorkflowTask;
 import io.boomerang.data.repository.TaskTemplateRepository;
+import io.boomerang.data.repository.TaskTemplateRevisionRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
+import io.boomerang.model.ChangeLogVersion;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.enums.TaskTemplateStatus;
 
+/*
+ * TaskTemplates are stored in a main TaskTemplateEntity with fields that have limited change scope
+ * and a TaskTemplateRevisionEntity that holds the versioned elements
+ * 
+ * It utilises a @DocumentReference for the parent field that allows us to retrieve the TaskTemplateEntity from within the TaskTemplateRevisionEntity when reading
+ */
 @Service
 public class TaskTemplateServiceImpl implements TaskTemplateService {
   private static final Logger LOGGER = LogManager.getLogger();
@@ -49,35 +60,42 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   private TaskTemplateRepository taskTemplateRepository;
 
   @Autowired
+  private TaskTemplateRevisionRepository taskTemplateRevisionRepository;
+
+  @Autowired
   private MongoTemplate mongoTemplate;
 
   @Override
-  public TaskTemplate get(String name, Optional<Integer> version) {
-    Optional<TaskTemplateEntity> taskTemplateEntity;
+  public TaskTemplate get(String name, Optional<Integer> version) {   
+    // Retrieve TaskTemplateRevision
+    Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity;
     if (version.isEmpty()) {
-      taskTemplateEntity = taskTemplateRepository.findByNameAndLatestVersion(name);
-      if (taskTemplateEntity.isEmpty()) {
-        throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, name, "latest");
-      }
+      taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndLatestVersion(name);
     } else {
-      taskTemplateEntity = taskTemplateRepository.findByNameAndVersion(name, version.get());
-      if (taskTemplateEntity.isEmpty()) {
-        throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, name, version.get());
-      }
+      taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndVersion(name, version.get());
     }
-    TaskTemplate template = new TaskTemplate(taskTemplateEntity.get());
-    return template;
+    if (taskTemplateRevisionEntity.isEmpty()) {
+      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, name, version.isPresent() ? version.get() : "latest");
+    }
+    
+    return convertEntityToModel(taskTemplateRevisionEntity.get().getParent(), taskTemplateRevisionEntity.get());
   }
 
+  /*
+   * Create TaskTemplate
+   * 
+   * TODO additional checks for mandatory fields
+   * I.e. if TaskTemplate is of type template, then it must include xyz
+   */
   @Override
-  public ResponseEntity<TaskTemplate> create(TaskTemplate taskTemplate) {
+  public TaskTemplate create(TaskTemplate taskTemplate) {
     //Name Check
     if (!taskTemplate.getName().matches(NAME_REGEX)) {
       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, taskTemplate.getName());
     }
     
     //Unique Name Check
-    if (taskTemplateRepository.findByNameAndLatestVersion(taskTemplate.getName().toLowerCase()).isPresent()) {
+    if (taskTemplateRepository.countByName(taskTemplate.getName().toLowerCase()) > 0) {
       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_ALREADY_EXISTS, taskTemplate.getName());
     }
     
@@ -90,51 +108,78 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     taskTemplate.getAnnotations().put("boomerang.io/generation", ANNOTATION_GENERATION);
     taskTemplate.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
     
-    //TODO additional checks for mandatory fields
-    //I.e. if TaskTemplate is of type template, then it must include xyz
-    
+    //Set as initial version
     taskTemplate.setVersion(1);
     ChangeLog changelog = new ChangeLog(CHANGELOG_INITIAL);
     updateChangeLog(taskTemplate, changelog);
     taskTemplate.setChangelog(changelog);
-    taskTemplate.setCreationDate(new Date());
-    taskTemplateRepository.save(taskTemplate);
-    return ResponseEntity.ok(taskTemplate);
+    
+    //Save
+    TaskTemplateEntity taskTemplateEntity = new TaskTemplateEntity(taskTemplate);
+    TaskTemplateRevisionEntity taskTemplateRevisionEntity = new TaskTemplateRevisionEntity(taskTemplate);
+    taskTemplateRevisionEntity.setParent(taskTemplateEntity);
+    taskTemplateRepository.save(taskTemplateEntity);
+    taskTemplateRevisionRepository.save(taskTemplateRevisionEntity);
+    
+    return convertEntityToModel(taskTemplateEntity, taskTemplateRevisionEntity);
   }
   
   //TODO: handle more of the apply i.e. if original has element, and new does not, keep the original element.
   @Override
-  public ResponseEntity<TaskTemplate> apply(TaskTemplate taskTemplate, boolean replace) {
+  public TaskTemplate apply(TaskTemplate taskTemplate, boolean replace) {
     //Name Check
     if (!taskTemplate.getName().matches(NAME_REGEX)) {
       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, taskTemplate.getName());
     }
     
     //Does it already exist?
-    Optional<TaskTemplateEntity> taskTemplateEntity = taskTemplateRepository.findByNameAndLatestVersion(taskTemplate.getName().toLowerCase());
-    if (!taskTemplateEntity.isPresent()) {
+    Optional<TaskTemplateEntity> taskTemplateEntityOpt = taskTemplateRepository.findByName(taskTemplate.getName());
+    if (!taskTemplateEntityOpt.isPresent()) {
       return this.create(taskTemplate);
     }
+    TaskTemplateEntity taskTemplateEntity = taskTemplateEntityOpt.get();
     
-    //Override Id & version
-    if (replace) {
-      taskTemplate.setId(taskTemplateEntity.get().getId());
-    } else {
-      taskTemplate.setId(null);
-      taskTemplate.setVersion(taskTemplateEntity.get().getVersion() + 1);
+    //Check for active status
+    if (TaskTemplateStatus.inactive.equals(taskTemplateEntity.getStatus()) && !TaskTemplateStatus.active.equals(taskTemplate.getStatus())) {
+      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INACTIVE_STATUS, taskTemplate.getName(), "latest");
+    }
+    
+    //Get latest revision
+    Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndLatestVersion(taskTemplate.getName());
+    if (taskTemplateRevisionEntity.isEmpty()) {
+      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, taskTemplate.getName(), "latest");
     }
 
     //Set System Generated Annotations
-    taskTemplate.getAnnotations().put("boomerang.io/generation", ANNOTATION_GENERATION);
-    taskTemplate.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
     
-    ChangeLog changelog = new ChangeLog(taskTemplateEntity.get().getVersion().equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE);
+    //Update TaskTemplateEntity
+    //Name (slug), Type, Creation Date, and Verified cannot be updated
+    taskTemplateEntity.setStatus(taskTemplate.getStatus());
+    taskTemplateEntity.getAnnotations().putAll(taskTemplate.getAnnotations());
+    taskTemplateEntity.getAnnotations().put("boomerang.io/generation", ANNOTATION_GENERATION);
+    taskTemplateEntity.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
+    taskTemplateEntity.getLabels().putAll(taskTemplate.getLabels());
+
+    //Create / Replace TaskTemplateRevisionEntity
+    TaskTemplateRevisionEntity newTaskTemplateRevisionEntity = new TaskTemplateRevisionEntity(taskTemplate);
+//    newTaskTemplateRevisionEntity.setParentRef(taskTemplateEntity.getId());
+    if (replace) {
+      newTaskTemplateRevisionEntity.setId(taskTemplateRevisionEntity.get().getId());
+      newTaskTemplateRevisionEntity.setVersion(taskTemplateRevisionEntity.get().getVersion());
+    } else {
+      newTaskTemplateRevisionEntity.setVersion(taskTemplateRevisionEntity.get().getVersion() + 1);
+    }
+    
+    //Update changelog
+    ChangeLog changelog = new ChangeLog(taskTemplateRevisionEntity.get().getVersion().equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE);
     updateChangeLog(taskTemplate, changelog);
-    taskTemplate.setChangelog(changelog);
-    taskTemplate.setCreationDate(new Date());
-    TaskTemplateEntity savedEntity = taskTemplateRepository.save(taskTemplate);
-    TaskTemplate savedTemplate = new TaskTemplate(savedEntity);
-    return ResponseEntity.ok(savedTemplate);
+    newTaskTemplateRevisionEntity.setChangelog(changelog);
+    
+    //Save entities
+    newTaskTemplateRevisionEntity.setParent(taskTemplateEntity);
+    TaskTemplateEntity savedEntity = taskTemplateRepository.save(taskTemplateEntity);
+    TaskTemplateRevisionEntity savedRevision = taskTemplateRevisionRepository.save(newTaskTemplateRevisionEntity);
+    return convertEntityToModel(savedEntity, savedRevision);
   }
 
   private void updateChangeLog(TaskTemplate taskTemplate, ChangeLog changelog) {
@@ -207,54 +252,62 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
       List<TaskTemplateEntity> taskTemplateEntities = mongoTemplate.find(query.with(pageable), TaskTemplateEntity.class);
       
       List<TaskTemplate> taskTemplates = new LinkedList<>();
-      taskTemplateEntities.forEach(e -> taskTemplates.add(new TaskTemplate(e)));
+      taskTemplateEntities.forEach(e -> {
+        Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity =
+            taskTemplateRevisionRepository.findByParentAndLatestVersion(e.getName());
+        if (taskTemplateRevisionEntity.isPresent()) {
+          TaskTemplate tt = convertEntityToModel(e, taskTemplateRevisionEntity.get());
+          taskTemplates.add(tt);
+        }
+      });
 
       Page<TaskTemplate> pages = PageableExecutionUtils.getPage(
           taskTemplates, pageable,
-          () -> mongoTemplate.count(query, TaskTemplateEntity.class));
+          () -> taskTemplates.size());
 
       return pages;
+  }  
+  
+  /*
+   * Retrieve all the changelogs and return by version
+   */
+  @Override
+  public List<ChangeLogVersion> changelog(String name) {
+      List<TaskTemplateRevisionEntity> taskTemplateRevisionEntities = taskTemplateRevisionRepository.findByParent(name);
+      if (taskTemplateRevisionEntities.isEmpty()) {
+        throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, name);
+      }
+      List<ChangeLogVersion> changelogs = new LinkedList<>();
+      taskTemplateRevisionEntities.forEach(v -> {
+        ChangeLogVersion cl = new ChangeLogVersion();
+        cl.setVersion(v.getVersion());
+        cl.setAuthor(v.getChangelog().getAuthor());
+        cl.setReason(v.getChangelog().getReason());
+        cl.setDate(v.getChangelog().getDate());
+        changelogs.add(cl);
+      });
+      return changelogs;
   }
-  
-   @Override
-   public TaskTemplate enable(String name) {
-     TaskTemplateEntity taskTemplateEntity = this.get(name, Optional.empty());
-     taskTemplateEntity.setStatus(TaskTemplateStatus.active);
-     return new TaskTemplate(taskTemplateRepository.save(taskTemplateEntity));
-   }
-  
-   @Override
-   public TaskTemplate disable(String name) {
-     TaskTemplateEntity taskTemplateEntity = this.get(name, Optional.empty());
-     taskTemplateEntity.setStatus(TaskTemplateStatus.inactive);
-     return new TaskTemplate(taskTemplateRepository.save(taskTemplateEntity));
-   }
 
    @Override
-   public TaskTemplateEntity retrieveAndValidateTaskTemplate(
-       final WorkflowTask wfRevisionTask) {
-     String templateRef = wfRevisionTask.getTemplateRef();
-     Optional<TaskTemplateEntity> taskTemplate;
-     if (wfRevisionTask.getTemplateVersion() != null) {
-       taskTemplate = taskTemplateRepository.findByNameAndVersion(templateRef,
-           wfRevisionTask.getTemplateVersion());
-       if (taskTemplate.isEmpty()) {
-         throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
-             wfRevisionTask.getTemplateVersion());
-       } else if (TaskTemplateStatus.inactive.equals(taskTemplate.get().getStatus())) {
-         throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INACTIVE_STATUS, templateRef,
-             wfRevisionTask.getTemplateVersion());
-       }
-     } else {
-       taskTemplate = taskTemplateRepository.findByNameAndLatestVersion(templateRef);
-       if (taskTemplate.isEmpty()) {
-         throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, templateRef,
-             "latest");
-       } else if (TaskTemplateStatus.inactive.equals(taskTemplate.get().getStatus())) {
-         throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INACTIVE_STATUS, templateRef,
-             "latest");
-       }
+   public TaskTemplate retrieveAndValidateTaskTemplate(
+       final WorkflowTask wfTask) {
+     //Get TaskTemplateEntity - this will check valid templateRef and Version
+     TaskTemplate taskTemplate = this.get(wfTask.getTemplateRef(), Optional.ofNullable(wfTask.getTemplateVersion()));
+     
+     //Check TaskTemplate Status
+     if (TaskTemplateStatus.inactive.equals(taskTemplate.getStatus())) {
+       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INACTIVE_STATUS, wfTask.getTemplateRef(),
+           wfTask.getTemplateVersion());
      }
-     return taskTemplate.get();
+     return taskTemplate;
+   }
+
+   private TaskTemplate convertEntityToModel(TaskTemplateEntity entity,
+       TaskTemplateRevisionEntity revision) {
+     TaskTemplate taskTemplate = new TaskTemplate();
+     BeanUtils.copyProperties(entity, taskTemplate);
+     BeanUtils.copyProperties(revision, taskTemplate);
+     return taskTemplate;
    }
 }

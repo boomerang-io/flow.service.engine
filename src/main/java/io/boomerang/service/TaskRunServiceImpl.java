@@ -147,7 +147,7 @@ public class TaskRunServiceImpl implements TaskRunService {
 
     Page<TaskRun> pages = PageableExecutionUtils.getPage(
         taskRuns, pageable,
-        () -> mongoTemplate.count(query, TaskRunEntity.class));
+        () -> taskRuns.size());
     
     return pages;
   }

@@ -2,16 +2,15 @@
 
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.model.AbstractParam;
-import io.boomerang.model.ChangeLog;
-import io.boomerang.model.TaskTemplateSpec;
+import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.enums.TaskTemplateStatus;
 import io.boomerang.model.enums.TaskType;
 
@@ -22,24 +21,21 @@ public class TaskTemplateEntity {
 
   @Id
   private String id;
+  @Indexed
   private String name;
-  private String displayName;
-  private String description;
+  private TaskType type;
   private TaskTemplateStatus status = TaskTemplateStatus.active;
+  private Date creationDate = new Date();
+  private boolean verified = false;
   private Map<String, String> labels = new HashMap<>();
   private Map<String, Object> annotations = new HashMap<>();
-  private Integer version;
-  private Date creationDate = new Date();
-  private ChangeLog changelog;
-  private String category;
-  private TaskType type;
-  private TaskTemplateSpec spec = new TaskTemplateSpec();
-  private List<AbstractParam> config;
-  private String icon;
-  private boolean verified;
 
   public TaskTemplateEntity() {
     // Do nothing
+  }
+
+  public TaskTemplateEntity(TaskTemplate taskTemplate) {
+    BeanUtils.copyProperties(taskTemplate, this, "id", "creationDate", "verified");
   }
 
   public String getId() {
@@ -50,38 +46,6 @@ public class TaskTemplateEntity {
     this.id = id;
   }
 
-  public Integer getVersion() {
-    return version;
-  }
-
-  public void setVersion(Integer version) {
-    this.version = version;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public Map<String, String> getLabels() {
-    return labels;
-  }
-
-  public void setLabels(Map<String, String> labels) {
-    this.labels = labels;
-  }
-
-  public Map<String, Object> getAnnotations() {
-    return annotations;
-  }
-
-  public void setAnnotations(Map<String, Object> annotations) {
-    this.annotations = annotations;
-  }
-
   public String getName() {
     return name;
   }
@@ -90,28 +54,12 @@ public class TaskTemplateEntity {
     this.name = name;
   }
 
-  public String getCategory() {
-    return category;
-  }
-
-  public void setCategory(String category) {
-    this.category = category;
-  }
-  
   public TaskType getType() {
     return type;
   }
 
   public void setType(TaskType type) {
     this.type = type;
-  }
-
-  public TaskTemplateSpec getSpec() {
-    return spec;
-  }
-
-  public void setSpec(TaskTemplateSpec spec) {
-    this.spec = spec;
   }
 
   public TaskTemplateStatus getStatus() {
@@ -130,22 +78,6 @@ public class TaskTemplateEntity {
     this.creationDate = creationDate;
   }
 
-  public ChangeLog getChangelog() {
-    return changelog;
-  }
-
-  public void setChangelog(ChangeLog changelog) {
-    this.changelog = changelog;
-  }
-
-  public String getIcon() {
-    return icon;
-  }
-
-  public void setIcon(String icon) {
-    this.icon = icon;
-  }
-
   public boolean isVerified() {
     return verified;
   }
@@ -154,19 +86,19 @@ public class TaskTemplateEntity {
     this.verified = verified;
   }
 
-  public List<AbstractParam> getConfig() {
-    return config;
+  public Map<String, String> getLabels() {
+    return labels;
   }
 
-  public void setConfig(List<AbstractParam> config) {
-    this.config = config;
+  public void setLabels(Map<String, String> labels) {
+    this.labels = labels;
   }
 
-  public String getDisplayName() {
-    return displayName;
+  public Map<String, Object> getAnnotations() {
+    return annotations;
   }
 
-  public void setDisplayName(String displayName) {
-    this.displayName = displayName;
+  public void setAnnotations(Map<String, Object> annotations) {
+    this.annotations = annotations;
   }
 }

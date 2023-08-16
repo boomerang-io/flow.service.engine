@@ -23,17 +23,18 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import io.boomerang.data.entity.TaskTemplateEntity;
+import io.boomerang.data.entity.TaskTemplateRevisionEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.model.WorkflowTask;
-import io.boomerang.data.repository.TaskTemplateRepository;
+import io.boomerang.data.repository.TaskTemplateRevisionRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.ChangeLogVersion;
+import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.enums.RunStatus;
@@ -62,7 +63,7 @@ public class WorkflowServiceImpl implements WorkflowService {
   private WorkflowRevisionRepository workflowRevisionRepository;
 
   @Autowired
-  private TaskTemplateRepository taskTemplateRepository;
+  private TaskTemplateRevisionRepository taskTemplateRevisionRepository;
 
   @Autowired
   private MongoTemplate mongoTemplate;
@@ -174,7 +175,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     
     Page<Workflow> pages = PageableExecutionUtils.getPage(
         workflows, pageable,
-        () -> mongoTemplate.count(query, WorkflowEntity.class));
+        () -> workflows.size());
     LOGGER.debug(pages.toString());
     return pages;
   }
@@ -251,7 +252,7 @@ public class WorkflowServiceImpl implements WorkflowService {
           && !TaskType.end.equals(wfRevisionTask.getType())) {
 
         //Shared utility with DAGUtility
-        TaskTemplateEntity taskTemplate = taskTemplateService.retrieveAndValidateTaskTemplate(wfRevisionTask);
+        TaskTemplate taskTemplate = taskTemplateService.retrieveAndValidateTaskTemplate(wfRevisionTask);
         wfRevisionTask.setTemplateVersion(taskTemplate.getVersion());
       }
     }
@@ -389,8 +390,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
   private boolean areTemplateUpgradesAvailable(WorkflowRevisionEntity wfRevisionEntity) {
     for (WorkflowTask t : wfRevisionEntity.getTasks()) {
-      Optional<TaskTemplateEntity> taskTemplate =
-          taskTemplateRepository.findByNameAndLatestVersion(t.getTemplateRef());
+      Optional<TaskTemplateRevisionEntity> taskTemplate =
+          taskTemplateRevisionRepository.findByParentAndLatestVersion(t.getTemplateRef());
       if (taskTemplate.isPresent()) {
         if (t.getTemplateVersion() != null
             && (t.getTemplateVersion() < taskTemplate.get().getVersion())) {

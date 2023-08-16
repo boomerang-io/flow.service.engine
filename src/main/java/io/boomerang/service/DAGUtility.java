@@ -24,7 +24,6 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskRunEntity;
-import io.boomerang.data.entity.TaskTemplateEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.model.WorkflowTask;
@@ -32,6 +31,7 @@ import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.TaskDependency;
+import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.enums.ExecutionCondition;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
@@ -114,11 +114,11 @@ public class DAGUtility {
         if (!TaskType.start.equals(wfRevisionTask.getType())
             && !TaskType.end.equals(wfRevisionTask.getType())) {
 
-          TaskTemplateEntity taskTemplate =
+          TaskTemplate taskTemplate =
               taskTemplateService.retrieveAndValidateTaskTemplate(wfRevisionTask);
           taskRunEntity.setTemplateRef(wfRevisionTask.getTemplateRef());
           taskRunEntity.setTemplateVersion(taskTemplate.getVersion());
-          LOGGER.debug("[{}] Found Task Template: {} ({})", wfRunEntity.getId(), taskTemplate.getName(), taskTemplate.getId());
+          LOGGER.debug("[{}] Found Task Template: {} @ {}", wfRunEntity.getId(), taskTemplate.getName(), taskTemplate.getVersion());
           
           // Stack the labels based on label propagation
           // Task Template -> Workflow Task -> Run 
