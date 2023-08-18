@@ -69,10 +69,10 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   public TaskTemplate get(String name, Optional<Integer> version) {   
     // Retrieve TaskTemplateRevision
     Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity;
-    if (version.isEmpty()) {
-      taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndLatestVersion(name);
-    } else {
+    if (version.isPresent()) {
       taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndVersion(name, version.get());
+    } else {
+      taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndLatestVersion(name);
     }
     if (taskTemplateRevisionEntity.isEmpty()) {
       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, name, version.isPresent() ? version.get() : "latest");

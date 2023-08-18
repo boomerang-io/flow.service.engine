@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * If TaskTypes are altered, logic will need to be checked in TaskExecutionServiceImpl
  */
 public enum TaskType {
-  start("start"), end("end"), template("template"), custom("custom"), generic("generic"), decision("decision)"), // NOSONAR
+  start("start"), end("end"), template("template"), custom("custom"), generic("generic"), decision("decision"), // NOSONAR
   approval("approval"), setwfproperty("setwfproperty"), manual("manual)"), eventwait("eventwait"), acquirelock("acquirelock"), // NOSONAR 
   releaselock("releaselock"), runworkflow("runworkflow"), runscheduledworkflow("runscheduledworkflow"), script("script"), // NOSONAR 
   setwfstatus("setwfstatus"), sleep("sleep"); // NOSONAR
