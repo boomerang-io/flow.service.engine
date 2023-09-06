@@ -31,18 +31,16 @@ public class TaskRunEntityUpdateInterceptor {
 
     LOGGER.info("Intercepted save action on entity {} from {}", entityToBeSaved,
         thisJoinPoint.getSignature().getDeclaringTypeName());
-
     if (entityToBeSaved instanceof TaskRunEntity) {
       taskRunEntityToBeUpdated((TaskRunEntity) entityToBeSaved);
     }
   }
 
   private void taskRunEntityToBeUpdated(TaskRunEntity newEntity) {
-
-    // Check if activity and workflow IDs are not empty
+    // Check if WorkflowRun and Workflow IDs are not empty
     if (StringUtils.isNotBlank(newEntity.getWorkflowRunRef())
         && StringUtils.isNotBlank(newEntity.getId())) {
-
+      
       // Retrieve old entity and compare the statuses
       taskRunRepository.findById(newEntity.getId()).ifPresent(oldEntity -> {
         if (oldEntity.getStatus() != newEntity.getStatus() || oldEntity.getPhase() != newEntity.getPhase()) {
