@@ -78,7 +78,7 @@ public class ParameterManagerImpl implements ParameterManager {
       LOGGER.debug("Resolving Parameters: " + p.getName() + "(" + p.getType() + ") = " + p.getValue());
       if (ParamType.string.equals(p.getType()) || p.getType() == null) {
         // Default to String replacement. This also allows recursive use of Params and multiple Param replacement
-        p.setValue(resolveParam(ParamType.string, p.getValue().toString(), wfRunId, paramLayers));
+        p.setValue(resolveParam(ParamType.string, p.getValue() != null ? p.getValue().toString() : "", wfRunId, paramLayers));
       } else if (ParamType.array.equals(p.getType()) && p.getValue() instanceof List) {
         // Type safety. If you attempt to convert a string or object (JSON = HashMap) then this causes an exception
         ArrayList<String> valueList = (ArrayList<String>) p.getValue();
