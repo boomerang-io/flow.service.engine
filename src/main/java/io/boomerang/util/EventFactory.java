@@ -44,7 +44,7 @@ public class EventFactory {
 
     // Event subject
     // @formatter:off
-    String eventSubject = MessageFormat.format("/workflow/run/{0}/status/{1}",
+    String eventSubject = MessageFormat.format("/workflowrun/{0}/status/{1}",
         wfRunEntity.getId(),
         wfRunEntity.getStatus().toString().toLowerCase());
     // @formatter:off
@@ -66,7 +66,7 @@ public class EventFactory {
 
     // Event subject
     // @formatter:off
-    String eventSubject = MessageFormat.format("/task/run/{0}/status/{1}",
+    String eventSubject = MessageFormat.format("/taskrun/{0}/status/{1}",
         taskRunEntity.getId(),
         taskRunEntity.getStatus().toString().toLowerCase());
     // @formatter:on
@@ -89,7 +89,7 @@ public class EventFactory {
 //
 //    // Event subject
 //    // @formatter:off
-//    String eventSubject = MessageFormat.format("/task/run/{0}/status/{1}",
+//    String eventSubject = MessageFormat.format("/taskrun/{0}/status/{1}",
 //        taskRunEntity.getId(),
 //        taskRunEntity.getStatus().toString().toLowerCase());
 //    // @formatter:on
