@@ -4,8 +4,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -25,9 +25,9 @@ public class WorkflowRunEntityUpdateInterceptor {
   @Autowired
   EventSinkService eventSinkService;
 
-  @After("execution(* io.boomerang.data.repository.WorkflowRunRepository.save(..))"
+  @Before("execution(* io.boomerang.data.repository.WorkflowRunRepository.save(..))"
       + " && args(entityToBeSaved)")
-  public void afterSaveInvoked(JoinPoint thisJoinPoint, Object entityToBeSaved) {
+  public void saveInvoked(JoinPoint thisJoinPoint, Object entityToBeSaved) {
 
     LOGGER.info("Intercepted save action on entity {} from {}", entityToBeSaved,
         thisJoinPoint.getSignature().getDeclaringTypeName());
