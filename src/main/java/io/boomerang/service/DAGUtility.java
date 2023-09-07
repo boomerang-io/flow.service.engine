@@ -131,7 +131,7 @@ public class DAGUtility {
           Map<String, Object> annotations = new HashMap<>();
           annotations.put("boomerang.io/generation", "4");
           annotations.put("boomerang.io/kind", "TaskRun");
-          annotations.put("boomerang.io/task-deletion", wfRunEntity.getAnnotations().get("boomerang.io/task-deletion"));
+//          annotations.put("boomerang.io/task-deletion", wfRunEntity.getAnnotations().get("boomerang.io/task-deletion"));
           taskRunEntity.getAnnotations().putAll(annotations);
 
           //TODO: validate this actually works - should template results just be merged into Run
@@ -156,6 +156,8 @@ public class DAGUtility {
           //Set TaskRun Spec from TaskTemplate Spec - Debug and Deletion come from an alternate source
           if (!Objects.isNull(taskTemplate.getSpec().getImage())) {
             taskRunEntity.getSpec().setImage(taskTemplate.getSpec().getImage());
+          } else if (!TaskType.template.equals(wfRevisionTask.getType())) {
+            taskRunEntity.getSpec().setImage(wfRunEntity.getAnnotations().get("boomerang.io/default-image").toString());
           }
           if (!Objects.isNull(taskTemplate.getSpec().getCommand())) {
             taskRunEntity.getSpec().setCommand(taskTemplate.getSpec().getCommand());
