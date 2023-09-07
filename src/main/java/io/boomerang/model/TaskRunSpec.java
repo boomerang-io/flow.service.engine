@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.model.enums.TaskDeletionEnum;
+import io.boomerang.model.enums.TaskDeletion;
 
 @JsonInclude(Include.NON_NULL)
 public class TaskRunSpec {
@@ -20,7 +20,7 @@ public class TaskRunSpec {
   private String script;
   private String workingDir;
   private Boolean debug = false;
-  private TaskDeletionEnum deletion;
+  private TaskDeletion deletion;
   @JsonIgnore
   private Map<String, Object> additionalProperties = new HashMap<>();
   
@@ -90,11 +90,11 @@ public class TaskRunSpec {
     this.debug = debug;
   }
 
-  public TaskDeletionEnum getDeletion() {
+  public TaskDeletion getDeletion() {
     return deletion;
   }
 
-  public void setDeletion(TaskDeletionEnum deletion) {
+  public void setDeletion(TaskDeletion deletion) {
     this.deletion = deletion;
   }
 }

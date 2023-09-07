@@ -35,6 +35,7 @@ import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.enums.ExecutionCondition;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
+import io.boomerang.model.enums.TaskDeletion;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.util.GraphProcessor;
 import io.boomerang.util.ParameterUtil;
@@ -130,6 +131,7 @@ public class DAGUtility {
           Map<String, Object> annotations = new HashMap<>();
           annotations.put("boomerang.io/generation", "4");
           annotations.put("boomerang.io/kind", "TaskRun");
+          annotations.put("boomerang.io/task-deletion", wfRunEntity.getAnnotations().get("boomerang.io/task-deletion"));
           taskRunEntity.getAnnotations().putAll(annotations);
 
           //TODO: validate this actually works - should template results just be merged into Run
@@ -173,6 +175,7 @@ public class DAGUtility {
           if (!Objects.isNull(taskTemplate.getSpec().getAdditionalProperties())) {
             taskRunEntity.getSpec().getAdditionalProperties().putAll(taskTemplate.getSpec().getAdditionalProperties());
           }
+          taskRunEntity.getSpec().setDeletion(TaskDeletion.getDeletion(wfRunEntity.getAnnotations().get("boomerang.io/task-deletion").toString()));
         }
         taskRunRepository.save(taskRunEntity);
         LOGGER.debug("[{}] TaskRunEntity ({}) created for: {}", wfRunEntity.getId(), taskRunEntity.getId(),
