@@ -156,7 +156,7 @@ public class DAGUtility {
           //Set TaskRun Spec from TaskTemplate Spec - Debug and Deletion come from an alternate source
           if (!Objects.isNull(taskTemplate.getSpec().getImage())) {
             taskRunEntity.getSpec().setImage(taskTemplate.getSpec().getImage());
-          } else if (!TaskType.template.equals(wfRevisionTask.getType())) {
+          } else if (TaskType.template.equals(wfRevisionTask.getType())) {
             taskRunEntity.getSpec().setImage(wfRunEntity.getAnnotations().get("boomerang.io/default-image").toString());
           }
           if (!Objects.isNull(taskTemplate.getSpec().getCommand())) {
