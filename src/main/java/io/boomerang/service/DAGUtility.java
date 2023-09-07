@@ -154,10 +154,10 @@ public class DAGUtility {
             taskRunEntity.setTimeout(wfRevisionTask.getTimeout());
           }          
           //Set TaskRun Spec from TaskTemplate Spec - Debug and Deletion come from an alternate source
-          if (!Objects.isNull(taskTemplate.getSpec().getImage())) {
+          if (!Objects.isNull(taskTemplate.getSpec().getImage()) && !taskTemplate.getSpec().getImage().isEmpty()) {
             taskRunEntity.getSpec().setImage(taskTemplate.getSpec().getImage());
           } else if (TaskType.template.equals(wfRevisionTask.getType())) {
-            taskRunEntity.getSpec().setImage(wfRunEntity.getAnnotations().get("boomerang.io/default-image").toString());
+            taskRunEntity.getSpec().setImage(wfRunEntity.getAnnotations().get("boomerang.io/task-default-image").toString());
           }
           if (!Objects.isNull(taskTemplate.getSpec().getCommand())) {
             taskRunEntity.getSpec().setCommand(taskTemplate.getSpec().getCommand());
