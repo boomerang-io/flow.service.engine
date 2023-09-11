@@ -12,9 +12,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
+import io.boomerang.data.entity.EventQueueEntity;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
+import io.boomerang.data.repository.EventQueueRepository;
 import io.boomerang.model.events.TaskRunStatusEvent;
 import io.boomerang.model.events.WorkflowRunStatusEvent;
 import io.boomerang.util.EventFactory;
@@ -39,6 +42,9 @@ public class EventSinkServiceImpl implements EventSinkService {
   @Autowired
   // @Qualifier("internalRestTemplate")
   public RestTemplate restTemplate;
+  
+  @Autowired
+  public EventQueueRepository eventRepository;
 
   @Override
   public Future<Boolean> publishStatusCloudEvent(TaskRunEntity taskRunEntity) {
@@ -130,12 +136,18 @@ public class EventSinkServiceImpl implements EventSinkService {
       String[] sinkUrlList = sinkUrls.split(",");
       for (String sinkUrl : sinkUrlList) {
         LOGGER.debug("httpSink() - URL: " + sinkUrl);
-        ResponseEntity<String> responseEntity =
-            restTemplate.exchange(sinkUrl, HttpMethod.POST, req, String.class);
-        LOGGER.debug("httpSink() - Status Code: " + responseEntity.getStatusCode());
-        if (responseEntity.getBody() != null) {
-          LOGGER.debug("httpSink() - Body: " + responseEntity.getBody().toString());
-        }
+        
+        // 2023-09-12 WIP - Updates to a dead letter queue for replayable events
+//        try {
+          ResponseEntity<String> responseEntity =
+              restTemplate.exchange(sinkUrl, HttpMethod.POST, req, String.class);
+          LOGGER.debug("httpSink() - Status Code: " + responseEntity.getStatusCode());
+          if (responseEntity.getBody() != null) {
+            LOGGER.debug("httpSink() - Body: " + responseEntity.getBody().toString());
+          }
+//        } catch (ResourceAccessException rae) {
+//          eventRepository.save(new EventQueueEntity(sinkUrl, req));
+//        }
       }
     }
   }
