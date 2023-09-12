@@ -1,13 +1,16 @@
 package io.boomerang.service;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.slf4j.helpers.MessageFormatter;
@@ -18,6 +21,7 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.boomerang.client.WorkflowClient;
 import io.boomerang.data.entity.ActionEntity;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
@@ -33,12 +37,14 @@ import io.boomerang.model.TaskDependency;
 import io.boomerang.model.TaskWorkspace;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunSubmitRequest;
+import io.boomerang.model.WorkflowSchedule;
 import io.boomerang.model.WorkflowWorkspaceSpec;
 import io.boomerang.model.enums.ActionStatus;
 import io.boomerang.model.enums.ActionType;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
+import io.boomerang.model.enums.WorkflowScheduleType;
 import io.boomerang.util.ParameterUtil;
 
 @Service
@@ -67,9 +73,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
   @Autowired
   private ActionRepository actionRepository;
-  //
-  // @Autowired
-  // private WorkflowScheduleService scheduleService;
+  
+   @Autowired
+   private WorkflowClient workflowClient;
 
   @Autowired
   private ParameterManager paramManager;
@@ -287,7 +293,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       callEnd = true;
     } else if (TaskType.runscheduledworkflow.equals(taskType)) {
       LOGGER.info("[{}] Execute Run Scheduled Workflow Task", wfRunId);
-//      this.runScheduledWorkflow(taskExecution, wfRunEntity.get(), workflowName);
+      this.runScheduledWorkflow(taskExecution, wfRunEntity);
       callEnd = true;
     } else if (TaskType.setwfstatus.equals(taskType)) {
       LOGGER.info("[{}] Save Workflow Status", wfRunId);
@@ -627,100 +633,83 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     taskRunRepository.save(taskExecution);
   }
 
-  // private void runScheduledWorkflow(Task task, ActivityEntity activity, String workflowName) {
-  // InternalTaskResponse response = new InternalTaskResponse();
-  // response.setActivityId(task.getTaskActivityId());
-  // response.setStatus(TaskStatus.failure);
-  //
-  // if (task.getInputs() != null) {
-  // String workflowId = task.getInputs().get("workflowId");
-  // Integer futureIn = Integer.valueOf(task.getInputs().get("futureIn"));
-  // String futurePeriod = task.getInputs().get("futurePeriod");
-  // Date executionDate = activity.getCreationDate();
-  // String timezone = task.getInputs().get("timezone");
-  // LOGGER.debug("*******Run Scheduled Workflow System Task******");
-  // LOGGER.debug("Scheduling new task in " + futureIn + " " + futurePeriod);
-  //
-  // if (futureIn != null && futureIn != 0 && StringUtils.indexOfAny(futurePeriod,
-  // new String[] {"minutes", "hours", "days", "weeks", "months"}) >= 0) {
-  // Calendar executionCal = Calendar.getInstance();
-  // executionCal.setTime(executionDate);
-  // Integer calField = Calendar.MINUTE;
-  // switch (futurePeriod) {
-  // case "hours":
-  // calField = Calendar.HOUR;
-  // break;
-  // case "days":
-  // calField = Calendar.DATE;
-  // break;
-  // case "weeks":
-  // futureIn = futureIn * 7;
-  // calField = Calendar.DATE;
-  // break;
-  // case "months":
-  // calField = Calendar.MONTH;
-  // break;
-  // }
-  // executionCal.add(calField, futureIn);
-  // if (!futurePeriod.equals("minutes") && !futurePeriod.equals("hours")) {
-  // String[] hoursTime = task.getInputs().get("time").split(":");
-  // Integer hours = Integer.valueOf(hoursTime[0]);
-  // Integer minutes = Integer.valueOf(hoursTime[1]);
-  // LOGGER
-  // .debug("With time to be set to: " + task.getInputs().get("time") + " in " + timezone);
-  // executionCal.setTimeZone(TimeZone.getTimeZone(timezone));
-  // executionCal.set(Calendar.HOUR, hours);
-  // executionCal.set(Calendar.MINUTE, minutes);
-  // LOGGER.debug(
-  // "With execution set to: " + executionCal.getTime().toString() + " in " + timezone);
-  // executionCal.setTimeZone(TimeZone.getTimeZone("UTC"));
-  // }
-  // LOGGER.debug("With execution set to: " + executionCal.getTime().toString() + " in UTC");
-  //
-  // // Define new properties removing the System Task specific properties
-  // ControllerRequestProperties requestProperties = propertyManager
-  // .buildRequestPropertyLayering(task, activity.getId(), activity.getWorkflowId());
-  //
-  // Map<String, String> properties = new HashMap<>();
-  // for (Map.Entry<String, String> entry : task.getInputs().entrySet()) {
-  // if (!"workflowId".equals(entry.getKey()) && !"futureIn".equals(entry.getKey())
-  // && !"futurePeriod".equals(entry.getKey()) && !"time".equals(entry.getKey())
-  // && !"timezone".equals(entry.getKey())) {
-  // String value = entry.getValue();
-  // if (value != null) {
-  // value = propertyManager.replaceValueWithProperty(value, activity.getId(),
-  // requestProperties);
-  // }
-  // properties.put(entry.getKey(), value);
-  // }
-  // }
-  //
-  // // Define and create the schedule
-  // WorkflowSchedule schedule = new WorkflowSchedule();
-  // schedule.setWorkflowId(workflowId);
-  // schedule.setName(task.getTaskName());
-  // schedule
-  // .setDescription("This schedule was generated through a Run Scheduled Workflow task.");
-  // schedule.setParametersMap(properties);
-  // schedule.setCreationDate(activity.getCreationDate());
-  // schedule.setDateSchedule(executionCal.getTime());
-  // schedule.setTimezone(timezone);
-  // schedule.setType(WorkflowScheduleType.runOnce);
-  // List<KeyValuePair> labels = new LinkedList<>();
-  // labels.add(new KeyValuePair("workflowName", workflowName));
-  // schedule.setLabels(labels);
-  // WorkflowSchedule workflowSchedule = scheduleService.createSchedule(schedule);
-  // if (workflowSchedule != null && workflowSchedule.getId() != null) {
-  // LOGGER.debug("Workflow Scheudle (" + workflowSchedule.getId() + ") created.");
-  // // TODO: Add a taskExecution with the ScheduleId so it can be deep linked.
-  // response.setStatus(TaskStatus.completed);
-  // }
-  // }
-  // }
-  //
-//  taskExecutionClient.end(this, taskExecution);
-  // }
-  //
+  private void runScheduledWorkflow(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {
+    if (taskExecution.getParams() != null) {
+       String workflowId = ParameterUtil.getValue(taskExecution.getParams(), "workflowId").toString();
+       Integer futureIn = Integer.valueOf(ParameterUtil.getValue(taskExecution.getParams(), "futureIn").toString());
+       String futurePeriod = ParameterUtil.getValue(taskExecution.getParams(), "futurePeriod").toString();
+       String timezone = ParameterUtil.getValue(taskExecution.getParams(), "timezone").toString();
+       String time = ParameterUtil.getValue(taskExecution.getParams(), "time").toString();
+       Date executionDate = taskExecution.getCreationDate();
+       LOGGER.debug("*******Run Scheduled Workflow System Task******");
+       LOGGER.debug("Scheduling new task in " + futureIn + " " + futurePeriod);
+       
+       if (Objects.nonNull(futureIn) && futureIn != 0 && StringUtils.indexOfAny(futurePeriod,
+       new String[] {"minutes", "hours", "days", "weeks", "months"}) >= 0) {
+         Calendar executionCal = Calendar.getInstance();
+         executionCal.setTime(executionDate);
+         Integer calField = Calendar.MINUTE;
+         switch (futurePeriod) {
+           case "hours":
+           calField = Calendar.HOUR;
+           break;
+           case "days":
+           calField = Calendar.DATE;
+           break;
+           case "weeks":
+           futureIn = futureIn * 7;
+           calField = Calendar.DATE;
+           break;
+           case "months":
+           calField = Calendar.MONTH;
+           break;
+         }
+         executionCal.add(calField, futureIn);
+       
+         if (!futurePeriod.equals("minutes") && !futurePeriod.equals("hours")) {
+           String[] hoursTime = time.split(":");
+           Integer hours = Integer.valueOf(hoursTime[0]);
+           Integer minutes = Integer.valueOf(hoursTime[1]);
+           LOGGER
+           .debug("With time to be set to: " + time + " in " + timezone);
+           executionCal.setTimeZone(TimeZone.getTimeZone(timezone));
+           executionCal.set(Calendar.HOUR, hours);
+           executionCal.set(Calendar.MINUTE, minutes);
+           LOGGER.debug(
+           "With execution set to: " + executionCal.getTime().toString() + " in " + timezone);
+           executionCal.setTimeZone(TimeZone.getTimeZone("UTC"));
+         }
+         LOGGER.debug("With execution set to: " + executionCal.getTime().toString() + " in UTC");
+      
+         // Define new properties removing the System Task specific properties
+         // TODO - determine if we need to resolve any param layers before executing new workflow
+         List<RunParam> newParamList = taskExecution.getParams();
+         ParameterUtil.removeEntry(newParamList, "workflowId");
+         ParameterUtil.removeEntry(newParamList, "futureIn");
+         ParameterUtil.removeEntry(newParamList, "futurePeriod");
+         ParameterUtil.removeEntry(newParamList, "timezone");
+         ParameterUtil.removeEntry(newParamList, "time");
+       
+         // Define and create the schedule
+         WorkflowSchedule schedule = new WorkflowSchedule();
+         schedule.setWorkflowRef(workflowId);
+         schedule.setName(taskExecution.getName());
+         schedule
+         .setDescription("This schedule was generated through a Run Scheduled Workflow task.");
+         schedule.setParams(newParamList);
+         schedule.setDateSchedule(executionCal.getTime());
+         schedule.setTimezone(timezone);
+         schedule.setType(WorkflowScheduleType.runOnce);
+         WorkflowSchedule workflowSchedule = workflowClient.createSchedule(schedule);
+         if (workflowSchedule != null && workflowSchedule.getId() != null) {
+           LOGGER.debug("Workflow Scheudle (" + workflowSchedule.getId() + ") created.");
+           taskExecution.setStatus(RunStatus.succeeded);
+           return;
+         }
+       }
+    } 
+    taskExecution.setStatus(RunStatus.failed);
+  }
 
   private void createWaitForEventTask(TaskRunEntity taskExecution, boolean callEnd) {
     LOGGER.debug("[{}] Creating wait for event task", taskExecution.getId());
