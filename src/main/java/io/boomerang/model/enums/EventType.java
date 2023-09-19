@@ -6,6 +6,7 @@ public enum EventType {
   TRIGGER("io.boomerang.event.workflow.trigger"),
   WFE("io.boomerang.event.workflow.wfe"),
   CANCEL("io.boomerang.event.workflow.cancel"),
+  WORKFLOW_STATUS_UPDATE("io.boomerang.event.status.workflow"),
   WORKFLOWRUN_STATUS_UPDATE("io.boomerang.event.status.workflowrun"),
   TASKRUN_STATUS_UPDATE("io.boomerang.event.status.taskrun");
   // @formatter:on

@@ -12,14 +12,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
-import io.boomerang.data.entity.EventQueueEntity;
 import io.boomerang.data.entity.TaskRunEntity;
+import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.EventQueueRepository;
 import io.boomerang.model.events.TaskRunStatusEvent;
 import io.boomerang.model.events.WorkflowRunStatusEvent;
+import io.boomerang.model.events.WorkflowStatusEvent;
 import io.boomerang.util.EventFactory;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.provider.EventFormatProvider;
@@ -110,6 +110,29 @@ public class EventSinkServiceImpl implements EventSinkService {
           }
           statusEvent.setInitiatorId(initiatorId);
           statusEvent.setInitiatorContext(initiatorContext);
+
+          httpSink(statusEvent.toCloudEvent());
+        }
+        isSuccess = Boolean.TRUE;
+      } catch (Exception e) {
+        LOGGER.fatal("A fatal error has occurred while publishing the message!", e);
+      }
+      return isSuccess;
+    };
+
+    return CompletableFuture.supplyAsync(supplier);
+  }  
+  
+  @Override
+  public Future<Boolean> publishStatusCloudEvent(WorkflowEntity workflowEntity) {
+    Supplier<Boolean> supplier = () -> {
+      Boolean isSuccess = Boolean.FALSE;
+
+      try {
+        if (sinkEnabled) {
+          // Create status update CloudEvent
+          WorkflowStatusEvent statusEvent =
+              EventFactory.buildStatusUpdateEvent(workflowEntity);
 
           httpSink(statusEvent.toCloudEvent());
         }

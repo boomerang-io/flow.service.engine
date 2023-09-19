@@ -5,12 +5,15 @@ import java.text.MessageFormat;
 import java.util.Date;
 import java.util.UUID;
 import io.boomerang.data.entity.TaskRunEntity;
+import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.model.TaskRun;
+import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.enums.EventType;
 import io.boomerang.model.events.TaskRunStatusEvent;
 import io.boomerang.model.events.WorkflowRunStatusEvent;
+import io.boomerang.model.events.WorkflowStatusEvent;
 
 public class EventFactory {
 
@@ -79,6 +82,28 @@ public class EventFactory {
     statusUpdateEvent.setDate(new Date());
     statusUpdateEvent.setType(EventType.TASKRUN_STATUS_UPDATE);
     statusUpdateEvent.setTaskRun(new TaskRun(taskRunEntity));
+
+    return statusUpdateEvent;
+  }
+
+  public static WorkflowStatusEvent buildStatusUpdateEvent(
+      WorkflowEntity workflowEntity) {
+
+    // Event subject
+    // @formatter:off
+    String eventSubject = MessageFormat.format("/workflow/{0}/status/{1}",
+        workflowEntity.getId(),
+        workflowEntity.getStatus().toString().toLowerCase());
+    // @formatter:on
+
+    // Create task status update event
+    WorkflowStatusEvent statusUpdateEvent = new WorkflowStatusEvent();
+    statusUpdateEvent.setId(UUID.randomUUID().toString());
+    statusUpdateEvent.setSource(URI.create(EVENT_SOURCE_URI));
+    statusUpdateEvent.setSubject(eventSubject);
+    statusUpdateEvent.setDate(new Date());
+    statusUpdateEvent.setType(EventType.TASKRUN_STATUS_UPDATE);
+    statusUpdateEvent.setWorkflow(workflowEntity);
 
     return statusUpdateEvent;
   }

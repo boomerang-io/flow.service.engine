@@ -397,7 +397,28 @@ public class WorkflowServiceImpl implements WorkflowService {
     if (workflowId == null || workflowId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
-    updateWorkflowStatus(workflowId, WorkflowStatus.deleted);
+    WorkflowEntity wfEntity = workflowRepository.findById(workflowId).get();
+    if (WorkflowStatus.deleted.equals(wfEntity.getStatus())) {
+      //TODO: better status to say invalid status. Once deleted you can't move to not deleted.
+      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
+    }
+    wfEntity.setStatus(WorkflowStatus.deleted);
+    if (wfEntity.getTriggers().getManual() != null) {
+      wfEntity.getTriggers().getManual().setEnable(Boolean.FALSE);
+    }
+
+    if (wfEntity.getTriggers().getScheduler() != null) {
+      wfEntity.getTriggers().getScheduler().setEnable(Boolean.FALSE);
+    }
+
+    if (wfEntity.getTriggers().getCustom() != null) {
+      wfEntity.getTriggers().getCustom().setEnable(Boolean.FALSE);
+    }
+
+    if (wfEntity.getTriggers().getWebhook() == null) {
+      wfEntity.getTriggers().getWebhook().setEnable(Boolean.FALSE);
+    }
+    workflowRepository.save(wfEntity);
   }
 
   private boolean areTemplateUpgradesAvailable(WorkflowRevisionEntity wfRevisionEntity) {
