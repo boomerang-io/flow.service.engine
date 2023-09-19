@@ -29,7 +29,7 @@ public class Task {
   
 //  private long retries = -1;
   
-  private List<TaskDependency> dependencies;
+  private List<TaskDependency> dependencies = new LinkedList<>();;
   
   private Map<String, String> labels = new HashMap<>();
   
@@ -39,7 +39,7 @@ public class Task {
   private List<RunParam> params = new LinkedList<>();
   
   //This is needed as some of our Tasks allow you to define Result Definitions on the fly
-  private List<ResultSpec> results;
+  private List<ResultSpec> results = new LinkedList<>();;
   
   //Optional - the default is that the workspace goes to all Tasks
   //Not supported by all integrations

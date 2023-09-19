@@ -47,7 +47,7 @@ public class Workflow {
   private List<Task> tasks = new LinkedList<>();
   private List<ParamSpec> params = new LinkedList<>();
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();  
-  private List<AbstractParam> config;
+  private List<AbstractParam> config = new LinkedList<>();;
   private Map<String, Object> unknownFields = new HashMap<>();
 
   @JsonAnyGetter
@@ -73,7 +73,7 @@ public class Workflow {
    */
   public Workflow(WorkflowEntity wfEntity, WorkflowRevisionEntity wfRevisionEntity) {
     BeanUtils.copyProperties(wfEntity, this);
-    BeanUtils.copyProperties(wfRevisionEntity, this, "id", "tasks");
+    BeanUtils.copyProperties(wfRevisionEntity, this, "id");
   }
 
   public String getId() {

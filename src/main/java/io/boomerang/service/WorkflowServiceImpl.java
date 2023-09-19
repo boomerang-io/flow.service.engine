@@ -26,7 +26,6 @@ import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateRevisionEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
-import io.boomerang.data.model.WorkflowTask;
 import io.boomerang.data.repository.TaskTemplateRevisionRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
@@ -34,13 +33,13 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.ChangeLogVersion;
+import io.boomerang.model.Task;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.model.enums.WorkflowStatus;
-import io.boomerang.util.TaskMapper;
 
 /*
  * Service implements the CRUD ops on a Workflow
@@ -93,8 +92,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     Workflow workflow = new Workflow(optWfEntity.get(), optWfRevisionEntity.get());
-    if (withTasks) {
-      workflow.setTasks(TaskMapper.workflowTasksToListOfTasks(optWfRevisionEntity.get().getTasks())); 
+    if (!withTasks) {
+      workflow.setTasks(new LinkedList<>()); 
     }
     
     // Determine if there are template upgrades available
@@ -184,57 +183,72 @@ public class WorkflowServiceImpl implements WorkflowService {
    * Adds a new Workflow as WorkflowEntity and WorkflowRevisionEntity
    */
   @Override
-  public ResponseEntity<Workflow> create(Workflow workflow, boolean useId) {
+  public ResponseEntity<Workflow> create(Workflow request, boolean useId) {
     WorkflowEntity wfEntity = new WorkflowEntity();
     if (useId) {
-      wfEntity.setId(workflow.getId());
+      wfEntity.setId(request.getId());
     }
-    wfEntity.setName(workflow.getName());
-    wfEntity.setIcon(workflow.getIcon());
-    wfEntity.setDescription(workflow.getDescription());
-    wfEntity.setLabels(workflow.getLabels());
+    wfEntity.setName(request.getName());
+    wfEntity.setIcon(request.getIcon());
+    wfEntity.setDescription(request.getDescription());
+    wfEntity.setLabels(request.getLabels());
     // Add System Generated Annotations
-    workflow.getAnnotations().put("boomerang.io/generation", ANNOTATION_GENERATION);
-    workflow.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
-    wfEntity.setAnnotations(workflow.getAnnotations());
+    request.getAnnotations().put("boomerang.io/generation", ANNOTATION_GENERATION);
+    request.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
+    wfEntity.setAnnotations(request.getAnnotations());
     wfEntity.setStatus(WorkflowStatus.active);
-    wfEntity.setTriggers(workflow.getTriggers() != null ? workflow.getTriggers() : new WorkflowTrigger());
+    wfEntity.setTriggers(request.getTriggers() != null ? request.getTriggers() : new WorkflowTrigger());
 
-    WorkflowRevisionEntity wfRevisionEntity = createWorkflowRevisionEntity(workflow, 1);
+    WorkflowRevisionEntity wfRevisionEntity = createWorkflowRevisionEntity(request, 1);
     wfEntity = workflowRepository.save(wfEntity);
-    workflow.setId(wfEntity.getId());
+    request.setId(wfEntity.getId());
     wfRevisionEntity.setWorkflowRef(wfEntity.getId());
     workflowRevisionRepository.save(wfRevisionEntity);
     //TODO: figure out a better approach to rollback
 
     // Determine if there are template upgrades available
+    Workflow workflow = new Workflow(wfEntity, wfRevisionEntity);
     workflow.setUpgradesAvailable(areTemplateUpgradesAvailable(wfRevisionEntity));
+    LOGGER.debug(workflow.toString());
     return ResponseEntity.ok(workflow);
   }
 
-  private WorkflowRevisionEntity createWorkflowRevisionEntity(Workflow workflow, Integer version) {
+  private WorkflowRevisionEntity createWorkflowRevisionEntity(Workflow request, Integer version) {
     WorkflowRevisionEntity wfRevisionEntity = new WorkflowRevisionEntity();
     wfRevisionEntity.setVersion(version);
     ChangeLog changelog = new ChangeLog(version.equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE);
-    if (workflow.getChangelog() != null) {
-      if (workflow.getChangelog().getAuthor() != null) {
-        changelog.setAuthor(workflow.getChangelog().getAuthor());
+    if (request.getChangelog() != null) {
+      if (request.getChangelog().getAuthor() != null) {
+        changelog.setAuthor(request.getChangelog().getAuthor());
       }
-      if (workflow.getChangelog().getReason() != null) {
-        changelog.setReason(workflow.getChangelog().getReason());
+      if (request.getChangelog().getReason() != null) {
+        changelog.setReason(request.getChangelog().getReason());
       }
-      if (workflow.getChangelog().getDate() != null) {
-        changelog.setDate(workflow.getChangelog().getDate());
+      if (request.getChangelog().getDate() != null) {
+        changelog.setDate(request.getChangelog().getDate());
       }
     }
     wfRevisionEntity.setChangelog(changelog);
-    wfRevisionEntity.setMarkdown(workflow.getMarkdown());
-    wfRevisionEntity.setParams(workflow.getParams());
-    wfRevisionEntity.setWorkspaces(workflow.getWorkspaces());
-    wfRevisionEntity.setTasks(TaskMapper.tasksToListOfWorkflowTasks(workflow.getTasks()));
-    wfRevisionEntity.setConfig(workflow.getConfig());
-    wfRevisionEntity.setTimeout(workflow.getTimeout());
-    wfRevisionEntity.setRetries(workflow.getRetries());
+    wfRevisionEntity.setMarkdown(request.getMarkdown());
+    wfRevisionEntity.setParams(request.getParams());
+    wfRevisionEntity.setWorkspaces(request.getWorkspaces());
+    if (request.getTasks() == null || request.getTasks().isEmpty()) {
+      List<Task> tasks = new LinkedList<>();
+      Task startTask = new Task();
+      startTask.setName("start");
+      startTask.setType(TaskType.start);
+      tasks.add(startTask);
+      Task endTask = new Task();
+      endTask.setName("end");
+      endTask.setType(TaskType.end);
+      tasks.add(endTask);
+      wfRevisionEntity.setTasks(tasks);
+    } else {      
+      wfRevisionEntity.setTasks(request.getTasks());
+    }
+    wfRevisionEntity.setConfig(request.getConfig());
+    wfRevisionEntity.setTimeout(request.getTimeout());
+    wfRevisionEntity.setRetries(request.getRetries());
 
     // Check Task Names are unique
     List<String> filteredNames =
@@ -247,13 +261,13 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     // Check Task Template references are valid
-    for (WorkflowTask wfRevisionTask : wfRevisionEntity.getTasks()) {
-      if (!TaskType.start.equals(wfRevisionTask.getType())
-          && !TaskType.end.equals(wfRevisionTask.getType())) {
+    for (Task wfTask : wfRevisionEntity.getTasks()) {
+      if (!TaskType.start.equals(wfTask.getType())
+          && !TaskType.end.equals(wfTask.getType())) {
 
         //Shared utility with DAGUtility
-        TaskTemplate taskTemplate = taskTemplateService.retrieveAndValidateTaskTemplate(wfRevisionTask);
-        wfRevisionTask.setTemplateVersion(taskTemplate.getVersion());
+        TaskTemplate taskTemplate = taskTemplateService.retrieveAndValidateTaskTemplate(wfTask);
+        wfTask.setTemplateVersion(taskTemplate.getVersion());
       }
     }
     return wfRevisionEntity;
@@ -320,8 +334,6 @@ public class WorkflowServiceImpl implements WorkflowService {
     workflowRevisionRepository.save(newWorkflowRevisionEntity);
     
     Workflow appliedWorkflow = new Workflow(workflowEntity, newWorkflowRevisionEntity);
-    appliedWorkflow.setTasks(TaskMapper.workflowTasksToListOfTasks(newWorkflowRevisionEntity.getTasks()));
-
     // Determine if there are template upgrades available
     workflow.setUpgradesAvailable(areTemplateUpgradesAvailable(newWorkflowRevisionEntity));
     return ResponseEntity.ok(appliedWorkflow);
@@ -389,7 +401,7 @@ public class WorkflowServiceImpl implements WorkflowService {
   }
 
   private boolean areTemplateUpgradesAvailable(WorkflowRevisionEntity wfRevisionEntity) {
-    for (WorkflowTask t : wfRevisionEntity.getTasks()) {
+    for (Task t : wfRevisionEntity.getTasks()) {
       Optional<TaskTemplateRevisionEntity> taskTemplate =
           taskTemplateRevisionRepository.findByParentAndLatestVersion(t.getTemplateRef());
       if (taskTemplate.isPresent()) {

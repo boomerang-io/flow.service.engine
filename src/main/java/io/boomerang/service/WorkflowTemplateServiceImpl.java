@@ -24,12 +24,12 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateRevisionEntity;
 import io.boomerang.data.entity.WorkflowTemplateEntity;
-import io.boomerang.data.model.WorkflowTask;
 import io.boomerang.data.repository.TaskTemplateRevisionRepository;
 import io.boomerang.data.repository.WorkflowTemplateRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
+import io.boomerang.model.Task;
 import io.boomerang.model.WorkflowTemplate;
 import io.boomerang.model.enums.TaskType;
 
@@ -204,7 +204,7 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
     }
 
     // Check Task Template references are valid
-    for (final WorkflowTask wfTemplateTask : wfTemplateEntity.getTasks()) {
+    for (final Task wfTemplateTask : wfTemplateEntity.getTasks()) {
       if (!TaskType.start.equals(wfTemplateTask.getType())
           && !TaskType.end.equals(wfTemplateTask.getType())) {
 
@@ -323,7 +323,7 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
   }
 
   private boolean areTemplateUpgradesAvailable(WorkflowTemplateEntity entity) {
-    for (WorkflowTask t : entity.getTasks()) {
+    for (Task t : entity.getTasks()) {
       Optional<TaskTemplateRevisionEntity> taskTemplate =
           taskTemplateRevisionRepository.findByParentAndLatestVersion(t.getTemplateRef());
       if (taskTemplate.isPresent()) {

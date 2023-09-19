@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort.Direction;
-import io.boomerang.data.model.WorkflowTask;
 import io.boomerang.model.ChangeLogVersion;
+import io.boomerang.model.Task;
 import io.boomerang.model.TaskTemplate;
 
 public interface TaskTemplateService {
@@ -19,7 +19,7 @@ public interface TaskTemplateService {
 
   TaskTemplate apply(TaskTemplate taskTemplate, boolean replace);
 
-  TaskTemplate retrieveAndValidateTaskTemplate(WorkflowTask wfRevisionTask);
+  TaskTemplate retrieveAndValidateTaskTemplate(Task wfTask);
 
   List<ChangeLogVersion> changelog(String name);
 }

@@ -26,10 +26,10 @@ import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.data.model.WorkflowTask;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
+import io.boomerang.model.Task;
 import io.boomerang.model.TaskDependency;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.enums.ExecutionCondition;
@@ -88,7 +88,7 @@ public class DAGUtility {
   public List<TaskRunEntity> createTaskList(WorkflowRevisionEntity wfRevisionEntity,
       WorkflowRunEntity wfRunEntity) {
     final List<TaskRunEntity> taskList = new LinkedList<>();
-    for (final WorkflowTask wfRevisionTask : wfRevisionEntity.getTasks()) {
+    for (final Task wfRevisionTask : wfRevisionEntity.getTasks()) {
       Optional<TaskRunEntity> existingTaskRunEntity =
           taskRunRepository.findFirstByNameAndWorkflowRunRef(wfRevisionTask.getName(), wfRunEntity.getId());
       if (existingTaskRunEntity.isPresent() && existingTaskRunEntity.get() != null) {

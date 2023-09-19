@@ -21,19 +21,16 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.support.PageableExecutionUtils;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateEntity;
 import io.boomerang.data.entity.TaskTemplateRevisionEntity;
-import io.boomerang.data.entity.WorkflowEntity;
-import io.boomerang.data.entity.WorkflowRevisionEntity;
-import io.boomerang.data.model.WorkflowTask;
 import io.boomerang.data.repository.TaskTemplateRepository;
 import io.boomerang.data.repository.TaskTemplateRevisionRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.ChangeLogVersion;
+import io.boomerang.model.Task;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.enums.TaskTemplateStatus;
 
@@ -291,7 +288,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
 
    @Override
    public TaskTemplate retrieveAndValidateTaskTemplate(
-       final WorkflowTask wfTask) {
+       final Task wfTask) {
      //Get TaskTemplateEntity - this will check valid templateRef and Version
      TaskTemplate taskTemplate = this.get(wfTask.getTemplateRef(), Optional.ofNullable(wfTask.getTemplateVersion()));
      
