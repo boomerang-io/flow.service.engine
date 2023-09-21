@@ -368,28 +368,6 @@ public class WorkflowServiceImpl implements WorkflowService {
   }
   
   /*
-   * Marks the Workflow as 'active' status.
-   */
-  @Override
-  public void enable(String workflowId) {
-    if (workflowId == null || workflowId.isBlank()) {
-      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
-    }
-    updateWorkflowStatus(workflowId, WorkflowStatus.active);
-  }
-  
-  /*
-   * Marks the Workflow as 'inactive' status.
-   */
-  @Override
-  public void disable(String workflowId) {
-    if (workflowId == null || workflowId.isBlank()) {
-      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
-    }
-    updateWorkflowStatus(workflowId, WorkflowStatus.inactive);
-  }
-  
-  /*
    * Marks the Workflow as 'deleted' status. This allows WorkflowRuns to still be visualised.
    */
   @Override
@@ -433,19 +411,5 @@ public class WorkflowServiceImpl implements WorkflowService {
       }
     }
     return false;
-  }
-  
-  private void updateWorkflowStatus(String workflowId, WorkflowStatus workflowStatus) {
-    try {
-      WorkflowEntity wfEntity = workflowRepository.findById(workflowId).get();
-      if (WorkflowStatus.deleted.equals(wfEntity.getStatus())) {
-        //TODO: better status to say invalid status. Once deleted you can't move to not deleted.
-        throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
-      }
-      wfEntity.setStatus(workflowStatus);
-      workflowRepository.save(wfEntity);
-    } catch (Exception e) {
-      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
-    }
   }
 }

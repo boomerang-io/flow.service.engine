@@ -103,28 +103,6 @@ public class WorkflowV1Controller {
     return workflowService.changelog(workflowId);
   }
 
-  @PutMapping(value = "/{workflowId}/enable")
-  @Operation(summary = "Enable a Workflow")
-  @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
-      @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public void enableWorkflow(
-      @Parameter(name = "workflowId",
-      description = "ID of Workflow",
-      required = true) @PathVariable String workflowId) {
-    workflowService.enable(workflowId);
-  }
-
-  @PutMapping(value = "/{workflowId}/disable")
-  @Operation(summary = "Disable a Workflow")
-  @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
-      @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public void disableWorkflow(
-      @Parameter(name = "workflowId",
-      description = "ID of Workflow",
-      required = true) @PathVariable String workflowId) {
-    workflowService.disable(workflowId);
-  }
-
   @DeleteMapping(value = "/{workflowId}")
   @Operation(summary = "Delete a Workflow")
   @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),

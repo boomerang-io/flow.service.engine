@@ -20,10 +20,6 @@ public interface WorkflowService {
 
   ResponseEntity<Workflow> apply(Workflow workflow, Boolean replace);
 
-  void enable(String workflowId);
-
-  void disable(String workflowId);
-
   void delete(String workflowId);
 
   ResponseEntity<List<ChangeLogVersion>> changelog(String workflowId);
