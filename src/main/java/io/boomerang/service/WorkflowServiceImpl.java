@@ -37,7 +37,6 @@ import io.boomerang.model.Task;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowTrigger;
-import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.model.enums.WorkflowStatus;
 
@@ -130,7 +129,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     if (queryStatus.isPresent()) {
       if (queryStatus.get().stream()
-          .allMatch(q -> EnumUtils.isValidEnumIgnoreCase(RunStatus.class, q))) {
+          .allMatch(q -> EnumUtils.isValidEnumIgnoreCase(WorkflowStatus.class, q))) {
         Criteria criteria = Criteria.where("status").in(queryStatus.get());
         criteriaList.add(criteria);
       } else {
