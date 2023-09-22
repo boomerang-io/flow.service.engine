@@ -302,7 +302,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   }
   
   /*
-   * Generates stats / insights for a given set of filters
+   * Generates stats for a given set of filters
    */
   @Override
   public ResponseEntity<WorkflowRunCount> count(Optional<Date> from, Optional<Date> to,

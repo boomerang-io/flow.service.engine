@@ -1,10 +1,14 @@
 package io.boomerang.service;
 
+import static java.util.stream.Collectors.groupingBy;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.EnumUtils;
@@ -26,6 +30,7 @@ import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateRevisionEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
+import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.TaskTemplateRevisionRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
@@ -36,7 +41,10 @@ import io.boomerang.model.ChangeLogVersion;
 import io.boomerang.model.Task;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.Workflow;
+import io.boomerang.model.WorkflowCount;
+import io.boomerang.model.WorkflowRunCount;
 import io.boomerang.model.WorkflowTrigger;
+import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.model.enums.WorkflowStatus;
 
@@ -176,6 +184,72 @@ public class WorkflowServiceImpl implements WorkflowService {
         () -> workflows.size());
     LOGGER.debug(pages.toString());
     return pages;
+  }
+  
+  /*
+   * Generates Counts for a given set of filters
+   */
+  @Override
+  public ResponseEntity<WorkflowCount> count(Optional<Date> from, Optional<Date> to,
+      Optional<List<String>> labels, Optional<List<String>> queryWorkflows) {
+    List<Criteria> criteriaList = new ArrayList<>();
+
+    if (from.isPresent() && !to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").gte(from.get());
+      criteriaList.add(criteria);
+    } else if (!from.isPresent() && to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").lt(to.get());
+      criteriaList.add(criteria);
+    } else if (from.isPresent() && to.isPresent()) {
+      Criteria criteria = Criteria.where("creationDate").gte(from.get()).lt(to.get());
+      criteriaList.add(criteria);
+    }
+
+    // TODO add the ability to OR labels not just AND
+    if (labels.isPresent()) {
+      labels.get().stream().forEach(l -> {
+        String decodedLabel = "";
+        try {
+          decodedLabel = URLDecoder.decode(l, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+          throw new BoomerangException(e, BoomerangError.QUERY_INVALID_FILTERS, "labels");
+        }
+        LOGGER.debug(decodedLabel.toString());
+        String[] label = decodedLabel.split("[=]+");
+        Criteria labelsCriteria =
+            Criteria.where("labels." + label[0].replace(".", "#")).is(label[1]);
+        criteriaList.add(labelsCriteria);
+      });
+    }
+
+    if (queryWorkflows.isPresent()) {
+      Criteria criteria = Criteria.where("id").in(queryWorkflows.get());
+      criteriaList.add(criteria);
+    }
+
+    Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);
+    Criteria allCriteria = new Criteria();
+    if (criteriaArray.length > 0) {
+      allCriteria.andOperator(criteriaArray);
+    }
+    Query query = new Query(allCriteria);
+    LOGGER.debug("Query: " + query.toString());
+    List<WorkflowEntity> wfEntities = mongoTemplate.find(query, WorkflowEntity.class);
+
+    // Collate by status count
+    Map<String, Long> result = wfEntities.stream()
+        .collect(groupingBy(v -> getStatusValue(v), Collectors.counting())); // NOSONAR
+    result.put("all", Long.valueOf(wfEntities.size()));
+
+    Arrays.stream(WorkflowStatus.values()).forEach(v -> result.putIfAbsent(v.toString(), 0L));
+    
+    WorkflowCount wfCount = new WorkflowCount();
+    wfCount.setStatus(result);
+    return ResponseEntity.ok(wfCount);
+  }
+  
+  private String getStatusValue(WorkflowEntity v) {
+    return v.getStatus() == null ? "no_status" : v.getStatus().toString();
   }
 
   /*

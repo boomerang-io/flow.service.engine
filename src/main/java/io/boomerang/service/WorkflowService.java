@@ -1,5 +1,6 @@
 package io.boomerang.service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -7,6 +8,8 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import io.boomerang.model.ChangeLogVersion;
 import io.boomerang.model.Workflow;
+import io.boomerang.model.WorkflowCount;
+import io.boomerang.model.WorkflowRunCount;
 
 public interface WorkflowService {
 
@@ -23,7 +26,10 @@ public interface WorkflowService {
   void delete(String workflowId);
 
   ResponseEntity<List<ChangeLogVersion>> changelog(String workflowId);
-//
+
+  ResponseEntity<WorkflowCount> count(Optional<Date> from, Optional<Date> to,
+      Optional<List<String>> labels, Optional<List<String>> ids);
+
 //  WorkflowSummary updateWorkflowProperties(String workflowId, List<WorkflowProperty> properties);
 //
 //  GenerateTokenResponse generateTriggerToken(String id, String label);
