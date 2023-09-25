@@ -689,27 +689,31 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
          ParameterUtil.removeEntry(newParamList, "futurePeriod");
          ParameterUtil.removeEntry(newParamList, "timezone");
          ParameterUtil.removeEntry(newParamList, "time");
-       
+
          // Define and create the schedule
          WorkflowSchedule schedule = new WorkflowSchedule();
          schedule.setWorkflowRef(workflowId);
          schedule.setName(taskExecution.getName());
          schedule
-         .setDescription("This schedule was generated through a Run Scheduled Workflow task.");
+             .setDescription("This schedule was generated through a Run Scheduled Workflow task.");
          schedule.setParams(newParamList);
          schedule.setDateSchedule(executionCal.getTime());
          schedule.setTimezone(timezone);
          schedule.setType(WorkflowScheduleType.runOnce);
-         WorkflowSchedule workflowSchedule = workflowClient.createSchedule(schedule);
-         if (workflowSchedule != null && workflowSchedule.getId() != null) {
-           LOGGER.debug("Workflow Scheudle (" + workflowSchedule.getId() + ") created.");
-           taskExecution.setStatus(RunStatus.succeeded);
-           return;
+         try {
+           WorkflowSchedule workflowSchedule = workflowClient.createSchedule(schedule);
+           if (workflowSchedule != null && workflowSchedule.getId() != null) {
+             LOGGER.debug("Workflow Scheudle (" + workflowSchedule.getId() + ") created.");
+             taskExecution.setStatus(RunStatus.succeeded);
+             return;
+           }
+         } catch (Exception ex) {
+           taskExecution.setStatus(RunStatus.failed);
          }
        }
-    } 
-    taskExecution.setStatus(RunStatus.failed);
-  }
+     }
+     taskExecution.setStatus(RunStatus.failed);
+   }
 
   private void createWaitForEventTask(TaskRunEntity taskExecution, boolean callEnd) {
     LOGGER.debug("[{}] Creating wait for event task", taskExecution.getId());
