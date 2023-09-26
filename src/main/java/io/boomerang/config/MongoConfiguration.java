@@ -16,9 +16,9 @@ public class MongoConfiguration {
     if (collectionPrefix == null || collectionPrefix.isBlank()) {
       return "" + collectionName;
     }
-    String newCollectionName = collectionPrefix + "_" + collectionName;
-    
-    return newCollectionName;
+
+    collectionPrefix = collectionPrefix.endsWith("_") ? collectionPrefix : collectionPrefix + "_";
+    return collectionPrefix + collectionName;
   }
   
   public String collectionPrefix() {
