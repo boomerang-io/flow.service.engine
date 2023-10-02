@@ -91,7 +91,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 //  @Async("asyncTaskExecutor")
   public void queue(TaskRunEntity taskExecution) {
     String taskExecutionId = taskExecution.getId();
-    LOGGER.info("[{}] Recieved queue task request.", taskExecutionId);
+    LOGGER.info("[{}] Recieved queue task request: {}", taskExecutionId, taskExecution.getName());
 
     // Check if TaskRun Phase is valid
     if (!RunPhase.pending.equals(taskExecution.getPhase())) {
