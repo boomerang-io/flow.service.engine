@@ -75,7 +75,7 @@ public class ParameterManagerImpl implements ParameterManager {
       runParams = wfRun.getParams();
     }
     runParams.stream().forEach(p -> {
-      LOGGER.debug("Resolving Parameters: " + p.getName() + "(" + p.getType() + ") = " + p.getValue());
+      LOGGER.debug("Resolving Parameters: " + p.getName() + "(" + p.getType() == null ? "string" : p.getType() + ") = " + p.getValue());
       if (ParamType.string.equals(p.getType()) || p.getType() == null) {
         // Default to String replacement. This also allows recursive use of Params and multiple Param replacement
         p.setValue(resolveParam(ParamType.string, p.getValue() != null ? p.getValue().toString() : "", wfRunId, paramLayers));
@@ -145,7 +145,6 @@ public class ParameterManagerImpl implements ParameterManager {
    */
   private Object resolveParam(ParamType type, Object originalValue, String wfRunId, ParamLayers paramLayers) {
     Map<String, Object> flatParamLayers = paramLayers.getFlatMap();
-    LOGGER.debug(flatParamLayers.toString());
     Pattern pattern = Pattern.compile(REGEX_DOT_NOTATION);
     if (Objects.isNull(originalValue)) {
       return originalValue;
@@ -158,8 +157,6 @@ public class ParameterManagerImpl implements ParameterManager {
       Object foundValue = null;
       int start = m.start() - 2;
       int end = m.end() + 1;
-      LOGGER
-          .debug("Param Substitution: " + foundKey + ", start: " + m.start() + ", end: " + m.end());
       String[] separatedKey = foundKey.split("\\.");
       if ((separatedKey.length == 2) && "params".equals(separatedKey[0])) {
         // Handle flattened - params.<name>
