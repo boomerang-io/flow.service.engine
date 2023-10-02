@@ -135,7 +135,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       // Update Status and Phase
       updateStatusAndSaveTask(taskExecution, RunStatus.ready, RunPhase.pending, Optional.empty());
     } else {
-      LOGGER.info("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
+      LOGGER.debug("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
       taskExecution.setStatus(RunStatus.skipped);
       taskExecutionClient.end(this, taskExecution);
     }
@@ -145,7 +145,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         && !TaskType.script.equals(taskExecution.getType())
         && !TaskType.custom.equals(taskExecution.getType())
         && !TaskType.generic.equals(taskExecution.getType())) {
-      taskExecutionClient.execute(this, taskExecution, wfRunEntity.get());
+      LOGGER.debug("[{}] Moving task to Executing: {}", taskExecutionId, taskExecution.getName());
+//      taskExecutionClient.execute(this, taskExecution, wfRunEntity.get());
+      this.execute(taskExecution, wfRunEntity.get());
     }
   }
 
