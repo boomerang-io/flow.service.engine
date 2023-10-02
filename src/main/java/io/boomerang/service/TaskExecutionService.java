@@ -3,7 +3,6 @@ package io.boomerang.service;
 import java.util.List;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.model.RunResult;
 
 public interface TaskExecutionService {
 
@@ -17,7 +16,7 @@ public interface TaskExecutionService {
 
   List<String> updateTaskRunForTopic(String activityId, String topic);
 
-  void submitActivity(String taskRunId, String taskStatus, List<RunResult> results);
+//  void submitActivity(String taskRunId, String taskStatus, List<RunResult> results);
 
 
 }
