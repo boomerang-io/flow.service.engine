@@ -89,7 +89,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   TaskExecutor asyncTaskExecutor;
 
   @Override
-  @Async("asyncTaskExecutor")
+//  @Async("asyncTaskExecutor")
   public void queue(TaskRunEntity taskExecution) {
     String taskExecutionId = taskExecution.getId();
     LOGGER.info("[{}] Recieved queue task request.", taskExecutionId);
@@ -242,7 +242,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
    * No status checks are performed as part of this method. They are handled in start().
    */
   @Override
-  @Async("asyncTaskExecutor")
+//  @Async("asyncTaskExecutor")
   public void execute(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {
     String taskExecutionId = taskExecution.getId();
     LOGGER.info("[{}] Recieved Execute task request.", taskExecutionId);
@@ -345,7 +345,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
    * start to finish.
    */
   @Override
-  @Async("asyncTaskExecutor")
+//  @Async("asyncTaskExecutor")
   public void end(TaskRunEntity taskExecution) {
     String taskExecutionId = taskExecution.getId();
     LOGGER.info("[{}] Recieved end task request.", taskExecutionId);
@@ -443,30 +443,30 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   }
 
   // TODO: confirm if needed - currently not used.
-  @Override
-  @Async("asyncTaskExecutor")
-  public void submitActivity(String taskRunId, String taskStatus, List<RunResult> results) {
-
-    LOGGER.info("[{}] SubmitActivity: {}", taskRunId, taskStatus);
-
-    RunStatus status = RunStatus.succeeded;
-    if ("success".equals(taskStatus)) {
-      status = RunStatus.succeeded;
-    } else if ("failure".equals(taskStatus)) {
-      status = RunStatus.failed;
-    }
-
-    Optional<TaskRunEntity> taskRunEntity = this.taskRunRepository.findById(taskRunId);
-    if (taskRunEntity.isPresent()
-        && !taskRunEntity.get().getStatus().equals(RunStatus.notstarted)) {
-      taskRunEntity.get().setStatus(status);
-      if (results != null) {
-        taskRunEntity.get().setResults(results);
-      }
-
-      end(taskRunEntity.get());
-    }
-  }
+//  @Override
+//  @Async("asyncTaskExecutor")
+//  public void submitActivity(String taskRunId, String taskStatus, List<RunResult> results) {
+//
+//    LOGGER.info("[{}] SubmitActivity: {}", taskRunId, taskStatus);
+//
+//    RunStatus status = RunStatus.succeeded;
+//    if ("success".equals(taskStatus)) {
+//      status = RunStatus.succeeded;
+//    } else if ("failure".equals(taskStatus)) {
+//      status = RunStatus.failed;
+//    }
+//
+//    Optional<TaskRunEntity> taskRunEntity = this.taskRunRepository.findById(taskRunId);
+//    if (taskRunEntity.isPresent()
+//        && !taskRunEntity.get().getStatus().equals(RunStatus.notstarted)) {
+//      taskRunEntity.get().setStatus(status);
+//      if (results != null) {
+//        taskRunEntity.get().setResults(results);
+//      }
+//
+//      end(taskRunEntity.get());
+//    }
+//  }
 
   /*
    * An async method to execute Timeout checks with DelayedExecutor
