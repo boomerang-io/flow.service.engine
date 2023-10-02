@@ -66,20 +66,21 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   TaskExecutor asyncWorkflowExecutor;       
 
   @Override
-  public void queue(WorkflowRunEntity workflowExecution) {
-    LOGGER.debug("[{}] Recieved queue Workflow request.", workflowExecution.getId());
+  public void queue(WorkflowRunEntity wfRunEntity) {
+    LOGGER.debug("[{}] Recieved queue WorkflowRun request.", wfRunEntity.getId());
     // Resolve Parameter Substitutions
     // TODO: check if we need this
-    paramManager.resolveParamLayers(workflowExecution, Optional.empty());
+    paramManager.resolveParamLayers(wfRunEntity, Optional.empty());
 
     // TODO: do we move the dagUtility.validateWorkflow() here and validate earlier?
 
-    updateStatusAndSaveWorkflow(workflowExecution, RunStatus.ready, RunPhase.pending,
+    updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.ready, RunPhase.pending,
         Optional.empty());
   }
 
   @Override
   public CompletableFuture<Boolean> start(WorkflowRunEntity wfRunEntity) {
+    LOGGER.debug("[{}] Recieved start WorkflowRun request.", wfRunEntity.getId());
     final Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity =
         this.workflowRevisionRepository.findById(wfRunEntity.getWorkflowRevisionRef());
     if (optWorkflowRevisionEntity.isPresent()) {
