@@ -82,6 +82,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       if (dagUtility.validateWorkflow(wfRunEntity, tasks)) {
         updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.ready, RunPhase.pending,
             Optional.empty());
+        return;
       }
     }
     updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.invalid, RunPhase.completed,
@@ -97,7 +98,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     //Check the WorkflowRun has been queued, throw if not
     //Don't update the WorkflowRun status as this may cause a running WorkflowRun to be incorrectly changed.
     if (!RunPhase.pending.equals(wfRunEntity.getPhase())) {
-      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_PHASE, wfRunEntity.getPhase());
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_PHASE, wfRunEntity.getPhase(), RunPhase.pending);
     }
     final List<TaskRunEntity> tasks = dagUtility.retrieveTaskList(wfRunEntity.getId());
     final TaskRunEntity start = dagUtility.getTaskByType(tasks, TaskType.start);
@@ -151,7 +152,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         if (!RunPhase.pending.equals(wfRunEntity.getPhase())) {
           lockManager.releaseRunLock(wfRunId, lockId);
           LOGGER.info("[{}] Released WorkflowRun lock", wfRunId);
-          throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_PHASE, wfRunEntity.getPhase());
+          throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_PHASE, wfRunEntity.getPhase(), RunPhase.pending);
         }
         // Set Workflow to Running (Status and Phase). From this point, the duration needs to be
         // calculated.
