@@ -121,10 +121,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
 
     // Ensure Task is valid as part of Graph
-    Optional<WorkflowRevisionEntity> wfRevisionEntity =
-        workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
     List<TaskRunEntity> tasks =
-        dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get());
+        dagUtility.retrieveTaskList(wfRunEntity.get().getId());
     boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
     LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
 
@@ -146,8 +144,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         && !TaskType.custom.equals(taskExecution.getType())
         && !TaskType.generic.equals(taskExecution.getType())) {
       LOGGER.debug("[{}] Moving task to Executing: {}", taskExecutionId, taskExecution.getName());
-//      taskExecutionClient.execute(this, taskExecution, wfRunEntity.get());
-      this.execute(taskExecution, wfRunEntity.get());
+      taskExecutionClient.execute(this, taskExecution, wfRunEntity.get());
     }
   }
 
@@ -210,25 +207,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       workflowRunService.timeout(wfRunEntity.get().getId(), false);
       return;
     }
-
-    // LOGGER.info("[{}] Attempting to get WorkflowRun ({}) lock", taskExecutionId,
-    // wfRunEntity.get().getId());
-    // String tokenId = lockManager.acquireRunLock(wfRunEntity.get().getId());
-    // LOGGER.info("[{}] Obtained WorkflowRun ({}) lock", taskExecutionId,
-    // wfRunEntity.get().getId());
-
-    // Ensure Task is valid as part of Graph
-    // TODO: can we remove this expensive check considering it is in Queue?
-    Optional<WorkflowRevisionEntity> wfRevisionEntity =
-        workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
-    List<TaskRunEntity> tasks =
-        dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get());
-    boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
-    LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
-
-    // lockManager.releaseRunLock(wfRunEntity.get().getId(), tokenId);
-    // LOGGER.info("[{}] Released WorkflowRun ({}) lock", taskExecutionId,
-    // wfRunEntity.get().getId());
 
     lockManager.releaseRunLock(taskExecutionId, lockId);
     LOGGER.info("[{}] Released TaskRun lock", taskExecutionId);
@@ -342,10 +320,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
    * Execute the End of a task as requested by the Handler
    * 
    * This needs to get a lock on the TaskRun so that if a Handler requests end, it waits for the
-   * start to finish.
+   * task to finish.
    */
   @Override
-//  @Async("asyncTaskExecutor")
+  @Async("asyncTaskExecutor")
   public void end(TaskRunEntity taskExecution) {
     String taskExecutionId = taskExecution.getId();
     LOGGER.info("[{}] Recieved end task request.", taskExecutionId);
@@ -425,10 +403,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     String tokenId = lockManager.acquireRunLock(wfRunEntity.get().getId());
     LOGGER.info("[{}] Obtained WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
 
-    Optional<WorkflowRevisionEntity> wfRevisionEntity =
-        workflowRevisionRepository.findById(wfRunEntity.get().getWorkflowRevisionRef());
     List<TaskRunEntity> tasks =
-        dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity.get());
+        dagUtility.retrieveTaskList(wfRunEntity.get().getId());
     boolean finishedAllDependencies = this.finishedAll(wfRunEntity.get(), tasks, taskExecution);
     LOGGER.debug("[{}] Finished all TaskRuns? {}", taskExecutionId, finishedAllDependencies);
 
@@ -441,32 +417,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     lockManager.releaseRunLock(wfRunEntity.get().getId(), tokenId);
     LOGGER.info("[{}] Released WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
   }
-
-  // TODO: confirm if needed - currently not used.
-//  @Override
-//  @Async("asyncTaskExecutor")
-//  public void submitActivity(String taskRunId, String taskStatus, List<RunResult> results) {
-//
-//    LOGGER.info("[{}] SubmitActivity: {}", taskRunId, taskStatus);
-//
-//    RunStatus status = RunStatus.succeeded;
-//    if ("success".equals(taskStatus)) {
-//      status = RunStatus.succeeded;
-//    } else if ("failure".equals(taskStatus)) {
-//      status = RunStatus.failed;
-//    }
-//
-//    Optional<TaskRunEntity> taskRunEntity = this.taskRunRepository.findById(taskRunId);
-//    if (taskRunEntity.isPresent()
-//        && !taskRunEntity.get().getStatus().equals(RunStatus.notstarted)) {
-//      taskRunEntity.get().setStatus(status);
-//      if (results != null) {
-//        taskRunEntity.get().setResults(results);
-//      }
-//
-//      end(taskRunEntity.get());
-//    }
-//  }
 
   /*
    * An async method to execute Timeout checks with DelayedExecutor
@@ -491,6 +441,42 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       }
       return true;
     };
+  }
+
+  /*
+   * This will approve a task to run
+   * 
+   * TODO: confirm this works
+   */
+  @Override
+  public List<String> updateTaskRunForTopic(String workflowRunId, String topic) {
+    List<String> ids = new LinkedList<>();
+
+    LOGGER.info("[{}] Finding taskRunId based on topic.", workflowRunId);
+    List<TaskRunEntity> taskRunEntities =
+        this.taskRunRepository.findByWorkflowRunRef(workflowRunId);
+
+    for (TaskRunEntity taskRun : taskRunEntities) {
+      if (TaskType.eventwait.equals(taskRun.getType())) {
+        List<RunParam> params = taskRun.getParams();
+        if (params != null && ParameterUtil.containsName(params, "topic")) {
+          // TODO: bring back parameter layering
+          // String paramTopic = params.get("topic").toString();
+          // ControllerRequestProperties properties = propertyManager
+          // .buildRequestPropertyLayering(null, taskRunId, activity.getWorkflowId());
+          // topic = propertyManager.replaceValueWithProperty(paramTopic, taskRunId, properties);
+          // String taskId = task.getId();
+          LOGGER.info("[{}] Found task run id: {} ", workflowRunId, taskRun.getId());
+          taskRun.setPreApproved(true);
+          this.taskRunRepository.save(taskRun);
+          ids.add(taskRun.getId());
+        }
+      }
+    }
+
+    // TODO: figure out what to return
+    LOGGER.info("[{}] No task activity ids found for topic: {}", workflowRunId, topic);
+    return ids;
   }
 
   private void getTaskWorkspaces(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {
@@ -535,37 +521,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       }
     }
     return false;
-  }
-
-  @Override
-  public List<String> updateTaskRunForTopic(String workflowRunId, String topic) {
-    List<String> ids = new LinkedList<>();
-
-    LOGGER.info("[{}] Finding taskRunId based on topic.", workflowRunId);
-    List<TaskRunEntity> taskRunEntities =
-        this.taskRunRepository.findByWorkflowRunRef(workflowRunId);
-
-    for (TaskRunEntity taskRun : taskRunEntities) {
-      if (TaskType.eventwait.equals(taskRun.getType())) {
-        List<RunParam> params = taskRun.getParams();
-        if (params != null && ParameterUtil.containsName(params, "topic")) {
-          // TODO: bring back parameter layering
-          // String paramTopic = params.get("topic").toString();
-          // ControllerRequestProperties properties = propertyManager
-          // .buildRequestPropertyLayering(null, taskRunId, activity.getWorkflowId());
-          // topic = propertyManager.replaceValueWithProperty(paramTopic, taskRunId, properties);
-          // String taskId = task.getId();
-          LOGGER.info("[{}] Found task run id: {} ", workflowRunId, taskRun.getId());
-          taskRun.setPreApproved(true);
-          this.taskRunRepository.save(taskRun);
-          ids.add(taskRun.getId());
-        }
-      }
-    }
-
-    // TODO: figure out what to return
-    LOGGER.info("[{}] No task activity ids found for topic: {}", workflowRunId, topic);
-    return ids;
   }
 
   private void saveWorkflowStatus(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {

@@ -15,8 +15,4 @@ public interface TaskExecutionService {
   void end(TaskRunEntity request);  
 
   List<String> updateTaskRunForTopic(String activityId, String topic);
-
-//  void submitActivity(String taskRunId, String taskStatus, List<RunResult> results);
-
-
 }

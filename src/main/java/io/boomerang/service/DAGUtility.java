@@ -174,7 +174,7 @@ public class DAGUtility {
           if (!Objects.isNull(taskTemplate.getSpec().getImage())
               && !taskTemplate.getSpec().getImage().isEmpty()) {
             taskRunEntity.getSpec().setImage(taskTemplate.getSpec().getImage());
-          } else if (TaskType.template.equals(wfRevisionTask.getType())) {
+          } else if (TaskType.template.equals(wfRevisionTask.getType()) || TaskType.script.equals(wfRevisionTask.getType())) {
             taskRunEntity.getSpec().setImage(
                 wfRunEntity.getAnnotations().get("boomerang.io/task-default-image").toString());
           }
