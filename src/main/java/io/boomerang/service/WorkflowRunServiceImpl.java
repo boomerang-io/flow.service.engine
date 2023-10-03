@@ -82,7 +82,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   @Override
   public ResponseEntity<WorkflowRun> get(String workflowRunId, boolean withTasks) {
     if (workflowRunId == null || workflowRunId.isBlank()) {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
     Optional<WorkflowRunEntity> workflowRunEntity = workflowRunRepository.findById(workflowRunId);
     if (workflowRunEntity.isPresent()) {
@@ -97,7 +97,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       }
       return ResponseEntity.ok(wfRun);
     } else {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
   }
 
@@ -469,7 +469,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         return ResponseEntity.ok(response);
       }
     } else {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REQ);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REQ);
     }
   }
 
@@ -477,37 +477,41 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   public ResponseEntity<WorkflowRun> start(String workflowRunId,
       Optional<WorkflowRunRequest> optRunRequest) {
     if (workflowRunId == null || workflowRunId.isBlank()) {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
     final Optional<WorkflowRunEntity> optWfRunEntity =
         workflowRunRepository.findById(workflowRunId);
     if (optWfRunEntity.isPresent()) {
       WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
-      // Add values from Run Request
-      if (optRunRequest.isPresent()) {
-        logPayload(optRunRequest.get());
-        wfRunEntity.putLabels(optRunRequest.get().getLabels());
-        wfRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
-        wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(),
-            optRunRequest.get().getParams()));
-        wfRunEntity.getWorkspaces().addAll(optRunRequest.get().getWorkspaces());
-        workflowRunRepository.save(wfRunEntity);
-      }
-      workflowExecutionClient.start(workflowExecutionService, wfRunEntity);
+      if (RunPhase.pending.equals(wfRunEntity.getPhase())) {
+        // Add values from Run Request
+        if (optRunRequest.isPresent()) {
+          logPayload(optRunRequest.get());
+          wfRunEntity.putLabels(optRunRequest.get().getLabels());
+          wfRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
+          wfRunEntity.setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(),
+              optRunRequest.get().getParams()));
+          wfRunEntity.getWorkspaces().addAll(optRunRequest.get().getWorkspaces());
+          workflowRunRepository.save(wfRunEntity);
+        }
+        workflowExecutionClient.start(workflowExecutionService, wfRunEntity);
 
-      // Retrieve the refreshed status
-      WorkflowRunEntity updatedWfRunEntity = workflowRunRepository.findById(workflowRunId).get();
-      final WorkflowRun response = new WorkflowRun(updatedWfRunEntity);
-      return ResponseEntity.ok(response);
+        // Retrieve the refreshed status
+        WorkflowRunEntity updatedWfRunEntity = workflowRunRepository.findById(workflowRunId).get();
+        final WorkflowRun response = new WorkflowRun(updatedWfRunEntity);
+        return ResponseEntity.ok(response);
+      } else {
+        throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_PHASE, wfRunEntity.getPhase());
+      }
     } else {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
   }
 
   @Override
   public ResponseEntity<WorkflowRun> finalize(String workflowRunId) {
     if (workflowRunId == null || workflowRunId.isBlank()) {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
     final Optional<WorkflowRunEntity> optWfRunEntity =
         workflowRunRepository.findById(workflowRunId);
@@ -518,14 +522,14 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       final WorkflowRun response = new WorkflowRun(wfRunEntity);
       return ResponseEntity.ok(response);
     } else {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
   }
 
   @Override
   public ResponseEntity<WorkflowRun> cancel(String workflowRunId) {
     if (workflowRunId == null || workflowRunId.isBlank()) {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
     final Optional<WorkflowRunEntity> optWfRunEntity =
         workflowRunRepository.findById(workflowRunId);
@@ -536,7 +540,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       final WorkflowRun response = new WorkflowRun(wfRunEntity);
       return ResponseEntity.ok(response);
     } else {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
   }
 
@@ -546,7 +550,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   @Override
   public ResponseEntity<WorkflowRun> timeout(String workflowRunId, boolean taskRunTimeout) {
     if (workflowRunId == null || workflowRunId.isBlank()) {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
     final Optional<WorkflowRunEntity> optWfRunEntity =
         workflowRunRepository.findById(workflowRunId);
@@ -560,14 +564,14 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       final WorkflowRun response = new WorkflowRun(wfRunEntity);
       return ResponseEntity.ok(response);
     } else {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
   }
 
   @Override
   public ResponseEntity<WorkflowRun> retry(String workflowRunId, boolean start, long retryCount) {
     if (workflowRunId == null || workflowRunId.isBlank()) {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
     final Optional<WorkflowRunEntity> optWfRunEntity =
         workflowRunRepository.findById(workflowRunId);
@@ -597,7 +601,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         return ResponseEntity.ok(response);
       }
     } else {
-      throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_REF);
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
   }
 

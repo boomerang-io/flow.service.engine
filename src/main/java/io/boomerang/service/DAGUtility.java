@@ -51,6 +51,10 @@ public class DAGUtility {
   private TaskTemplateService taskTemplateService;
 
   public boolean validateWorkflow(WorkflowRunEntity wfRunEntity, List<TaskRunEntity> tasks) {
+    if (tasks.size() == 2) {
+      // Workflow only has Start and End and therefore cant run.
+      return false;
+    }
     final TaskRunEntity start =
         tasks.stream().filter(tsk -> TaskType.start.equals(tsk.getType())).findAny().orElse(null);
     final TaskRunEntity end =
@@ -76,7 +80,8 @@ public class DAGUtility {
           final Pair<String, String> pair = Pair.of(depTaskRefAsId, task.getId());
           edgeList.add(pair);
         } catch (NoSuchElementException ex) {
-          throw new BoomerangException(BoomerangError.WORKFLOW_RUN_INVALID_DEPENDENCY, dep.getTaskRef());
+          throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_DEPENDENCY,
+              dep.getTaskRef());
         }
       }
     }
@@ -89,12 +94,13 @@ public class DAGUtility {
       WorkflowRunEntity wfRunEntity) {
     final List<TaskRunEntity> taskList = new LinkedList<>();
     for (final Task wfRevisionTask : wfRevisionEntity.getTasks()) {
-      Optional<TaskRunEntity> existingTaskRunEntity =
-          taskRunRepository.findFirstByNameAndWorkflowRunRef(wfRevisionTask.getName(), wfRunEntity.getId());
+      Optional<TaskRunEntity> existingTaskRunEntity = taskRunRepository
+          .findFirstByNameAndWorkflowRunRef(wfRevisionTask.getName(), wfRunEntity.getId());
       if (existingTaskRunEntity.isPresent() && existingTaskRunEntity.get() != null) {
         taskList.add(existingTaskRunEntity.get());
       } else {
-        LOGGER.debug("[{}] Creating TaskRunEntity: {}", wfRunEntity.getId(), wfRevisionTask.getName());
+        LOGGER.debug("[{}] Creating TaskRunEntity: {}", wfRunEntity.getId(),
+            wfRevisionTask.getName());
         TaskRunEntity taskRunEntity = new TaskRunEntity();
         taskRunEntity.setName(wfRevisionTask.getName());
         taskRunEntity.setStatus(RunStatus.notstarted);
@@ -119,45 +125,53 @@ public class DAGUtility {
               taskTemplateService.retrieveAndValidateTaskTemplate(wfRevisionTask);
           taskRunEntity.setTemplateRef(wfRevisionTask.getTemplateRef());
           taskRunEntity.setTemplateVersion(taskTemplate.getVersion());
-          LOGGER.debug("[{}] Found Task Template: {} @ {}", wfRunEntity.getId(), taskTemplate.getName(), taskTemplate.getVersion());
-          
+          LOGGER.debug("[{}] Found Task Template: {} @ {}", wfRunEntity.getId(),
+              taskTemplate.getName(), taskTemplate.getVersion());
+
           // Stack the labels based on label propagation
-          // Task Template -> Workflow Task -> Run 
+          // Task Template -> Workflow Task -> Run
           taskRunEntity.getLabels().putAll(taskTemplate.getLabels());
           taskRunEntity.getLabels().putAll(wfRevisionTask.getLabels());
           taskRunEntity.getLabels().putAll(wfRunEntity.getLabels());
-          
-          //Add System Generated Annotations
+
+          // Add System Generated Annotations
           Map<String, Object> annotations = new HashMap<>();
           annotations.put("boomerang.io/generation", "4");
           annotations.put("boomerang.io/kind", "TaskRun");
-//          annotations.put("boomerang.io/task-deletion", wfRunEntity.getAnnotations().get("boomerang.io/task-deletion"));
+          // annotations.put("boomerang.io/task-deletion",
+          // wfRunEntity.getAnnotations().get("boomerang.io/task-deletion"));
           taskRunEntity.getAnnotations().putAll(annotations);
 
-          //TODO: validate this actually works - should template results just be merged into Run
+          // TODO: validate this actually works - should template results just be merged into Run
           taskRunEntity.setTemplateResults(taskTemplate.getSpec().getResults());
-          
-          //Set Task RunParams
-          if (taskTemplate.getSpec().getParams() != null && !taskTemplate.getSpec().getParams().isEmpty()) {
-            LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(), taskTemplate.getSpec().getParams().toString());
-            LOGGER.debug("[{}] Revision Task Params: {}", wfRunEntity.getId(), wfRevisionTask.getParams().toString());
+
+          // Set Task RunParams
+          if (taskTemplate.getSpec().getParams() != null
+              && !taskTemplate.getSpec().getParams().isEmpty()) {
+            LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(),
+                taskTemplate.getSpec().getParams().toString());
+            LOGGER.debug("[{}] Revision Task Params: {}", wfRunEntity.getId(),
+                wfRevisionTask.getParams().toString());
             taskRunEntity.setParams(ParameterUtil.addUniqueParams(
                 ParameterUtil.paramSpecToRunParam(taskTemplate.getSpec().getParams()),
                 wfRevisionTask.getParams()));
           } else {
-            LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(), wfRevisionTask.getParams().toString());
+            LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(),
+                wfRevisionTask.getParams().toString());
             taskRunEntity.setParams(wfRevisionTask.getParams());
           }
           LOGGER.debug("[{}] Task Run Params: {}", wfRunEntity.getId(), taskRunEntity.getParams());
-          if (!Objects.isNull(wfRevisionTask.getTimeout())
-              && wfRevisionTask.getTimeout() != 0) {
+          if (!Objects.isNull(wfRevisionTask.getTimeout()) && wfRevisionTask.getTimeout() != 0) {
             taskRunEntity.setTimeout(wfRevisionTask.getTimeout());
-          }          
-          //Set TaskRun Spec from TaskTemplate Spec - Debug and Deletion come from an alternate source
-          if (!Objects.isNull(taskTemplate.getSpec().getImage()) && !taskTemplate.getSpec().getImage().isEmpty()) {
+          }
+          // Set TaskRun Spec from TaskTemplate Spec - Debug and Deletion come from an alternate
+          // source
+          if (!Objects.isNull(taskTemplate.getSpec().getImage())
+              && !taskTemplate.getSpec().getImage().isEmpty()) {
             taskRunEntity.getSpec().setImage(taskTemplate.getSpec().getImage());
           } else if (TaskType.template.equals(wfRevisionTask.getType())) {
-            taskRunEntity.getSpec().setImage(wfRunEntity.getAnnotations().get("boomerang.io/task-default-image").toString());
+            taskRunEntity.getSpec().setImage(
+                wfRunEntity.getAnnotations().get("boomerang.io/task-default-image").toString());
           }
           if (!Objects.isNull(taskTemplate.getSpec().getCommand())) {
             taskRunEntity.getSpec().setCommand(taskTemplate.getSpec().getCommand());
@@ -175,13 +189,15 @@ public class DAGUtility {
             taskRunEntity.getSpec().setWorkingDir(taskTemplate.getSpec().getWorkingDir());
           }
           if (!Objects.isNull(taskTemplate.getSpec().getAdditionalProperties())) {
-            taskRunEntity.getSpec().getAdditionalProperties().putAll(taskTemplate.getSpec().getAdditionalProperties());
+            taskRunEntity.getSpec().getAdditionalProperties()
+                .putAll(taskTemplate.getSpec().getAdditionalProperties());
           }
-          taskRunEntity.getSpec().setDeletion(TaskDeletion.getDeletion(wfRunEntity.getAnnotations().get("boomerang.io/task-deletion").toString()));
+          taskRunEntity.getSpec().setDeletion(TaskDeletion.getDeletion(
+              wfRunEntity.getAnnotations().get("boomerang.io/task-deletion").toString()));
         }
         taskRunRepository.save(taskRunEntity);
-        LOGGER.debug("[{}] TaskRunEntity ({}) created for: {}", wfRunEntity.getId(), taskRunEntity.getId(),
-            taskRunEntity.getName());
+        LOGGER.debug("[{}] TaskRunEntity ({}) created for: {}", wfRunEntity.getId(),
+            taskRunEntity.getId(), taskRunEntity.getName());
         taskList.add(taskRunEntity);
       }
     }

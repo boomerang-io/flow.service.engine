@@ -150,12 +150,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
           this.workflowRunRepository.findById(wfRunId);
       if (optWorkflowRunEntity.isPresent()) {
         WorkflowRunEntity workflowRunEntity = optWorkflowRunEntity.get();
-        if (tasksToRun.size() == 2) {
-          // Workflow only has Start and End and therefore can succeed.
-          updateStatusAndSaveWorkflow(workflowRunEntity, RunStatus.succeeded, RunPhase.running,
-              Optional.empty());
-          return true;
-        }
         LOGGER.info("[{}] Executing Workflow Async...", workflowRunEntity.getId());
 
         try {

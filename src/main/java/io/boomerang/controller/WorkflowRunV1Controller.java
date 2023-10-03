@@ -30,20 +30,20 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/v1/workflowrun")
-@Tag(name = "Workflow Run",
-description = "Submit, View, Start, End, and Update Status of your Workflow Runs.")
+@Tag(name = "WorkflowRun",
+description = "Submit, View, Start, End, and Update Status of your WorkflowRuns.")
 public class WorkflowRunV1Controller {
 
   @Autowired
   private WorkflowRunService workflowRunService;
 
   @GetMapping(value = "/{workflowRunId}")
-  @Operation(summary = "Retrieve a specific Workflow Run.")
+  @Operation(summary = "Retrieve a specific WorkflowRun.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<WorkflowRun> getWorkflowRuns(
       @Parameter(name = "workflowRunId",
-      description = "ID of Workflow Run",
+      description = "ID of WorkflowRun",
       required = true) @PathVariable String workflowRunId,
       @Parameter(name = "withTasks",
       description = "Include Task Runs in the response",
@@ -52,7 +52,7 @@ public class WorkflowRunV1Controller {
   }
 
   @GetMapping(value = "/query")
-  @Operation(summary = "Search for Workflow Runs")
+  @Operation(summary = "Search for WorkflowRuns")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public Page<WorkflowRun> queryWorkflowRuns(
@@ -153,61 +153,61 @@ public class WorkflowRunV1Controller {
   }
 
   @PostMapping(value = "/submit")
-  @Operation(summary = "Submit a Workflow to be run. Will queue the Workflow Run ready for execution.")
+  @Operation(summary = "Submit a Workflow to be run. Will queue the WorkflowRun ready for execution.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<WorkflowRun> submitWorkflowRun(
       @Parameter(name = "start",
-      description = "Start the Workflow Run immediately after submission",
+      description = "Start the WorkflowRun immediately after submission",
       required = false) @RequestParam(required = false, defaultValue = "false") boolean start,
       @RequestBody WorkflowRunSubmitRequest request) {
     return workflowRunService.submit(request, start);
   }
 
   @PutMapping(value = "/{workflowRunId}/start")
-  @Operation(summary = "Start Workflow Run execution. The Workflow Run has to already have been queued.")
+  @Operation(summary = "Start WorkflowRun execution. The WorkflowRun has to already have been queued.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<WorkflowRun> startWorkflowRun(
       @Parameter(name = "workflowRunId",
-      description = "ID of Workflow Run to Start",
+      description = "ID of WorkflowRun to Start",
       required = true) @PathVariable(required = true) String workflowRunId,
       @RequestBody Optional<WorkflowRunRequest> runRequest) {
     return workflowRunService.start(workflowRunId, runRequest);
   }
 
   @PutMapping(value = "/{workflowRunId}/finalize")
-  @Operation(summary = "End a Workflow Run")
+  @Operation(summary = "End a WorkflowRun")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<WorkflowRun> endWorkflowRun(
       @Parameter(name = "workflowRunId",
-      description = "ID of Workflow Run to Finalize",
+      description = "ID of WorkflowRun to Finalize",
       required = true) @PathVariable(required = true) String workflowRunId) {
     return workflowRunService.finalize(workflowRunId);
   }
 
   @DeleteMapping(value = "/{workflowRunId}/cancel")
-  @Operation(summary = "Cancel a Workflow Run")
+  @Operation(summary = "Cancel a WorkflowRun")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<WorkflowRun> cancelWorkflowRun(
       @Parameter(name = "workflowRunId",
-      description = "ID of Workflow Run to Cancel",
+      description = "ID of WorkflowRun to Cancel",
       required = true) @PathVariable(required = true) String workflowRunId) {
     return workflowRunService.cancel(workflowRunId);
   }
 
   @PutMapping(value = "/{workflowRunId}/retry")
-  @Operation(summary = "Retry Workflow Run execution.")
+  @Operation(summary = "Retry WorkflowRun execution.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public ResponseEntity<WorkflowRun> retryWorkflowRun(
       @Parameter(name = "workflowRunId",
-      description = "ID of Workflow Run to Retry.",
+      description = "ID of WorkflowRun to Retry.",
       required = true) @PathVariable(required = true) String workflowRunId,
       @Parameter(name = "start",
-      description = "Start the Workflow Run immediately after submission",
+      description = "Start the WorkflowRun immediately after submission",
       required = false) @RequestParam(required = false, defaultValue = "false") boolean start) {
     return workflowRunService.retry(workflowRunId, start, 1);
   }
