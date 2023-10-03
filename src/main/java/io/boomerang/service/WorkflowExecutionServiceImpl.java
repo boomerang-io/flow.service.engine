@@ -81,6 +81,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   @Override
   public CompletableFuture<Boolean> start(WorkflowRunEntity wfRunEntity) {
     LOGGER.debug("[{}] Recieved start WorkflowRun request.", wfRunEntity.getId());
+    LOGGER.info("[{}] Attempting to acquire WorkflowRun lock...", wfRunEntity.getId());
+    String lockId = lockManager.acquireRunLock(wfRunEntity.getId());
+    LOGGER.info("[{}] Obtained WorkflowRun lock", wfRunEntity.getId());
     final Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity =
         this.workflowRevisionRepository.findById(wfRunEntity.getWorkflowRevisionRef());
     if (optWorkflowRevisionEntity.isPresent()) {
@@ -103,11 +106,15 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
           CompletableFuture.supplyAsync(timeoutWorkflowAsync(wfRunEntity.getId()),
               CompletableFuture.delayedExecutor(wfRunEntity.getTimeout(), TimeUnit.MINUTES, asyncWorkflowExecutor));
         }
+        lockManager.releaseRunLock(wfRunEntity.getId(), lockId);
+        LOGGER.info("[{}] Released TaskRun lock", wfRunEntity.getId());
         return CompletableFuture
             .supplyAsync(executeWorkflowAsync(wfRunEntity.getId(), start, end, graph, tasks), asyncWorkflowExecutor);
       }
       updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.invalid, RunPhase.completed,
           Optional.of("Failed to run workflow: incomplete, or invalid, workflow"));
+      lockManager.releaseRunLock(wfRunEntity.getId(), lockId);
+      LOGGER.info("[{}] Released TaskRun lock", wfRunEntity.getId());
       throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION",
           "[{0}] Failed to run workflow: incomplete, or invalid, workflow",
           HttpStatus.INTERNAL_SERVER_ERROR, wfRunEntity.getId());
@@ -115,6 +122,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.invalid, RunPhase.completed,
         Optional.of("Failed to run workflow: incomplete, or invalid, workflow revision: {}"),
         wfRunEntity.getWorkflowRevisionRef());
+    lockManager.releaseRunLock(wfRunEntity.getId(), lockId);
+    LOGGER.info("[{}] Released TaskRun lock", wfRunEntity.getId());
     throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION",
         "[{0}] Failed to run workflow: incomplete, or invalid, workflow revision: {1}",
         HttpStatus.INTERNAL_SERVER_ERROR, wfRunEntity.getId(),
