@@ -87,6 +87,11 @@ public class DAGUtility {
     }
     return GraphProcessor.createGraph(vertices, edgeList);
   }
+  
+  public List<TaskRunEntity> retrieveTaskList(String wfRunId) {
+    return taskRunRepository
+        .findByWorkflowRunRef(wfRunId);
+  }
 
   // TODO: determine a better way to handle the start and end task without saving them as a
   // TaskRunEntity

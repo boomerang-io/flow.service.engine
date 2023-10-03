@@ -73,53 +73,45 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     // TODO: check if we need this
     paramManager.resolveParamLayers(wfRunEntity, Optional.empty());
 
-    // TODO: do we move the dagUtility.validateWorkflow() here and validate earlier?
-
-    updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.ready, RunPhase.pending,
-        Optional.empty());
-  }
-
-  @Override
-  public CompletableFuture<Boolean> start(WorkflowRunEntity wfRunEntity) {
-    LOGGER.debug("[{}] Recieved start WorkflowRun request.", wfRunEntity.getId());
     final Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity =
         this.workflowRevisionRepository.findById(wfRunEntity.getWorkflowRevisionRef());
     if (optWorkflowRevisionEntity.isPresent()) {
       WorkflowRevisionEntity wfRevisionEntity = optWorkflowRevisionEntity.get();
       final List<TaskRunEntity> tasks = dagUtility.createTaskList(wfRevisionEntity, wfRunEntity);
       LOGGER.info("[{}] Found {} tasks: {}", wfRunEntity.getId(), tasks.size(), tasks.toString());
-      final TaskRunEntity start = dagUtility.getTaskByType(tasks, TaskType.start);
-      final TaskRunEntity end = dagUtility.getTaskByType(tasks, TaskType.end);
-      final Graph<String, DefaultEdge> graph = dagUtility.createGraph(tasks);
       if (dagUtility.validateWorkflow(wfRunEntity, tasks)) {
-        // Set Workflow to Running (Status and Phase). From this point, the duration needs to be
-        // calculated.
-        wfRunEntity.setStartTime(new Date());
-        updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.running, RunPhase.running,
+        updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.ready, RunPhase.pending,
             Optional.empty());
-        if (!Objects.isNull(wfRunEntity.getTimeout())
-            && wfRunEntity.getTimeout() != 0) {
-          // Create Timeout Delayed CompletableFuture 
-          LOGGER.debug("[{}] WorkflowRun Timeout provided of {} minutes. Creating future timeout check.", wfRunEntity.getId(), wfRunEntity.getTimeout());
-          CompletableFuture.supplyAsync(timeoutWorkflowAsync(wfRunEntity.getId()),
-              CompletableFuture.delayedExecutor(wfRunEntity.getTimeout(), TimeUnit.MINUTES, asyncWorkflowExecutor));
-        }
-        return CompletableFuture
-            .supplyAsync(executeWorkflowAsync(wfRunEntity.getId(), start, end, graph, tasks), asyncWorkflowExecutor);
       }
-      updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.invalid, RunPhase.completed,
-          Optional.of("Failed to run workflow: incomplete, or invalid, workflow"));
-      throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION",
-          "[{0}] Failed to run workflow: incomplete, or invalid, workflow",
-          HttpStatus.INTERNAL_SERVER_ERROR, wfRunEntity.getId());
     }
     updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.invalid, RunPhase.completed,
-        Optional.of("Failed to run workflow: incomplete, or invalid, workflow revision: {}"),
-        wfRunEntity.getWorkflowRevisionRef());
+        Optional.of("Failed to run workflow: incomplete, or invalid, workflow"));
     throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION",
-        "[{0}] Failed to run workflow: incomplete, or invalid, workflow revision: {1}",
-        HttpStatus.INTERNAL_SERVER_ERROR, wfRunEntity.getId(),
-        wfRunEntity.getWorkflowRevisionRef());
+        "[{0}] Failed to run workflow: incomplete, or invalid, workflow",
+        HttpStatus.INTERNAL_SERVER_ERROR, wfRunEntity.getId());
+  }
+
+  @Override
+  public CompletableFuture<Boolean> start(WorkflowRunEntity wfRunEntity) {
+    LOGGER.debug("[{}] Recieved start WorkflowRun request.", wfRunEntity.getId());
+    //Check the WorkflowRun has been queued, throw if not
+    //Don't update the WorkflowRun status as this may cause a running WorkflowRun to be incorrectly changed.
+    if (!RunPhase.pending.equals(wfRunEntity.getPhase())) {
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_PHASE, wfRunEntity.getPhase());
+    }
+    final List<TaskRunEntity> tasks = dagUtility.retrieveTaskList(wfRunEntity.getId());
+    final TaskRunEntity start = dagUtility.getTaskByType(tasks, TaskType.start);
+    final TaskRunEntity end = dagUtility.getTaskByType(tasks, TaskType.end);
+    final Graph<String, DefaultEdge> graph = dagUtility.createGraph(tasks);
+    if (!Objects.isNull(wfRunEntity.getTimeout())
+        && wfRunEntity.getTimeout() != 0) {
+      // Create Timeout Delayed CompletableFuture 
+      LOGGER.debug("[{}] WorkflowRun Timeout provided of {} minutes. Creating future timeout check.", wfRunEntity.getId(), wfRunEntity.getTimeout());
+      CompletableFuture.supplyAsync(timeoutWorkflowAsync(wfRunEntity.getId()),
+          CompletableFuture.delayedExecutor(wfRunEntity.getTimeout(), TimeUnit.MINUTES, asyncWorkflowExecutor));
+    }
+    return CompletableFuture
+        .supplyAsync(executeWorkflowAsync(wfRunEntity.getId(), start, end, graph, tasks), asyncWorkflowExecutor);
   }
 
   @Override
@@ -153,43 +145,46 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       final Optional<WorkflowRunEntity> optWorkflowRunEntity =
           this.workflowRunRepository.findById(wfRunId);
       if (optWorkflowRunEntity.isPresent()) {
-        WorkflowRunEntity workflowRunEntity = optWorkflowRunEntity.get();
-        //Check the Workflow has been queued
-        if (!RunPhase.pending.equals(workflowRunEntity.getPhase())) {
-          updateStatusAndSaveWorkflow(workflowRunEntity, RunStatus.invalid, RunPhase.completed,
-              Optional
-                  .of("Failed to run Workflow: incorrect phase."));
+        WorkflowRunEntity wfRunEntity = optWorkflowRunEntity.get();
+        //Check the WorkflowRun has been queued, throw if not
+        //Don't update the WorkflowRun status as this may cause a running WorkflowRun to be incorrectly changed.
+        if (!RunPhase.pending.equals(wfRunEntity.getPhase())) {
           lockManager.releaseRunLock(wfRunId, lockId);
           LOGGER.info("[{}] Released WorkflowRun lock", wfRunId);
-          throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_PHASE, workflowRunEntity.getPhase());
+          throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_PHASE, wfRunEntity.getPhase());
         }
-        LOGGER.info("[{}] Executing Workflow Async...", workflowRunEntity.getId());
+        // Set Workflow to Running (Status and Phase). From this point, the duration needs to be
+        // calculated.
+        wfRunEntity.setStartTime(new Date());
+        updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.running, RunPhase.running,
+            Optional.empty());
+        LOGGER.info("[{}] Executing Workflow Async...", wfRunEntity.getId());
         try {
           List<TaskRunEntity> nextNodes = dagUtility.getTasksDependants(tasksToRun, start);
-          LOGGER.debug("[{}] Next Nodes Size: {}", workflowRunEntity.getId(), nextNodes.size());
+          LOGGER.debug("[{}] Next Nodes Size: {}", wfRunEntity.getId(), nextNodes.size());
           for (TaskRunEntity next : nextNodes) {
             final List<String> nodes =
                 GraphProcessor.createOrderedTaskList(graph, start.getId(), end.getId());
 
             if (nodes.contains(next.getId())) {
-              LOGGER.debug("[{}] Creating TaskRun ({})...", workflowRunEntity.getId(),
+              LOGGER.debug("[{}] Creating TaskRun ({})...", wfRunEntity.getId(),
                   next.getId());
               taskClient.queue(taskService, next);
             }
           }
         } catch (Exception e) {
-          updateStatusAndSaveWorkflow(workflowRunEntity, RunStatus.invalid, RunPhase.completed,
+          updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.invalid, RunPhase.completed,
               Optional
                   .of("Failed to run workflow: unable to process Workflow and queue all tasks."));
           lockManager.releaseRunLock(wfRunId, lockId);
-          LOGGER.info("[{}] Released TaskRun lock", wfRunId);
+          LOGGER.info("[{}] Released WorkflowRun lock", wfRunId);
           throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION",
               "[{0}] Failed to run workflow: unable to process Workflow and queue all tasks",
-              HttpStatus.INTERNAL_SERVER_ERROR, workflowRunEntity.getId());
+              HttpStatus.INTERNAL_SERVER_ERROR, wfRunEntity.getId());
         }
       }
       lockManager.releaseRunLock(wfRunId, lockId);
-      LOGGER.info("[{}] Released TaskRun lock", wfRunId);
+      LOGGER.info("[{}] Released WorkflowRun lock", wfRunId);
       return true;
     };
   }
@@ -210,9 +205,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       if (optWorkflowRunEntity.isPresent()) {
         WorkflowRunEntity wfRunEntity = optWorkflowRunEntity.get();
         // Only need to check if Workflow is running - otherwise nothing to timeout
-        // Note: If the TaskList creation was to move into the WorkflowRun Queue step then tasks
-        // would
-        // need to be moved into skipped.
         if (RunPhase.running.equals(wfRunEntity.getPhase())) {
           LOGGER.info("[{}] Timeout Workflow Async...", wfRunId);
           String tokenId = lockManager.acquireRunLock(wfRunId);
