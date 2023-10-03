@@ -23,6 +23,7 @@ import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
+import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
@@ -81,9 +82,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
   @Override
   public CompletableFuture<Boolean> start(WorkflowRunEntity wfRunEntity) {
     LOGGER.debug("[{}] Recieved start WorkflowRun request.", wfRunEntity.getId());
-    LOGGER.info("[{}] Attempting to acquire WorkflowRun lock...", wfRunEntity.getId());
-    String lockId = lockManager.acquireRunLock(wfRunEntity.getId());
-    LOGGER.info("[{}] Obtained WorkflowRun lock", wfRunEntity.getId());
     final Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity =
         this.workflowRevisionRepository.findById(wfRunEntity.getWorkflowRevisionRef());
     if (optWorkflowRevisionEntity.isPresent()) {
@@ -106,15 +104,11 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
           CompletableFuture.supplyAsync(timeoutWorkflowAsync(wfRunEntity.getId()),
               CompletableFuture.delayedExecutor(wfRunEntity.getTimeout(), TimeUnit.MINUTES, asyncWorkflowExecutor));
         }
-        lockManager.releaseRunLock(wfRunEntity.getId(), lockId);
-        LOGGER.info("[{}] Released TaskRun lock", wfRunEntity.getId());
         return CompletableFuture
             .supplyAsync(executeWorkflowAsync(wfRunEntity.getId(), start, end, graph, tasks), asyncWorkflowExecutor);
       }
       updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.invalid, RunPhase.completed,
           Optional.of("Failed to run workflow: incomplete, or invalid, workflow"));
-      lockManager.releaseRunLock(wfRunEntity.getId(), lockId);
-      LOGGER.info("[{}] Released TaskRun lock", wfRunEntity.getId());
       throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION",
           "[{0}] Failed to run workflow: incomplete, or invalid, workflow",
           HttpStatus.INTERNAL_SERVER_ERROR, wfRunEntity.getId());
@@ -122,8 +116,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.invalid, RunPhase.completed,
         Optional.of("Failed to run workflow: incomplete, or invalid, workflow revision: {}"),
         wfRunEntity.getWorkflowRevisionRef());
-    lockManager.releaseRunLock(wfRunEntity.getId(), lockId);
-    LOGGER.info("[{}] Released TaskRun lock", wfRunEntity.getId());
     throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION",
         "[{0}] Failed to run workflow: incomplete, or invalid, workflow revision: {1}",
         HttpStatus.INTERNAL_SERVER_ERROR, wfRunEntity.getId(),
@@ -155,12 +147,23 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       final TaskRunEntity end, final Graph<String, DefaultEdge> graph,
       final List<TaskRunEntity> tasksToRun) {
     return () -> {
+      LOGGER.debug("[{}] Attempting to acquire WorkflowRun lock...", wfRunId);
+      String lockId = lockManager.acquireRunLock(wfRunId);
+      LOGGER.info("[{}] Obtained WorkflowRun lock",wfRunId);
       final Optional<WorkflowRunEntity> optWorkflowRunEntity =
           this.workflowRunRepository.findById(wfRunId);
       if (optWorkflowRunEntity.isPresent()) {
         WorkflowRunEntity workflowRunEntity = optWorkflowRunEntity.get();
+        //Check the Workflow has been queued
+        if (!RunPhase.pending.equals(workflowRunEntity.getPhase())) {
+          updateStatusAndSaveWorkflow(workflowRunEntity, RunStatus.invalid, RunPhase.completed,
+              Optional
+                  .of("Failed to run Workflow: incorrect phase."));
+          lockManager.releaseRunLock(wfRunId, lockId);
+          LOGGER.info("[{}] Released WorkflowRun lock", wfRunId);
+          throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_PHASE, workflowRunEntity.getPhase());
+        }
         LOGGER.info("[{}] Executing Workflow Async...", workflowRunEntity.getId());
-
         try {
           List<TaskRunEntity> nextNodes = dagUtility.getTasksDependants(tasksToRun, start);
           LOGGER.debug("[{}] Next Nodes Size: {}", workflowRunEntity.getId(), nextNodes.size());
@@ -178,11 +181,15 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
           updateStatusAndSaveWorkflow(workflowRunEntity, RunStatus.invalid, RunPhase.completed,
               Optional
                   .of("Failed to run workflow: unable to process Workflow and queue all tasks."));
+          lockManager.releaseRunLock(wfRunId, lockId);
+          LOGGER.info("[{}] Released TaskRun lock", wfRunId);
           throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION",
               "[{0}] Failed to run workflow: unable to process Workflow and queue all tasks",
               HttpStatus.INTERNAL_SERVER_ERROR, workflowRunEntity.getId());
         }
       }
+      lockManager.releaseRunLock(wfRunId, lockId);
+      LOGGER.info("[{}] Released TaskRun lock", wfRunId);
       return true;
     };
   }

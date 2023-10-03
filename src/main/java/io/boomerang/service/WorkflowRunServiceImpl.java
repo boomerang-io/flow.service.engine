@@ -483,7 +483,6 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         workflowRunRepository.findById(workflowRunId);
     if (optWfRunEntity.isPresent()) {
       WorkflowRunEntity wfRunEntity = optWfRunEntity.get();
-      if (RunPhase.pending.equals(wfRunEntity.getPhase())) {
         // Add values from Run Request
         if (optRunRequest.isPresent()) {
           logPayload(optRunRequest.get());
@@ -500,9 +499,6 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
         WorkflowRunEntity updatedWfRunEntity = workflowRunRepository.findById(workflowRunId).get();
         final WorkflowRun response = new WorkflowRun(updatedWfRunEntity);
         return ResponseEntity.ok(response);
-      } else {
-        throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_PHASE, wfRunEntity.getPhase());
-      }
     } else {
       throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }

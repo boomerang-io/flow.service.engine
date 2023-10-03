@@ -173,7 +173,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       return;
     }
 
-    LOGGER.info("[{}] Attempting to acquire TaskRun lock...", taskExecutionId);
+    LOGGER.debug("[{}] Attempting to acquire TaskRun lock...", taskExecutionId);
     String lockId = lockManager.acquireRunLock(taskExecutionId);
     LOGGER.info("[{}] Obtained TaskRun lock", taskExecutionId);
 
@@ -356,7 +356,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       return;
     }
 
-    LOGGER.info("[{}] Attempting to acquire TaskRun ({}) lock", taskExecutionId, taskExecutionId);
+    LOGGER.debug("[{}] Attempting to acquire TaskRun ({}) lock", taskExecutionId, taskExecutionId);
     String taskTokenId = lockManager.acquireRunLock(taskExecutionId);
     LOGGER.info("[{}] Obtained TaskRun ({}) lock", taskExecutionId, taskExecutionId);
 
