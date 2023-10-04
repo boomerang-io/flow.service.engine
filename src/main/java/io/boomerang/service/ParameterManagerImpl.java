@@ -105,15 +105,23 @@ public class ParameterManagerImpl implements ParameterManager {
       Optional<TaskRunEntity> optTaskRun) {
     ParamLayers paramLayers = new ParamLayers();
 
-    LOGGER.debug("Received Context Params: " + wfRun.getParams().stream().filter(p -> p.getName().startsWith("context.")).toList().toString());
-    LOGGER.debug("Received Global Params: " + wfRun.getParams().stream().filter(p -> p.getName().startsWith("global.")).toList().toString());
-    LOGGER.debug("Received Team Params: " + wfRun.getParams().stream().filter(p -> p.getName().startsWith("team.")).toList().toString());
-    LOGGER.debug("Received Params: " + wfRun.getParams().stream().filter(p -> p.getName().startsWith("params.")).toList().toString());
+    LOGGER.debug("Received Global Params: " + wfRun.getAnnotations().get("boomerang.io/global-params"));
+    LOGGER.debug("Received Team Params: " + wfRun.getAnnotations().get("boomerang.io/team-params"));
+    LOGGER.debug("Received Context Params: " + wfRun.getAnnotations().get("boomerang.io/context-params"));
 
-    if (workflowParamsEnabled) {
-      // Retrieve Global, Team, and some Context from the Workflow Service
-      paramLayers = workflowClient.getParamLayers(wfRun.getWorkflowRef());
+    if (wfRun.getAnnotations().containsKey("boomerang.io/global-params") && wfRun.getAnnotations().get("boomerang.io/global-params") != null) {
+      paramLayers.setGlobalParams((Map<String, Object>) wfRun.getAnnotations().get("boomerang.io/global-params"));
     }
+    if (wfRun.getAnnotations().containsKey("boomerang.io/team-params") && wfRun.getAnnotations().get("boomerang.io/team-params") != null) {
+      paramLayers.setTeamParams((Map<String, Object>) wfRun.getAnnotations().get("boomerang.io/team-params"));
+    }
+    if (wfRun.getAnnotations().containsKey("boomerang.io/context-params") && wfRun.getAnnotations().get("boomerang.io/context-params") != null) {
+      paramLayers.setContextParams((Map<String, Object>) wfRun.getAnnotations().get("boomerang.io/context-params"));
+    }
+//    if (workflowParamsEnabled) {
+//      // Retrieve Global, Team, and some Context from the Workflow Service
+//      paramLayers = workflowClient.getParamLayers(wfRun.getWorkflowRef());
+//    }
     // Override particular context Parameters. Additional Context Params come from the Workflow
     // service.
     Map<String, Object> contextParams = paramLayers.getContextParams();
