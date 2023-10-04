@@ -218,7 +218,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   }
 
   /*
-   * Execute the System tasks called from queue or start asynchronously
+   * Executes the Specific TaskType. Method called from queue or start asynchronously
    * 
    * No status checks are performed as part of this method. They are handled in start().
    */
@@ -226,76 +226,71 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   @Async("asyncTaskExecutor")
   public void execute(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {
     String taskExecutionId = taskExecution.getId();
-    LOGGER.info("[{}] Recieved Execute task request.", taskExecutionId);
-
-    // Execute based on TaskType
+    boolean endTask = false;
     TaskType taskType = taskExecution.getType();
     String wfRunId = wfRunEntity.getId();
-    LOGGER.debug("[{}] Examining task type: {}", taskExecutionId, taskType);
-    boolean callEnd = false;
-    // Set up task
+    LOGGER.info("[{}] Recieved Execute task request for type: {}.", taskExecutionId, taskType);
+    
+    // Set Task status and start time for duration
     taskExecution.setStartTime(new Date());
     updateStatusAndSaveTask(taskExecution, RunStatus.running, RunPhase.running, Optional.empty());
-    /*
-     * If new TaskTypes are added, the following code needs updated as well as the IF statement at
-     * the end of QUEUE
-     * 
-     * TODO: migrate to CASE statement
-     */
-    if (TaskType.decision.equals(taskType)) {
-      LOGGER.info("[{}] Execute Decision Task", wfRunId);
-      processDecision(taskExecution, wfRunId);
-      taskExecution.setStatus(RunStatus.succeeded);
-      callEnd = true;
-    } else if (TaskType.template.equals(taskType) || TaskType.script.equals(taskType)) {
-      LOGGER.info("[{}] Execute Template Task", wfRunId);
-      getTaskWorkspaces(taskExecution, wfRunEntity);
-    } else if (TaskType.custom.equals(taskType)) {
-      LOGGER.info("[{}] Execute Custom Task", wfRunId);
-      getTaskWorkspaces(taskExecution, wfRunEntity);
-    } else if (TaskType.generic.equals(taskType)) {
-      LOGGER.info("[{}] Execute Generic Task", wfRunId);
-      // Nothing to do here. Generic task is completely up to the Handler.
-      getTaskWorkspaces(taskExecution, wfRunEntity);
-    } else if (TaskType.acquirelock.equals(taskType)) {
-      LOGGER.info("[{}] Execute Acquire Lock", wfRunId);
-      this.acquireTaskLock(taskExecution, wfRunEntity);
-      callEnd = true;
-    } else if (TaskType.releaselock.equals(taskType)) {
-      LOGGER.info("[{}] Execute Release Lock", wfRunId);
-      this.releaseTaskLock(taskExecution, wfRunEntity);
-      callEnd = true;
-    } else if (TaskType.runworkflow.equals(taskType)) {
-      LOGGER.info("[{}] Execute Run Workflow Task", wfRunId);
-      this.runWorkflow(taskExecution, wfRunEntity);
-      callEnd = true;
-    } else if (TaskType.runscheduledworkflow.equals(taskType)) {
-      LOGGER.info("[{}] Execute Run Scheduled Workflow Task", wfRunId);
-      this.runScheduledWorkflow(taskExecution, wfRunEntity);
-      callEnd = true;
-    } else if (TaskType.setwfstatus.equals(taskType)) {
-      LOGGER.info("[{}] Save Workflow Status", wfRunId);
-      saveWorkflowStatus(taskExecution, wfRunEntity);
-      taskExecution.setStatus(RunStatus.succeeded);
-      callEnd = true;
-    } else if (TaskType.setwfproperty.equals(taskType)) {
-      LOGGER.info("[{}] Execute Set Workflow Result Parameter Task", wfRunId);
-      saveWorkflowProperty(taskExecution, wfRunEntity);
-      taskExecution.setStatus(RunStatus.succeeded);
-      callEnd = true;
-    } else if (TaskType.approval.equals(taskType)) {
-      LOGGER.info("[{}] Execute Approval Action Task", wfRunId);
-      createActionTask(taskExecution, wfRunEntity, ActionType.approval);
-    } else if (TaskType.manual.equals(taskType)) {
-      LOGGER.info("[{}] Execute Manual Action Task", wfRunId);
-      createActionTask(taskExecution, wfRunEntity, ActionType.manual);
-    } else if (TaskType.eventwait.equals(taskType)) {
-      LOGGER.info("[{}] Execute Wait For Event Task", wfRunId);
-      createWaitForEventTask(taskExecution, callEnd);
-    } else if (TaskType.sleep.equals(taskType)) {
-      LOGGER.info("[{}] Execute Sleep Task", wfRunId);
-      createSleepTask(taskExecution);
-      callEnd = true;
+    
+     // If new TaskTypes are added, the following code needs updated as well as the IF statement at
+     // the end of QUEUE
+    switch(taskType) {
+      case template, script, custom, generic -> {
+        // Nothing to do here. These types wait for a Handler.
+        getTaskWorkspaces(taskExecution, wfRunEntity);
+      }
+      case decision -> {
+        processDecision(taskExecution, wfRunId);
+        taskExecution.setStatus(RunStatus.succeeded);
+        endTask = true;
+      }
+      case acquirelock -> {
+        this.acquireTaskLock(taskExecution, wfRunEntity);
+        endTask = true;
+      }
+      case releaselock -> {
+        this.releaseTaskLock(taskExecution, wfRunEntity);
+        endTask = true;
+      }
+      case runworkflow -> {
+        this.runWorkflow(taskExecution, wfRunEntity);
+        endTask = true;
+      }
+      case runscheduledworkflow -> {
+        this.runScheduledWorkflow(taskExecution, wfRunEntity);
+        endTask = true;
+      }
+      case setwfstatus -> {
+        this.saveWorkflowStatus(taskExecution, wfRunEntity);
+        taskExecution.setStatus(RunStatus.succeeded);
+        endTask = true;
+      }
+      case setwfproperty -> {
+        this.saveWorkflowProperty(taskExecution, wfRunEntity);
+        taskExecution.setStatus(RunStatus.succeeded);
+        endTask = true; 
+      }
+      case approval -> {
+        // Task will wait for user action and does not end.
+       this.createActionTask(taskExecution, wfRunEntity, ActionType.approval);
+      }
+      case manual -> {
+        // Task will wait for user action and does not end.
+        this.createActionTask(taskExecution, wfRunEntity, ActionType.manual);
+      }
+      case eventwait -> {
+        // Task will wait for event and does not end.
+        this.createWaitForEventTask(taskExecution, endTask);
+      }
+      case sleep -> {
+        this.createSleepTask(taskExecution);
+        endTask = true;
+      }
+      case end, start -> throw new UnsupportedOperationException("Unimplemented case: " + taskType);
+      default -> throw new BoomerangException(BoomerangError.TASKRUN_INVALID_TYPE, taskType);
     }
 
     // Check if task has a timeout set
@@ -309,7 +304,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
           .delayedExecutor(taskExecution.getTimeout(), TimeUnit.MINUTES, asyncTaskExecutor));
     }
 
-    if (callEnd) {
+    if (endTask) {
       taskExecutionClient.end(this, taskExecution);
     }
   }
