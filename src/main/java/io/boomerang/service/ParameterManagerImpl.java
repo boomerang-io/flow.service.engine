@@ -105,6 +105,11 @@ public class ParameterManagerImpl implements ParameterManager {
       Optional<TaskRunEntity> optTaskRun) {
     ParamLayers paramLayers = new ParamLayers();
 
+    LOGGER.debug("Received Context Params: " + wfRun.getParams().stream().filter(p -> p.getName().startsWith("context.")).toList().toString());
+    LOGGER.debug("Received Global Params: " + wfRun.getParams().stream().filter(p -> p.getName().startsWith("global.")).toList().toString());
+    LOGGER.debug("Received Team Params: " + wfRun.getParams().stream().filter(p -> p.getName().startsWith("team.")).toList().toString());
+    LOGGER.debug("Received Params: " + wfRun.getParams().stream().filter(p -> p.getName().startsWith("params.")).toList().toString());
+
     if (workflowParamsEnabled) {
       // Retrieve Global, Team, and some Context from the Workflow Service
       paramLayers = workflowClient.getParamLayers(wfRun.getWorkflowRef());
