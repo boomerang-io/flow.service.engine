@@ -39,6 +39,7 @@ import io.boomerang.model.enums.TaskDeletion;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.util.GraphProcessor;
 import io.boomerang.util.ParameterUtil;
+import io.boomerang.util.ResultUtil;
 
 @Service
 public class DAGUtility {
@@ -143,12 +144,14 @@ public class DAGUtility {
           Map<String, Object> annotations = new HashMap<>();
           annotations.put("boomerang.io/generation", "4");
           annotations.put("boomerang.io/kind", "TaskRun");
-          // annotations.put("boomerang.io/task-deletion",
-          // wfRunEntity.getAnnotations().get("boomerang.io/task-deletion"));
+          // Add Request Annotations from Workflow Service
+          if (wfRunEntity.getAnnotations() != null && !wfRunEntity.getAnnotations().isEmpty() && wfRunEntity.getAnnotations().containsKey("boomerang.io/team-name")) {
+            annotations.put("boomerang.io/team-name", wfRunEntity.getAnnotations().get("boomerang.io/team-name"));
+          }
           taskRunEntity.getAnnotations().putAll(annotations);
 
-          // TODO: validate this actually works - should template results just be merged into Run
-          taskRunEntity.setTemplateResults(taskTemplate.getSpec().getResults());
+          // Set Task RunResults
+          taskRunEntity.setResults(ResultUtil.resultSpecToRunResult(taskTemplate.getSpec().getResults()));
 
           // Set Task RunParams
           if (taskTemplate.getSpec().getParams() != null

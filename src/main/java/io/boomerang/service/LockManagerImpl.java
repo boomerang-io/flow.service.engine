@@ -3,7 +3,6 @@ package io.boomerang.service;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +15,8 @@ import org.springframework.stereotype.Service;
 import com.github.alturkovic.lock.exception.LockNotAvailableException;
 import com.github.alturkovic.lock.mongo.impl.SimpleMongoLock;
 import io.boomerang.config.MongoConfiguration;
-import io.boomerang.data.entity.TaskRunEntity;
-import io.boomerang.model.RunParam;
 import io.boomerang.util.CosmosDBMongoLock;
 import io.boomerang.util.FlowMongoLock;
-import io.boomerang.util.ParameterUtil;
 
 @Service
 public class LockManagerImpl implements LockManager {
@@ -39,42 +35,36 @@ public class LockManagerImpl implements LockManager {
   private static final Logger LOGGER = LogManager.getLogger(LockManagerImpl.class);
 
   /*
-   * Locks on a single key in 2 minutes timeout
+   * Locks on a single key in 2 minutes timeout with 2 second backoff.
    */
-  public String acquireRunLock(String key) {
+  @Override
+  public String acquireLock(String key) {
     List<String> keys = new LinkedList<>();
     keys.add(key);
     return acquireLock(keys, 120000, 2000l, 100);
   }
 
+  /*
+   * Lock used by the AcquireTask lock
+   * 
+   * Allows a custom key and timeout. Backoff period is 5s
+   */
   @Override
-  // TODO add a prefix for the owning user or team, otherwise the lock is essentially system wide.
-  public String acquireTaskLock(TaskRunEntity taskExecution, String wfRunId) {
-    long timeout = 60000;
-    String key = null;
+  public String acquireLock(String key, Long timeout) {
+    final List<String> keys = new LinkedList<>();
+    keys.add(key);
 
-    if (taskExecution != null) {
-      List<RunParam> params = taskExecution.getParams();
-      if (ParameterUtil.containsName(params, "timeout")) {
-        String timeoutStr = ParameterUtil.getValue(params, "timeout").toString();
-        if (!timeoutStr.isBlank() && NumberUtils.isCreatable(timeoutStr)) {
-          timeout = Long.valueOf(timeoutStr);
-        }
-      }
-
-      if (ParameterUtil.containsName(params, "key")) {
-        key = ParameterUtil.getValue(params, "key").toString();
-      }
-      final List<String> keys = new LinkedList<>();
-      keys.add(key);
-
-      return this.acquireLock(keys, timeout, 10000l, Integer.MAX_VALUE);
-
-    } else {
-      // TODO update with failure so that the Task can fail.
-      LOGGER.info("No Acquire Lock Key Found!");
-      return null;
-    }
+    return this.acquireLock(keys, timeout, 5000l, Integer.MAX_VALUE);
+  }
+  
+  /* 
+   * Release Lock
+   */
+  @Override
+  public void releaseLock(String key, String tokenId) {
+    List<String> keys = new LinkedList<>();
+    keys.add(key);
+    this.releaseLock(keys, tokenId);
   }
 
   /*
@@ -122,6 +112,7 @@ public class LockManagerImpl implements LockManager {
   // }
 
 
+  //TODO - perform testing of the locks and if the above commented out code is needed
   private String acquireLock(List<String> keys, long timeout, long backOffPeriod,
       Integer maxAttempts) {
     String storeId = mongoConfiguration.fullCollectionName(LOCKS_COLLECTION_NAME);
@@ -192,30 +183,6 @@ public class LockManagerImpl implements LockManager {
     retryPolicy.setMaxAttempts(maxAttempts);
     retryTemplate.setRetryPolicy(retryPolicy);
     return retryTemplate;
-  }
-
-  @Override
-  public void releaseRunLock(String key, String tokenId) {
-    List<String> keys = new LinkedList<>();
-    keys.add(key);
-    this.releaseLock(keys, tokenId);
-  }
-
-  @Override
-  public void releaseTaskLock(TaskRunEntity taskExecution, String wfRunId) {
-    String key = null;
-    if (taskExecution != null) {
-      List<RunParam> params = taskExecution.getParams();
-      if (ParameterUtil.containsName(params, "key")) {
-        key = ParameterUtil.getValue(params, "key").toString();
-      }
-
-      if (key != null) {
-        final List<String> keys = new LinkedList<>();
-        keys.add(key);
-        this.releaseLock(keys, key);
-      }
-    }
   }
 
   /*

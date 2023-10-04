@@ -141,7 +141,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       final List<TaskRunEntity> tasksToRun) {
     return () -> {
       LOGGER.debug("[{}] Attempting to acquire WorkflowRun lock...", wfRunId);
-      String lockId = lockManager.acquireRunLock(wfRunId);
+      String lockId = lockManager.acquireLock(wfRunId);
       LOGGER.info("[{}] Obtained WorkflowRun lock",wfRunId);
       final Optional<WorkflowRunEntity> optWorkflowRunEntity =
           this.workflowRunRepository.findById(wfRunId);
@@ -150,7 +150,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         //Check the WorkflowRun has been queued, throw if not
         //Don't update the WorkflowRun status as this may cause a running WorkflowRun to be incorrectly changed.
         if (!RunPhase.pending.equals(wfRunEntity.getPhase())) {
-          lockManager.releaseRunLock(wfRunId, lockId);
+          lockManager.releaseLock(wfRunId, lockId);
           LOGGER.info("[{}] Released WorkflowRun lock", wfRunId);
           throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_PHASE, wfRunEntity.getPhase(), RunPhase.pending);
         }
@@ -177,14 +177,14 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
           updateStatusAndSaveWorkflow(wfRunEntity, RunStatus.invalid, RunPhase.completed,
               Optional
                   .of("Failed to run workflow: unable to process Workflow and queue all tasks."));
-          lockManager.releaseRunLock(wfRunId, lockId);
+          lockManager.releaseLock(wfRunId, lockId);
           LOGGER.info("[{}] Released WorkflowRun lock", wfRunId);
           throw new BoomerangException(1000, "WORKFLOW_RUNTIME_EXCEPTION",
               "[{0}] Failed to run workflow: unable to process Workflow and queue all tasks",
               HttpStatus.INTERNAL_SERVER_ERROR, wfRunEntity.getId());
         }
       }
-      lockManager.releaseRunLock(wfRunId, lockId);
+      lockManager.releaseLock(wfRunId, lockId);
       LOGGER.info("[{}] Released WorkflowRun lock", wfRunId);
       return true;
     };
@@ -208,7 +208,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         // Only need to check if Workflow is running - otherwise nothing to timeout
         if (RunPhase.running.equals(wfRunEntity.getPhase())) {
           LOGGER.info("[{}] Timeout Workflow Async...", wfRunId);
-          String tokenId = lockManager.acquireRunLock(wfRunId);
+          String tokenId = lockManager.acquireLock(wfRunId);
           LOGGER.debug("[{}] Obtained WorkflowRun lock", wfRunId);
 
           long duration = new Date().getTime() - wfRunEntity.getStartTime().getTime();
@@ -265,7 +265,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
               workflowRunService.retry(wfRunId, start, retryCount);
             }
           }
-          lockManager.releaseRunLock(wfRunId, tokenId);
+          lockManager.releaseLock(wfRunId, tokenId);
           LOGGER.debug("[{}] Released WorkflowRun lock", wfRunId);
         }
       }

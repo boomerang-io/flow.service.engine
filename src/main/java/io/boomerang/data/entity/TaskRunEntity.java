@@ -77,9 +77,6 @@ public class TaskRunEntity {
 
   private Integer templateVersion;
 
-  @JsonIgnore
-  private List<ResultSpec> templateResults;
-
   private String workflowRef;
 
   private String workflowRevisionRef;
@@ -279,14 +276,6 @@ public class TaskRunEntity {
 
   public void setTemplateVersion(Integer templateVersion) {
     this.templateVersion = templateVersion;
-  }
-
-  public List<ResultSpec> getTemplateResults() {
-    return templateResults;
-  }
-
-  public void setTemplateResults(List<ResultSpec> templateResults) {
-    this.templateResults = templateResults;
   }
 
   public String getWorkflowRunRef() {
