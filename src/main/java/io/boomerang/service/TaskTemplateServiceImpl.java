@@ -72,7 +72,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
       taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndLatestVersion(name);
     }
     if (taskTemplateRevisionEntity.isEmpty()) {
-      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, name, version.isPresent() ? version.get() : "latest");
+      throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_REF, name, version.isPresent() ? version.get() : "latest");
     }
     
     return convertEntityToModel(taskTemplateRevisionEntity.get().getParent(), taskTemplateRevisionEntity.get());
@@ -88,12 +88,12 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   public TaskTemplate create(TaskTemplate taskTemplate) {
     //Name Check
     if (!taskTemplate.getName().matches(NAME_REGEX)) {
-      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, taskTemplate.getName());
+      throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_NAME, taskTemplate.getName());
     }
     
     //Unique Name Check
     if (taskTemplateRepository.countByName(taskTemplate.getName().toLowerCase()) > 0) {
-      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_ALREADY_EXISTS, taskTemplate.getName());
+      throw new BoomerangException(BoomerangError.TASKTEMPLATE_ALREADY_EXISTS, taskTemplate.getName());
     }
     
     //Set Display Name if not provided
@@ -126,7 +126,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   public TaskTemplate apply(TaskTemplate taskTemplate, boolean replace) {
     //Name Check
     if (!taskTemplate.getName().matches(NAME_REGEX)) {
-      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, taskTemplate.getName());
+      throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_NAME, taskTemplate.getName());
     }
     
     //Does it already exist?
@@ -138,13 +138,13 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     
     //Check for active status
     if (TaskTemplateStatus.inactive.equals(taskTemplateEntity.getStatus()) && !TaskTemplateStatus.active.equals(taskTemplate.getStatus())) {
-      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INACTIVE_STATUS, taskTemplate.getName(), "latest");
+      throw new BoomerangException(BoomerangError.TASKTEMPLATE_INACTIVE_STATUS, taskTemplate.getName(), "latest");
     }
     
     //Get latest revision
     Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndLatestVersion(taskTemplate.getName());
     if (taskTemplateRevisionEntity.isEmpty()) {
-      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, taskTemplate.getName(), "latest");
+      throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_REF, taskTemplate.getName(), "latest");
     }
 
     //Set System Generated Annotations
@@ -272,7 +272,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   public List<ChangeLogVersion> changelog(String name) {
       List<TaskTemplateRevisionEntity> taskTemplateRevisionEntities = taskTemplateRevisionRepository.findByParent(name);
       if (taskTemplateRevisionEntities.isEmpty()) {
-        throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, name);
+        throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_NAME, name);
       }
       List<ChangeLogVersion> changelogs = new LinkedList<>();
       taskTemplateRevisionEntities.forEach(v -> {
@@ -294,7 +294,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
      
      //Check TaskTemplate Status
      if (TaskTemplateStatus.inactive.equals(taskTemplate.getStatus())) {
-       throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INACTIVE_STATUS, wfTask.getTemplateRef(),
+       throw new BoomerangException(BoomerangError.TASKTEMPLATE_INACTIVE_STATUS, wfTask.getTemplateRef(),
            wfTask.getTemplateVersion());
      }
      return taskTemplate;

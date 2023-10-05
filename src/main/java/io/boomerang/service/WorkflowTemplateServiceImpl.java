@@ -70,13 +70,13 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
       wfTemplateEntity = wfTemplateRepository.findByNameAndLatestVersion(name);
       if (wfTemplateEntity.isEmpty()) {
         //TODO change to correct error
-        throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, name, "latest");
+        throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_REF, name, "latest");
       }
     } else {
       wfTemplateEntity = wfTemplateRepository.findByNameAndVersion(name, version.get());
       if (wfTemplateEntity.isEmpty()) {
         //TODO change to correct error
-        throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_REF, name, version.get());
+        throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_REF, name, version.get());
       }
     }
     return new WorkflowTemplate(wfTemplateEntity.get());
@@ -153,13 +153,13 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
     //Name Check
     if (!request.getName().matches(NAME_REGEX)) {
       //TODO change the error
-      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, request.getName());
+      throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_NAME, request.getName());
     }
     
     //Unique Name Check
     if (wfTemplateRepository.findByNameAndLatestVersion(request.getName().toLowerCase()).isPresent()) {
       //TODO change the error
-      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_ALREADY_EXISTS, request.getName());
+      throw new BoomerangException(BoomerangError.TASKTEMPLATE_ALREADY_EXISTS, request.getName());
     }
     WorkflowTemplateEntity wfTemplateEntity = new WorkflowTemplateEntity();
     wfTemplateEntity.setName(request.getName());
@@ -230,7 +230,7 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
     //Name Check
     if (!request.getName().matches(NAME_REGEX)) {
       //TODO change the error
-      throw new BoomerangException(BoomerangError.TASK_TEMPLATE_INVALID_NAME, request.getName());
+      throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_NAME, request.getName());
     }
     
     //Does it already exist?
