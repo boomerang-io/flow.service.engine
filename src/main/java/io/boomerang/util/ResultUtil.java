@@ -1,5 +1,6 @@
 package io.boomerang.util;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import io.boomerang.model.ResultSpec;
@@ -15,6 +16,9 @@ public class ResultUtil {
    * @return the parameter list
    */
   public static List<RunResult> resultSpecToRunResult(List<ResultSpec> resultList) {
+    if (resultList.isEmpty()) {
+      return new ArrayList<>();
+    }
     return resultList.stream().map(r -> {
       RunResult result = new RunResult();
       result.setName(r.getName());
