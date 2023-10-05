@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.repository.TaskRunRepository;
+import io.boomerang.model.enums.RunStatus;
 import io.boomerang.service.EventSinkService;
 
 @Aspect
@@ -41,15 +42,13 @@ public class TaskRunEntityUpdateInterceptor {
     if (StringUtils.isNotBlank(newEntity.getWorkflowRunRef())
         && StringUtils.isNotBlank(newEntity.getId())) {
       
-      // Retrieve old entity and compare the statuses
       taskRunRepository.findById(newEntity.getId()).ifPresent(oldEntity -> {
-        if (oldEntity.getStatus() != newEntity.getStatus() || oldEntity.getPhase() != newEntity.getPhase()) {
+        // Retrieve old entity and compare the statuses
+        if (oldEntity.getStatus() != newEntity.getStatus()) {
 
           // Status has changed, publish status update CloudEvent
-//          eventingService.publishStatusCloudEvent(newActivityEntity);
           //TODO: separate out phase and status events
           eventSinkService.publishStatusCloudEvent(newEntity);
-          
           LOGGER.info("TaskRun Status / Phase has changed [Status: " + oldEntity.getStatus() + ", Phase: " + oldEntity.getPhase() + "] -> [Status: " + newEntity.getStatus() + ", Phase: " + newEntity.getPhase() + "].");
         }
       });

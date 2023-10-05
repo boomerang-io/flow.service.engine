@@ -25,11 +25,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.boomerang.client.WorkflowClient;
 import io.boomerang.data.entity.ActionEntity;
 import io.boomerang.data.entity.TaskRunEntity;
-import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.ActionRepository;
 import io.boomerang.data.repository.TaskRunRepository;
-import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
@@ -67,9 +65,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
   @Autowired
   private WorkflowRunService workflowRunService;
-
-  @Autowired
-  private WorkflowRevisionRepository workflowRevisionRepository;
 
   @Autowired
   private TaskRunRepository taskRunRepository;
@@ -237,6 +232,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     
      // If new TaskTypes are added, the following code needs updated as well as the IF statement at
      // the end of QUEUE
+    // TaskRunEntities are typically only updated and then passed to end
+    // If not ending, then they may save a waiting status.
     switch(taskType) {
       case template, script, custom, generic -> {
         // Nothing to do here. These types wait for a Handler.
@@ -269,7 +266,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         endTask = true;
       }
       case setwfproperty -> {
-        this.saveWorkflowProperty(taskExecution, wfRunEntity);
+        this.saveWorkflowParam(taskExecution, wfRunEntity);
         taskExecution.setStatus(RunStatus.succeeded);
         endTask = true; 
       }
@@ -283,7 +280,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       }
       case eventwait -> {
         // Task will wait for event and does not end.
-        this.createWaitForEventTask(taskExecution, endTask);
+        this.processWaitForEventTask(taskExecution, endTask);
       }
       case sleep -> {
         this.createSleepTask(taskExecution);
@@ -534,21 +531,15 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       taskExecution.setStatus(RunStatus.succeeded);
     } catch (InterruptedException e) {
       taskExecution.setStatus(RunStatus.failed);
-      RunError error = new RunError();
-      error.setMessage(e.getMessage());
-      taskExecution.setError(error);
+      taskExecution.setStatusMessage(e.getMessage());
     }
   }
 
   private void processDecision(TaskRunEntity taskExecution, String activityId) {
     String decisionValue = ParameterUtil.getValue(taskExecution.getParams(), "value").toString();
-    // ControllerRequestProperties properties =
-    // propertyManager.buildRequestPropertyLayering(taskExecution, activityId,
-    // task.getWorkflowId());
     String value = decisionValue;
-    // value = propertyManager.replaceValueWithProperty(value, activityId, properties);
     taskExecution.setDecisionValue(value);
-    taskRunRepository.save(taskExecution);
+    taskExecution.setStatus(RunStatus.succeeded);
   }
   
   private void acquireTaskLock(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {
@@ -617,7 +608,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       List<RunParam> wfRunParamsRequest =
           ParameterUtil.removeEntry(taskExecution.getParams(), "workflowId");
       if (workflowId != null) {
-        // TODO: need to add the ability to set Trigger
         WorkflowRunSubmitRequest request = new WorkflowRunSubmitRequest();
         request.setTrigger("WorkflowRun");
         request.setParams(wfRunParamsRequest);
@@ -631,14 +621,12 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
           runResult.setValue(wfRunResponse.getId());
           taskExecution.setResults(wfRunResultResponse);
           taskExecution.setStatus(RunStatus.succeeded);
-        } catch (Exception e) {
+        } catch (Exception ex) {
+          taskExecution.setStatusMessage(ex.getMessage());
           taskExecution.setStatus(RunStatus.failed);
         }
-        taskRunRepository.save(taskExecution);
-        return;
       }
     }
-    taskExecution.setStatus(RunStatus.failed);
     taskRunRepository.save(taskExecution);
   }
 
@@ -717,6 +705,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
              return;
            }
          } catch (Exception ex) {
+           taskExecution.setStatusMessage(ex.getMessage());
            taskExecution.setStatus(RunStatus.failed);
          }
        }
@@ -724,14 +713,13 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
      taskExecution.setStatus(RunStatus.failed);
    }
 
-  private void createWaitForEventTask(TaskRunEntity taskExecution, boolean callEnd) {
+  private void processWaitForEventTask(TaskRunEntity taskExecution, boolean callEnd) {
     LOGGER.debug("[{}] Creating wait for event task", taskExecution.getId());
     taskExecution.setStatus(RunStatus.waiting);
     taskExecution = taskRunRepository.save(taskExecution);
 
     if (taskExecution.isPreApproved()) {
       taskExecution.setStatus(RunStatus.succeeded);
-      taskExecution = taskRunRepository.save(taskExecution);
       callEnd = true;
     }
   }
@@ -783,20 +771,16 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     taskExecution.setStatus(RunStatus.waiting);
     taskExecution = taskRunRepository.save(taskExecution);
     wfRunEntity.setAwaitingApproval(true);
+    String tokenId = lockManager.acquireLock(wfRunEntity.getId());
     this.workflowRunRepository.save(wfRunEntity);
+    lockManager.releaseLock(wfRunEntity.getId(), tokenId);
   }
 
-  // TODO: parameter layering
-  private void saveWorkflowProperty(TaskRunEntity taskRunEntity, WorkflowRunEntity wfRunEntity) {
-    String input = (String) taskRunEntity.getParams().stream()
+  private void saveWorkflowParam(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {
+    String input = (String) taskExecution.getParams().stream()
         .filter(p -> "value".equals(p.getName())).findFirst().get().getValue();
-    String output = (String) taskRunEntity.getParams().stream()
+    String output = (String) taskExecution.getParams().stream()
         .filter(p -> "output".equals(p.getName())).findFirst().get().getValue();
-
-    // ControllerRequestProperties requestProperties = propertyManager
-    // .buildRequestPropertyLayering(task, activity.getId(), activity.getWorkflowId());
-    // String outputValue =
-    // propertyManager.replaceValueWithProperty(input, activity.getId(), requestProperties);
 
     String tokenId = lockManager.acquireLock(wfRunEntity.getId());
 
@@ -809,6 +793,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     workflowRunRepository.save(wfRunEntity);
 
     lockManager.releaseLock(wfRunEntity.getId(), tokenId);
+    taskExecution.setStatus(RunStatus.succeeded);
   }
 
   private void finishWorkflow(WorkflowRunEntity wfRunEntity, List<TaskRunEntity> tasks) {

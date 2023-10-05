@@ -61,8 +61,6 @@ public class TaskRunEntity {
   private RunPhase phase;
 
   private String statusMessage;
-  
-  private RunError error;
 
   @JsonIgnore
   private boolean preApproved;
@@ -228,14 +226,6 @@ public class TaskRunEntity {
 
   public void setStatusMessage(String statusMessage) {
     this.statusMessage = statusMessage;
-  }
-
-  public RunError getError() {
-    return error;
-  }
-
-  public void setError(RunError error) {
-    this.error = error;
   }
 
   public boolean isPreApproved() {

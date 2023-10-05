@@ -59,16 +59,14 @@ public class TaskRunServiceImpl implements TaskRunService {
 
   @Override
   public ResponseEntity<TaskRun> get(String taskRunId) {
-    if (taskRunId == null || taskRunId.isBlank()) {
-      throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
+    if (!Objects.isNull(taskRunId) && !taskRunId.isBlank()) {
+      Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
+      if (optTaskRunEntity.isPresent()) {
+        TaskRun taskRun = new TaskRun(optTaskRunEntity.get());
+        return ResponseEntity.ok(taskRun);
+      }
     }
-    Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
-    if (optTaskRunEntity.isPresent()) {
-      TaskRun taskRun = new TaskRun(optTaskRunEntity.get());
-      return ResponseEntity.ok(taskRun);
-    } else {
-      throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
-    }
+    throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
   }
 
   @Override
@@ -153,79 +151,76 @@ public class TaskRunServiceImpl implements TaskRunService {
   }
 
   @Override
-  public ResponseEntity<TaskRun> start(String taskRunId, Optional<TaskRunStartRequest> optRunRequest) {
-    if (taskRunId == null || taskRunId.isBlank()) {
-      throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
-    }
-    Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
-    if (optTaskRunEntity.isPresent()) {
-      TaskRunEntity taskRunEntity = optTaskRunEntity.get();
-      // Add values from Run Request
-      if (optRunRequest.isPresent()) {
-        taskRunEntity.putLabels(optRunRequest.get().getLabels());
-        taskRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
-        taskRunEntity.setParams(ParameterUtil.addUniqueParams(taskRunEntity.getParams(), optRunRequest.get().getParams()));
-        if (!Objects.isNull(optRunRequest.get().getTimeout()) && optRunRequest.get().getTimeout() != 0) {
-          taskRunEntity.setTimeout(optRunRequest.get().getTimeout());
+  public ResponseEntity<TaskRun> start(String taskRunId,
+      Optional<TaskRunStartRequest> optRunRequest) {
+    if (!Objects.isNull(taskRunId) && !taskRunId.isBlank()) {
+      Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
+      if (optTaskRunEntity.isPresent()) {
+        TaskRunEntity taskRunEntity = optTaskRunEntity.get();
+        // Add values from Run Request
+        if (optRunRequest.isPresent()) {
+          taskRunEntity.putLabels(optRunRequest.get().getLabels());
+          taskRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
+          taskRunEntity.setParams(ParameterUtil.addUniqueParams(taskRunEntity.getParams(),
+              optRunRequest.get().getParams()));
+          if (!Objects.isNull(optRunRequest.get().getTimeout())
+              && optRunRequest.get().getTimeout() != 0) {
+            taskRunEntity.setTimeout(optRunRequest.get().getTimeout());
+          }
         }
+        taskExecutionClient.start(taskExecutionService, taskRunEntity);
+        TaskRun taskRun = new TaskRun(taskRunEntity);
+        return ResponseEntity.ok(taskRun);
       }
-      taskExecutionClient.start(taskExecutionService, taskRunEntity);      
-      TaskRun taskRun = new TaskRun(taskRunEntity);
-      return ResponseEntity.ok(taskRun);
-    } else {
-      throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
     }
+    throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
   }
 
   @Override
   public ResponseEntity<TaskRun> end(String taskRunId, Optional<TaskRunEndRequest> optRunRequest) {
-    if (taskRunId == null || taskRunId.isBlank()) {
-      throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
-    }
-    Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
-    if (optTaskRunEntity.isPresent()) {
-      TaskRunEntity taskRunEntity = optTaskRunEntity.get();
-      // Add values from Run Request
-      if (optRunRequest.isPresent()) {
-        taskRunEntity.putLabels(optRunRequest.get().getLabels());
-        taskRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
-        if (optRunRequest.get().getError() != null) {
-          taskRunEntity.setError(optRunRequest.get().getError());
+    if (!Objects.isNull(taskRunId) && !taskRunId.isBlank()) {
+      Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
+      if (optTaskRunEntity.isPresent()) {
+        TaskRunEntity taskRunEntity = optTaskRunEntity.get();
+        // Add values from Run Request
+        if (optRunRequest.isPresent()) {
+          taskRunEntity.putLabels(optRunRequest.get().getLabels());
+          taskRunEntity.putAnnotations(optRunRequest.get().getAnnotations());
+          if (optRunRequest.get().getStatusMessage() != null
+              && !optRunRequest.get().getStatusMessage().isEmpty()) {
+            taskRunEntity.setStatusMessage(optRunRequest.get().getStatusMessage());
+          }
+          taskRunEntity.setResults(optRunRequest.get().getResults());
+          if (optRunRequest.get().getStatus() == null) {
+            taskRunEntity.setStatus(RunStatus.succeeded);
+          } else if (!(RunStatus.failed.equals(optRunRequest.get().getStatus())
+              || RunStatus.succeeded.equals(optRunRequest.get().getStatus())
+              || RunStatus.invalid.equals(optRunRequest.get().getStatus()))) {
+            throw new BoomerangException(BoomerangError.TASKRUN_INVALID_END_STATUS);
+          } else {
+            taskRunEntity.setStatus(optRunRequest.get().getStatus());
+          }
         }
-        if (optRunRequest.get().getStatusMessage() != null && !optRunRequest.get().getStatusMessage().isEmpty()) {
-          taskRunEntity.setStatusMessage(optRunRequest.get().getStatusMessage());
-        }
-        taskRunEntity.setResults(optRunRequest.get().getResults());
-        if (optRunRequest.get().getStatus() == null) {
-          taskRunEntity.setStatus(RunStatus.succeeded);
-        } else if (!(RunStatus.failed.equals(optRunRequest.get().getStatus()) || RunStatus.succeeded.equals(optRunRequest.get().getStatus()) || RunStatus.invalid.equals(optRunRequest.get().getStatus()))) {
-          throw new BoomerangException(BoomerangError.TASKRUN_INVALID_END_STATUS);
-        } else {
-          taskRunEntity.setStatus(optRunRequest.get().getStatus());          
-        }
+        taskExecutionClient.end(taskExecutionService, taskRunEntity);
+        TaskRun taskRun = new TaskRun(taskRunEntity);
+        return ResponseEntity.ok(taskRun);
       }
-      taskExecutionClient.end(taskExecutionService, taskRunEntity);
-      TaskRun taskRun = new TaskRun(taskRunEntity);
-      return ResponseEntity.ok(taskRun);
-    } else {
-      throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
     }
+    throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
   }
 
   @Override
   public ResponseEntity<TaskRun> cancel(String taskRunId) {
-    if (taskRunId == null || taskRunId.isBlank()) {
-      throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
+    if (!Objects.isNull(taskRunId) && !taskRunId.isBlank()) {
+      Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
+      if (optTaskRunEntity.isPresent()) {
+        TaskRunEntity taskRunEntity = optTaskRunEntity.get();
+        taskRunEntity.setStatus(RunStatus.cancelled);
+        taskExecutionClient.end(taskExecutionService, taskRunEntity);
+        TaskRun taskRun = new TaskRun(optTaskRunEntity.get());
+        return ResponseEntity.ok(taskRun);
+      }
     }
-    Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
-    if (optTaskRunEntity.isPresent()) {
-      TaskRunEntity taskRunEntity = optTaskRunEntity.get();
-      taskRunEntity.setStatus(RunStatus.cancelled);
-      taskExecutionClient.end(taskExecutionService, taskRunEntity);
-      TaskRun taskRun = new TaskRun(optTaskRunEntity.get());
-      return ResponseEntity.ok(taskRun);
-    } else {
-      throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
-    }
+    throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
   }
 }
