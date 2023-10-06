@@ -19,8 +19,6 @@ public class WorkflowRunRequest {
   
   private Long retries;
   
-  private String trigger;
-  
   private Boolean debug;
 
   public Map<String, String> getLabels() {
@@ -69,14 +67,6 @@ public class WorkflowRunRequest {
 
   public void setRetries(Long retries) {
     this.retries = retries;
-  }
-
-  public String getTrigger() {
-    return trigger;
-  }
-
-  public void setTrigger(String trigger) {
-    this.trigger = trigger;
   }
 
   public Boolean getDebug() {

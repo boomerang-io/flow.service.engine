@@ -370,8 +370,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   /*
    * Queues the Workflow to be executed (and optionally starts the execution)
    * 
-   * TODO: implement Triggers && Status - triggers may only be a Workflow service concern (same as
-   * Relationship)
+   * Trigger will be set to 'Engine' if empty
    */
   @Override
   public ResponseEntity<WorkflowRun> submit(WorkflowRunSubmitRequest request, boolean start) {

@@ -30,7 +30,6 @@ import org.springframework.stereotype.Service;
 import io.boomerang.data.entity.TaskTemplateRevisionEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
-import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.TaskTemplateRevisionRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
@@ -42,9 +41,7 @@ import io.boomerang.model.Task;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowCount;
-import io.boomerang.model.WorkflowRunCount;
 import io.boomerang.model.WorkflowTrigger;
-import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.model.enums.WorkflowStatus;
 
@@ -454,21 +451,8 @@ public class WorkflowServiceImpl implements WorkflowService {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
     wfEntity.setStatus(WorkflowStatus.deleted);
-    if (wfEntity.getTriggers().getManual() != null) {
-      wfEntity.getTriggers().getManual().setEnable(Boolean.FALSE);
-    }
-
-    if (wfEntity.getTriggers().getScheduler() != null) {
-      wfEntity.getTriggers().getScheduler().setEnable(Boolean.FALSE);
-    }
-
-    if (wfEntity.getTriggers().getCustom() != null) {
-      wfEntity.getTriggers().getCustom().setEnable(Boolean.FALSE);
-    }
-
-    if (wfEntity.getTriggers().getWebhook() == null) {
-      wfEntity.getTriggers().getWebhook().setEnable(Boolean.FALSE);
-    }
+    wfEntity.setTriggers(new WorkflowTrigger());
+    wfEntity.getTriggers().getManual().setEnable(Boolean.FALSE);
     workflowRepository.save(wfEntity);
   }
 
