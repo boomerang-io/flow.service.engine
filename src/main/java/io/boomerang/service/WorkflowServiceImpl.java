@@ -39,6 +39,7 @@ import io.boomerang.model.ChangeLog;
 import io.boomerang.model.ChangeLogVersion;
 import io.boomerang.model.Task;
 import io.boomerang.model.TaskTemplate;
+import io.boomerang.model.Trigger;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowCount;
 import io.boomerang.model.WorkflowTrigger;
@@ -267,7 +268,6 @@ public class WorkflowServiceImpl implements WorkflowService {
     request.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
     wfEntity.setAnnotations(request.getAnnotations());
     wfEntity.setStatus(WorkflowStatus.active);
-    wfEntity.setTriggers(request.getTriggers() != null ? request.getTriggers() : new WorkflowTrigger());
 
     WorkflowRevisionEntity wfRevisionEntity = createWorkflowRevisionEntity(request, 1);
     wfEntity = workflowRepository.save(wfEntity);
@@ -383,9 +383,6 @@ public class WorkflowServiceImpl implements WorkflowService {
     // Add System Generated Annotations
     workflowEntity.getAnnotations().put("boomerang.io/generation", ANNOTATION_GENERATION);
     workflowEntity.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
-    if (workflow.getTriggers() != null) {
-      workflowEntity.getTriggers();
-    }
     workflowRepository.save(workflowEntity);
     
     //TODO, the creation of new better to include fields available on the old that aren't available on the new.
@@ -452,7 +449,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
     wfEntity.setStatus(WorkflowStatus.deleted);
     wfEntity.setTriggers(new WorkflowTrigger());
-    wfEntity.getTriggers().getManual().setEnable(Boolean.FALSE);
+    wfEntity.getTriggers().setManual(new Trigger(false));
     workflowRepository.save(wfEntity);
   }
 

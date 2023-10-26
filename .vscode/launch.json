@@ -1,0 +1,14 @@
+{
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot-Application<flow.service.engine>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "io.boomerang.Application",
+      "projectName": "flow.service.engine",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}
