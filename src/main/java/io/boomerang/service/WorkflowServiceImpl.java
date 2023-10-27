@@ -45,6 +45,7 @@ import io.boomerang.model.WorkflowCount;
 import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.model.enums.WorkflowStatus;
+import io.boomerang.util.ConvertUtil;
 
 /*
  * Service implements the CRUD ops on a Workflow
@@ -96,7 +97,7 @@ public class WorkflowServiceImpl implements WorkflowService {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
 
-    Workflow workflow = new Workflow(optWfEntity.get(), optWfRevisionEntity.get());
+    Workflow workflow = ConvertUtil.wfEntityToModel(optWfEntity.get(), optWfRevisionEntity.get());
     if (!withTasks) {
       workflow.setTasks(new LinkedList<>()); 
     }
@@ -170,7 +171,7 @@ public class WorkflowServiceImpl implements WorkflowService {
           workflowRevisionRepository.findByWorkflowRefAndLatestVersion(e.getId());
       if (optWfRevisionEntity.isPresent()) {
         LOGGER.debug("Revision: " + optWfRevisionEntity.get().toString());
-        Workflow w = new Workflow(e, optWfRevisionEntity.get());
+        Workflow w = ConvertUtil.wfEntityToModel(e, optWfRevisionEntity.get());
         // Determine if there are template upgrades available
         w.setUpgradesAvailable(areTemplateUpgradesAvailable(optWfRevisionEntity.get()));
         workflows.add(w);
@@ -277,7 +278,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     //TODO: figure out a better approach to rollback
 
     // Determine if there are template upgrades available
-    Workflow workflow = new Workflow(wfEntity, wfRevisionEntity);
+    Workflow workflow = ConvertUtil.wfEntityToModel(wfEntity, wfRevisionEntity);
     workflow.setUpgradesAvailable(areTemplateUpgradesAvailable(wfRevisionEntity));
     LOGGER.debug(workflow.toString());
     return ResponseEntity.ok(workflow);
@@ -400,7 +401,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     
     workflowRevisionRepository.save(newWorkflowRevisionEntity);
     
-    Workflow appliedWorkflow = new Workflow(workflowEntity, newWorkflowRevisionEntity);
+    Workflow appliedWorkflow = ConvertUtil.wfEntityToModel(workflowEntity, newWorkflowRevisionEntity);
     // Determine if there are template upgrades available
     workflow.setUpgradesAvailable(areTemplateUpgradesAvailable(newWorkflowRevisionEntity));
     return ResponseEntity.ok(appliedWorkflow);

@@ -8,7 +8,6 @@ import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.model.TaskRun;
-import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.enums.EventType;
 import io.boomerang.model.events.TaskRunStatusEvent;
@@ -59,7 +58,7 @@ public class EventFactory {
     statusEvent.setSubject(eventSubject);
     statusEvent.setDate(new Date());
     statusEvent.setType(EventType.WORKFLOWRUN_STATUS_UPDATE);
-    statusEvent.setWorkflowRun(new WorkflowRun(wfRunEntity));
+    statusEvent.setWorkflowRun(ConvertUtil.entityToModel(wfRunEntity, WorkflowRun.class));
 
     return statusEvent;
   }

@@ -10,7 +10,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.model.RunError;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
 import io.boomerang.model.WorkflowWorkspace;
@@ -24,47 +23,25 @@ public class WorkflowRunEntity   {
 
   @Id
   private String id;
-
   private Map<String, String> labels = new HashMap<>();
-
   private Map<String, Object> annotations = new HashMap<>();
-  
   private Date creationDate;
-  
   private Date startTime;
-
   private long duration = 0;
-  
   private Long timeout;
-  
   private Long retries;
-
   private Boolean debug;
-
   private RunStatus status = RunStatus.notstarted;
-  
   private RunPhase phase = RunPhase.pending;
-
   private RunStatus statusOverride;
-
   private String statusMessage;
-  
   private boolean isAwaitingApproval;
-  
-  private RunError error;
-
   private String workflowRef;
-
   private String workflowRevisionRef;
-
   private String trigger;
-
   private String initiatedByRef;
-  
   private List<RunParam> params = new LinkedList<>();
-
   private List<RunResult> results = new LinkedList<>();
-  
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();
 
   public Map<String, String> getLabels() {
@@ -185,14 +162,6 @@ public class WorkflowRunEntity   {
 
   public void setAwaitingApproval(boolean isAwaitingApproval) {
     this.isAwaitingApproval = isAwaitingApproval;
-  }
-
-  public RunError getError() {
-    return error;
-  }
-
-  public void setError(RunError error) {
-    this.error = error;
   }
 
   public String getWorkflowRef() {

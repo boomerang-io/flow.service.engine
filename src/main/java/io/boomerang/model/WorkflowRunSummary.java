@@ -14,14 +14,6 @@ public class WorkflowRunSummary {
   private RunStatus status;
   private String workflowRef;
   private String workflowName;
-  
-  public WorkflowRunSummary() {
-    
-  }
-
-  public WorkflowRunSummary(WorkflowRunEntity entity) {
-    BeanUtils.copyProperties(entity, this);
-  }
 
   @Override
   public String toString() {

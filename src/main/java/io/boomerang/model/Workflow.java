@@ -5,15 +5,12 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.BeanUtils;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.boomerang.data.entity.WorkflowEntity;
-import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.model.enums.WorkflowStatus;
 
 /*
@@ -57,21 +54,6 @@ public class Workflow {
   @JsonAnySetter
   public void setOtherField(String name, Object value) {
     unknownFields.put(name, value);
-  }
-  
-  public Workflow() {
-    
-  }
-
-  /*
-   * Creates a Workflow from WorkflowEntity and WorkflowRevisionEntity
-   * 
-   * Does not copy / convert the stored Tasks onto the Workflow. If you want the Tasks you need to run
-   * workflow.setTasks(TaskMapper.revisionTasksToListOfTasks(wfRevisionEntity.getTasks()));
-   */
-  public Workflow(WorkflowEntity wfEntity, WorkflowRevisionEntity wfRevisionEntity) {
-    BeanUtils.copyProperties(wfEntity, this);
-    BeanUtils.copyProperties(wfRevisionEntity, this, "id");
   }
 
   public String getId() {

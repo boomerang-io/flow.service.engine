@@ -31,7 +31,6 @@ import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
-import io.boomerang.model.RunError;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
@@ -767,7 +766,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         }
       }
     }
-    actionRepository.save(actionEntity);
+    actionEntity = actionRepository.save(actionEntity);
+    taskExecution.getAnnotations().put("boomerang.io/action-ref", actionEntity.getId());
     taskExecution.setStatus(RunStatus.waiting);
     taskExecution = taskRunRepository.save(taskExecution);
     wfRunEntity.setAwaitingApproval(true);

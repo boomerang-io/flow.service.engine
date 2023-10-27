@@ -11,8 +11,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.model.ResultSpec;
-import io.boomerang.model.RunError;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
@@ -29,56 +27,32 @@ public class TaskRunEntity {
 
   @Id
   private String id;
-  
   private TaskType type;
-  
   private String name;
-
   private Map<String, String> labels = new HashMap<>();
-
   private Map<String, Object> annotations = new HashMap<>();
-  
   private Date creationDate;
-  
   private Date startTime;
-
   private long duration;
-  
   private Long timeout;
-  
 //  private Long retries;
-  
   private List<RunParam> params = new LinkedList<>();
-
   private List<RunResult> results = new LinkedList<>();
-  
   private List<TaskWorkspace> workspaces = new LinkedList<>();
-  
   private TaskRunSpec spec = new TaskRunSpec();
-
   private RunStatus status;
-  
   private RunPhase phase;
-
   private String statusMessage;
-
   @JsonIgnore
   private boolean preApproved;
-
   @JsonIgnore
   private String decisionValue;
-
   @JsonIgnore
   private List<TaskDependency> dependencies;
-
   private String templateRef;
-
   private Integer templateVersion;
-
   private String workflowRef;
-
   private String workflowRevisionRef;
-
   private String workflowRunRef;
 
   @Override

@@ -2,14 +2,12 @@ package io.boomerang.data.entity;
 
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.model.WorkflowToken;
 import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.enums.WorkflowStatus;
 
