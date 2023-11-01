@@ -767,7 +767,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       }
     }
     actionEntity = actionRepository.save(actionEntity);
-    taskExecution.getAnnotations().put("boomerang.io/action-ref", actionEntity.getId());
+    taskExecution.getResults().add(new RunResult("actionRef", actionEntity.getId()));
     taskExecution.setStatus(RunStatus.waiting);
     taskExecution = taskRunRepository.save(taskExecution);
     wfRunEntity.setAwaitingApproval(true);
