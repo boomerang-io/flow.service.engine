@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.EnumUtils;
@@ -380,6 +381,35 @@ public class WorkflowServiceImpl implements WorkflowService {
         workflowEntity.setAnnotations(workflow.getAnnotations());
       } else {
         workflowEntity.getAnnotations().putAll(workflow.getAnnotations());
+      }
+    }
+    if (Objects.isNull(workflow.getTriggers())) {
+      workflowEntity.setTriggers(new WorkflowTrigger());
+    } else {
+      if (Objects.isNull(workflow.getTriggers().getManual())) {
+        workflow.getTriggers().setManual(new Trigger(Boolean.TRUE));
+      } else {
+        workflowEntity.getTriggers().setManual(workflow.getTriggers().getManual());
+      }
+      if (Objects.isNull(workflow.getTriggers().getSchedule())) {
+        workflow.getTriggers().setSchedule(new Trigger(Boolean.FALSE));
+      } else {
+        workflowEntity.getTriggers().setSchedule(workflow.getTriggers().getSchedule());
+      }
+      if (Objects.isNull(workflow.getTriggers().getWebhook())) {
+        workflow.getTriggers().setWebhook(new Trigger(Boolean.FALSE));
+      } else {
+        workflow.getTriggers().setWebhook(workflow.getTriggers().getWebhook());
+      }
+      if (Objects.isNull(workflow.getTriggers().getEvent())) {
+        workflow.getTriggers().setEvent(new Trigger(Boolean.FALSE));
+      } else {
+        workflow.getTriggers().setWebhook(workflow.getTriggers().getEvent());
+      }
+      if (Objects.isNull(workflow.getTriggers().getGithub())) {
+        workflow.getTriggers().setGithub(new Trigger(Boolean.FALSE));
+      } else {
+        workflow.getTriggers().setWebhook(workflow.getTriggers().getGithub());
       }
     }
     // Add System Generated Annotations
