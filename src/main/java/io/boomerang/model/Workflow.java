@@ -12,7 +12,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.boomerang.model.enums.WorkflowStatus;
-import io.boomerang.model.ref.WorkflowTrigger;
 
 /*
  * Workflow Model joining Workflow Entity and Workflow Revision Entity
