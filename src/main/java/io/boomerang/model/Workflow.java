@@ -45,6 +45,17 @@ public class Workflow {
   private List<AbstractParam> config = new LinkedList<>();;
   private Map<String, Object> unknownFields = new HashMap<>();
 
+  @Override
+  public String toString() {
+    return "Workflow [id=" + id + ", name=" + name + ", status=" + status + ", version=" + version
+        + ", creationDate=" + creationDate + ", changelog=" + changelog + ", icon=" + icon
+        + ", description=" + description + ", markdown=" + markdown + ", labels=" + labels
+        + ", annotations=" + annotations + ", timeout=" + timeout + ", retries=" + retries
+        + ", upgradesAvailable=" + upgradesAvailable + ", triggers=" + triggers + ", tasks=" + tasks
+        + ", params=" + params + ", workspaces=" + workspaces + ", config=" + config
+        + ", unknownFields=" + unknownFields + "]";
+  }
+
   @JsonAnyGetter
   @JsonPropertyOrder(alphabetic = true)
   public Map<String, Object> otherFields() {

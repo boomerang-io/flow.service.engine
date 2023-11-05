@@ -383,33 +383,21 @@ public class WorkflowServiceImpl implements WorkflowService {
         workflowEntity.getAnnotations().putAll(workflow.getAnnotations());
       }
     }
-    if (Objects.isNull(workflow.getTriggers())) {
-      workflowEntity.setTriggers(new WorkflowTrigger());
-    } else {
-      if (Objects.isNull(workflow.getTriggers().getManual())) {
-        workflow.getTriggers().setManual(new Trigger(Boolean.TRUE));
-      } else {
+    if (!Objects.isNull(workflow.getTriggers())) {
+      if (!Objects.isNull(workflow.getTriggers().getManual())) {
         workflowEntity.getTriggers().setManual(workflow.getTriggers().getManual());
       }
-      if (Objects.isNull(workflow.getTriggers().getSchedule())) {
-        workflow.getTriggers().setSchedule(new Trigger(Boolean.FALSE));
-      } else {
+      if (!Objects.isNull(workflow.getTriggers().getSchedule())) {
         workflowEntity.getTriggers().setSchedule(workflow.getTriggers().getSchedule());
       }
-      if (Objects.isNull(workflow.getTriggers().getWebhook())) {
-        workflow.getTriggers().setWebhook(new Trigger(Boolean.FALSE));
-      } else {
-        workflow.getTriggers().setWebhook(workflow.getTriggers().getWebhook());
+      if (!Objects.isNull(workflow.getTriggers().getWebhook())) {
+        workflowEntity.getTriggers().setWebhook(workflow.getTriggers().getWebhook());
       }
-      if (Objects.isNull(workflow.getTriggers().getEvent())) {
-        workflow.getTriggers().setEvent(new Trigger(Boolean.FALSE));
-      } else {
-        workflow.getTriggers().setWebhook(workflow.getTriggers().getEvent());
+      if (!Objects.isNull(workflow.getTriggers().getEvent())) {
+        workflowEntity.getTriggers().setEvent(workflow.getTriggers().getEvent());
       }
-      if (Objects.isNull(workflow.getTriggers().getGithub())) {
-        workflow.getTriggers().setGithub(new Trigger(Boolean.FALSE));
-      } else {
-        workflow.getTriggers().setWebhook(workflow.getTriggers().getGithub());
+      if (!Objects.isNull(workflow.getTriggers().getGithub())) {
+        workflowEntity.getTriggers().setGithub(workflow.getTriggers().getGithub());
       }
     }
     // Add System Generated Annotations
