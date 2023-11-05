@@ -269,6 +269,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     request.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
     wfEntity.setAnnotations(request.getAnnotations());
     wfEntity.setStatus(WorkflowStatus.active);
+    wfEntity.setTriggers(request.getTriggers());
 
     WorkflowRevisionEntity wfRevisionEntity = createWorkflowRevisionEntity(request, 1);
     wfEntity = workflowRepository.save(wfEntity);

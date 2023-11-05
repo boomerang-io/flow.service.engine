@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.boomerang.model.enums.WorkflowStatus;
+import io.boomerang.model.ref.WorkflowTrigger;
 
 /*
  * Workflow Model joining Workflow Entity and Workflow Revision Entity
@@ -38,7 +39,7 @@ public class Workflow {
   private Long retries;
   private boolean upgradesAvailable = false;
   //TODO: adjust the triggers model
-  private WorkflowTrigger triggers;
+  private WorkflowTrigger triggers = new WorkflowTrigger();
   private List<Task> tasks = new LinkedList<>();
   private List<ParamSpec> params = new LinkedList<>();
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();  
