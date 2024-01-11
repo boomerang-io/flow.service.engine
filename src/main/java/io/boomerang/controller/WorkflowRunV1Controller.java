@@ -20,7 +20,7 @@ import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunCount;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
-import io.boomerang.model.WorkflowRunSubmitRequest;
+import io.boomerang.model.WorkflowSubmitRequest;
 import io.boomerang.service.WorkflowRunService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -41,7 +41,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Retrieve a specific WorkflowRun.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<WorkflowRun> getWorkflowRuns(
+  public WorkflowRun getWorkflowRuns(
       @Parameter(name = "workflowRunId",
       description = "ID of WorkflowRun",
       required = true) @PathVariable String workflowRunId,
@@ -98,7 +98,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Retrieve WorkflowRun Insights.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<WorkflowRunInsight> workflowRunInsights(
+  public WorkflowRunInsight workflowRunInsights(
       @Parameter(name = "labels",
       description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
       required = false) @RequestParam(required = false) Optional<List<String>> labels,
@@ -129,7 +129,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Retrieve a count of WorkflowRuns by Status.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<WorkflowRunCount> count(
+  public WorkflowRunCount count(
       @Parameter(name = "labels",
       description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
       required = false) @RequestParam(required = false) Optional<List<String>> labels,
@@ -152,23 +152,11 @@ public class WorkflowRunV1Controller {
     return workflowRunService.count(from, to, labels, workflows);
   }
 
-  @PostMapping(value = "/submit")
-  @Operation(summary = "Submit a Workflow to be run. Will queue the WorkflowRun ready for execution.")
-  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
-      @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<WorkflowRun> submitWorkflowRun(
-      @Parameter(name = "start",
-      description = "Start the WorkflowRun immediately after submission",
-      required = false) @RequestParam(required = false, defaultValue = "false") boolean start,
-      @RequestBody WorkflowRunSubmitRequest request) {
-    return workflowRunService.submit(request, start);
-  }
-
   @PutMapping(value = "/{workflowRunId}/start")
   @Operation(summary = "Start WorkflowRun execution. The WorkflowRun has to already have been queued.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<WorkflowRun> startWorkflowRun(
+  public WorkflowRun startWorkflowRun(
       @Parameter(name = "workflowRunId",
       description = "ID of WorkflowRun to Start",
       required = true) @PathVariable(required = true) String workflowRunId,
@@ -180,7 +168,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "End a WorkflowRun")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<WorkflowRun> endWorkflowRun(
+  public WorkflowRun endWorkflowRun(
       @Parameter(name = "workflowRunId",
       description = "ID of WorkflowRun to Finalize",
       required = true) @PathVariable(required = true) String workflowRunId) {
@@ -191,7 +179,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Cancel a WorkflowRun")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<WorkflowRun> cancelWorkflowRun(
+  public WorkflowRun cancelWorkflowRun(
       @Parameter(name = "workflowRunId",
       description = "ID of WorkflowRun to Cancel",
       required = true) @PathVariable(required = true) String workflowRunId) {
@@ -202,7 +190,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Retry WorkflowRun execution.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public ResponseEntity<WorkflowRun> retryWorkflowRun(
+  public WorkflowRun retryWorkflowRun(
       @Parameter(name = "workflowRunId",
       description = "ID of WorkflowRun to Retry.",
       required = true) @PathVariable(required = true) String workflowRunId,

@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.model.ChangeLogVersion;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowCount;
+import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.WorkflowSubmitRequest;
 import io.boomerang.service.WorkflowService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -120,6 +122,20 @@ public class WorkflowV1Controller {
       description = "Replace existing version",
       required = false) @RequestParam(required = false, defaultValue = "false") boolean replace) {
     return workflowService.apply(workflow, replace);
+  }
+  
+  @PostMapping(value = "/{workflowId}/submit")
+  @Operation(summary = "Submit a Workflow to be run. Will queue the WorkflowRun ready for execution.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public WorkflowRun submitWorkflow(
+      @Parameter(name = "workflowId", description = "ID of Workflow",
+          required = true) @PathVariable String workflowId,
+      @Parameter(name = "start",
+      description = "Start the WorkflowRun immediately after submission",
+      required = false) @RequestParam(required = false, defaultValue = "false") boolean start,
+      @RequestBody WorkflowSubmitRequest request) {
+    return workflowService.submit(workflowId, request, start);
   }
   
   @GetMapping(value = "/{workflowId}/changelog")

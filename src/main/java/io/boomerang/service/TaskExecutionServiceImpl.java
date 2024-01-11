@@ -36,7 +36,7 @@ import io.boomerang.model.RunResult;
 import io.boomerang.model.TaskDependency;
 import io.boomerang.model.TaskWorkspace;
 import io.boomerang.model.WorkflowRun;
-import io.boomerang.model.WorkflowRunSubmitRequest;
+import io.boomerang.model.WorkflowSubmitRequest;
 import io.boomerang.model.WorkflowSchedule;
 import io.boomerang.model.WorkflowWorkspaceSpec;
 import io.boomerang.model.enums.ActionStatus;
@@ -66,13 +66,16 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   private WorkflowRunService workflowRunService;
 
   @Autowired
+  private WorkflowService workflowService;
+
+  @Autowired
   private TaskRunRepository taskRunRepository;
 
   @Autowired
   private ActionRepository actionRepository;
-  
-   @Autowired
-   private WorkflowClient workflowClient;
+
+  @Autowired
+  private WorkflowClient workflowClient;
 
   @Autowired
   private ParameterManager paramManager;
@@ -118,8 +121,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
 
     // Ensure Task is valid as part of Graph
-    List<TaskRunEntity> tasks =
-        dagUtility.retrieveTaskList(wfRunEntity.get().getId());
+    List<TaskRunEntity> tasks = dagUtility.retrieveTaskList(wfRunEntity.get().getId());
     boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
     LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
 
@@ -224,16 +226,16 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     TaskType taskType = taskExecution.getType();
     String wfRunId = wfRunEntity.getId();
     LOGGER.info("[{}] Recieved Execute task request for type: {}.", taskExecutionId, taskType);
-    
+
     // Set Task status and start time for duration
     taskExecution.setStartTime(new Date());
     updateStatusAndSaveTask(taskExecution, RunStatus.running, RunPhase.running, Optional.empty());
-    
-     // If new TaskTypes are added, the following code needs updated as well as the IF statement at
-     // the end of QUEUE
+
+    // If new TaskTypes are added, the following code needs updated as well as the IF statement at
+    // the end of QUEUE
     // TaskRunEntities are typically only updated and then passed to end
     // If not ending, then they may save a waiting status.
-    switch(taskType) {
+    switch (taskType) {
       case template, script, custom, generic -> {
         // Nothing to do here. These types wait for a Handler.
         getTaskWorkspaces(taskExecution, wfRunEntity);
@@ -267,11 +269,11 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       case setwfproperty -> {
         this.saveWorkflowParam(taskExecution, wfRunEntity);
         taskExecution.setStatus(RunStatus.succeeded);
-        endTask = true; 
+        endTask = true;
       }
       case approval -> {
         // Task will wait for user action and does not end.
-       this.createActionTask(taskExecution, wfRunEntity, ActionType.approval);
+        this.createActionTask(taskExecution, wfRunEntity, ActionType.approval);
       }
       case manual -> {
         // Task will wait for user action and does not end.
@@ -392,8 +394,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     String tokenId = lockManager.acquireLock(wfRunEntity.get().getId());
     LOGGER.info("[{}] Obtained WorkflowRun ({}) lock", taskExecutionId, wfRunEntity.get().getId());
 
-    List<TaskRunEntity> tasks =
-        dagUtility.retrieveTaskList(wfRunEntity.get().getId());
+    List<TaskRunEntity> tasks = dagUtility.retrieveTaskList(wfRunEntity.get().getId());
     boolean finishedAllDependencies = this.finishedAll(wfRunEntity.get(), tasks, taskExecution);
     LOGGER.debug("[{}] Finished all TaskRuns? {}", taskExecutionId, finishedAllDependencies);
 
@@ -540,7 +541,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     taskExecution.setDecisionValue(value);
     taskExecution.setStatus(RunStatus.succeeded);
   }
-  
+
   private void acquireTaskLock(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {
     Long timeout = null;
     String key = null;
@@ -556,9 +557,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     if (ParameterUtil.containsName(params, "key")) {
       key = ParameterUtil.getValue(params, "key").toString();
     }
-    
+
     // Set team prefix if available from Workflow to scope
-    if (taskExecution.getAnnotations() != null && !taskExecution.getAnnotations().isEmpty() && taskExecution.getAnnotations().containsKey("boomerang.io/team-name")) {
+    if (taskExecution.getAnnotations() != null && !taskExecution.getAnnotations().isEmpty()
+        && taskExecution.getAnnotations().containsKey("boomerang.io/team-name")) {
       key = taskExecution.getAnnotations().get("boomerang.io/team-name").toString() + "-" + key;
     }
 
@@ -574,7 +576,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
     taskExecution.setStatus(RunStatus.succeeded);
   }
-  
+
   private void releaseTaskLock(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {
     String key = null;
 
@@ -582,9 +584,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     if (ParameterUtil.containsName(params, "key")) {
       key = ParameterUtil.getValue(params, "key").toString();
     }
-    
+
     // Set team prefix if available from Workflow to scope
-    if (taskExecution.getAnnotations() != null && !taskExecution.getAnnotations().isEmpty() && taskExecution.getAnnotations().containsKey("boomerang.io/team-name")) {
+    if (taskExecution.getAnnotations() != null && !taskExecution.getAnnotations().isEmpty()
+        && taskExecution.getAnnotations().containsKey("boomerang.io/team-name")) {
       key = taskExecution.getAnnotations().get("boomerang.io/team-name").toString() + "-" + key;
     }
     try {
@@ -607,13 +610,11 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       List<RunParam> wfRunParamsRequest =
           ParameterUtil.removeEntry(taskExecution.getParams(), "workflowId");
       if (workflowId != null) {
-        WorkflowRunSubmitRequest request = new WorkflowRunSubmitRequest();
+        WorkflowSubmitRequest request = new WorkflowSubmitRequest();
         request.setTrigger("WorkflowRun");
         request.setParams(wfRunParamsRequest);
         try {
-          request.setWorkflowRef(workflowId);
-          WorkflowRun wfRunResponse = workflowRunService
-              .submit(request, false).getBody();
+          WorkflowRun wfRunResponse = workflowService.submit(workflowId, request, false);
           List<RunResult> wfRunResultResponse = new LinkedList<>();
           RunResult runResult = new RunResult();
           runResult.setName("workflowRunRef");
@@ -631,86 +632,88 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
   private void runScheduledWorkflow(TaskRunEntity taskExecution, WorkflowRunEntity wfRunEntity) {
     if (taskExecution.getParams() != null) {
-       String workflowId = ParameterUtil.getValue(taskExecution.getParams(), "workflowId").toString();
-       Integer futureIn = Integer.valueOf(ParameterUtil.getValue(taskExecution.getParams(), "futureIn").toString());
-       String futurePeriod = ParameterUtil.getValue(taskExecution.getParams(), "futurePeriod").toString();
-       String timezone = ParameterUtil.getValue(taskExecution.getParams(), "timezone").toString();
-       String time = ParameterUtil.getValue(taskExecution.getParams(), "time").toString();
-       Date executionDate = taskExecution.getCreationDate();
-       LOGGER.debug("*******Run Scheduled Workflow System Task******");
-       LOGGER.debug("Scheduling new task in " + futureIn + " " + futurePeriod);
-       
-       if (Objects.nonNull(futureIn) && futureIn != 0 && StringUtils.indexOfAny(futurePeriod,
-       new String[] {"minutes", "hours", "days", "weeks", "months"}) >= 0) {
-         Calendar executionCal = Calendar.getInstance();
-         executionCal.setTime(executionDate);
-         Integer calField = Calendar.MINUTE;
-         switch (futurePeriod) {
-           case "hours":
-           calField = Calendar.HOUR;
-           break;
-           case "days":
-           calField = Calendar.DATE;
-           break;
-           case "weeks":
-           futureIn = futureIn * 7;
-           calField = Calendar.DATE;
-           break;
-           case "months":
-           calField = Calendar.MONTH;
-           break;
-         }
-         executionCal.add(calField, futureIn);
-       
-         if (!futurePeriod.equals("minutes") && !futurePeriod.equals("hours")) {
-           String[] hoursTime = time.split(":");
-           Integer hours = Integer.valueOf(hoursTime[0]);
-           Integer minutes = Integer.valueOf(hoursTime[1]);
-           LOGGER
-           .debug("With time to be set to: " + time + " in " + timezone);
-           executionCal.setTimeZone(TimeZone.getTimeZone(timezone));
-           executionCal.set(Calendar.HOUR, hours);
-           executionCal.set(Calendar.MINUTE, minutes);
-           LOGGER.debug(
-           "With execution set to: " + executionCal.getTime().toString() + " in " + timezone);
-           executionCal.setTimeZone(TimeZone.getTimeZone("UTC"));
-         }
-         LOGGER.debug("With execution set to: " + executionCal.getTime().toString() + " in UTC");
-      
-         // Define new properties removing the System Task specific properties
-         // TODO - determine if we need to resolve any param layers before executing new workflow
-         List<RunParam> newParamList = taskExecution.getParams();
-         ParameterUtil.removeEntry(newParamList, "workflowId");
-         ParameterUtil.removeEntry(newParamList, "futureIn");
-         ParameterUtil.removeEntry(newParamList, "futurePeriod");
-         ParameterUtil.removeEntry(newParamList, "timezone");
-         ParameterUtil.removeEntry(newParamList, "time");
+      String workflowId =
+          ParameterUtil.getValue(taskExecution.getParams(), "workflowId").toString();
+      Integer futureIn =
+          Integer.valueOf(ParameterUtil.getValue(taskExecution.getParams(), "futureIn").toString());
+      String futurePeriod =
+          ParameterUtil.getValue(taskExecution.getParams(), "futurePeriod").toString();
+      String timezone = ParameterUtil.getValue(taskExecution.getParams(), "timezone").toString();
+      String time = ParameterUtil.getValue(taskExecution.getParams(), "time").toString();
+      Date executionDate = taskExecution.getCreationDate();
+      LOGGER.debug("*******Run Scheduled Workflow System Task******");
+      LOGGER.debug("Scheduling new task in " + futureIn + " " + futurePeriod);
 
-         // Define and create the schedule
-         WorkflowSchedule schedule = new WorkflowSchedule();
-         schedule.setWorkflowRef(workflowId);
-         schedule.setName(taskExecution.getName());
-         schedule
-             .setDescription("This schedule was generated through a Run Scheduled Workflow task.");
-         schedule.setParams(newParamList);
-         schedule.setDateSchedule(executionCal.getTime());
-         schedule.setTimezone(timezone);
-         schedule.setType(WorkflowScheduleType.runOnce);
-         try {
-           WorkflowSchedule workflowSchedule = workflowClient.createSchedule(schedule);
-           if (workflowSchedule != null && workflowSchedule.getId() != null) {
-             LOGGER.debug("Workflow Scheudle (" + workflowSchedule.getId() + ") created.");
-             taskExecution.setStatus(RunStatus.succeeded);
-             return;
-           }
-         } catch (Exception ex) {
-           taskExecution.setStatusMessage(ex.getMessage());
-           taskExecution.setStatus(RunStatus.failed);
-         }
-       }
-     }
-     taskExecution.setStatus(RunStatus.failed);
-   }
+      if (Objects.nonNull(futureIn) && futureIn != 0 && StringUtils.indexOfAny(futurePeriod,
+          new String[] {"minutes", "hours", "days", "weeks", "months"}) >= 0) {
+        Calendar executionCal = Calendar.getInstance();
+        executionCal.setTime(executionDate);
+        Integer calField = Calendar.MINUTE;
+        switch (futurePeriod) {
+          case "hours":
+            calField = Calendar.HOUR;
+            break;
+          case "days":
+            calField = Calendar.DATE;
+            break;
+          case "weeks":
+            futureIn = futureIn * 7;
+            calField = Calendar.DATE;
+            break;
+          case "months":
+            calField = Calendar.MONTH;
+            break;
+        }
+        executionCal.add(calField, futureIn);
+
+        if (!futurePeriod.equals("minutes") && !futurePeriod.equals("hours")) {
+          String[] hoursTime = time.split(":");
+          Integer hours = Integer.valueOf(hoursTime[0]);
+          Integer minutes = Integer.valueOf(hoursTime[1]);
+          LOGGER.debug("With time to be set to: " + time + " in " + timezone);
+          executionCal.setTimeZone(TimeZone.getTimeZone(timezone));
+          executionCal.set(Calendar.HOUR, hours);
+          executionCal.set(Calendar.MINUTE, minutes);
+          LOGGER.debug(
+              "With execution set to: " + executionCal.getTime().toString() + " in " + timezone);
+          executionCal.setTimeZone(TimeZone.getTimeZone("UTC"));
+        }
+        LOGGER.debug("With execution set to: " + executionCal.getTime().toString() + " in UTC");
+
+        // Define new properties removing the System Task specific properties
+        // TODO - determine if we need to resolve any param layers before executing new workflow
+        List<RunParam> newParamList = taskExecution.getParams();
+        ParameterUtil.removeEntry(newParamList, "workflowId");
+        ParameterUtil.removeEntry(newParamList, "futureIn");
+        ParameterUtil.removeEntry(newParamList, "futurePeriod");
+        ParameterUtil.removeEntry(newParamList, "timezone");
+        ParameterUtil.removeEntry(newParamList, "time");
+
+        // Define and create the schedule
+        WorkflowSchedule schedule = new WorkflowSchedule();
+        schedule.setWorkflowRef(workflowId);
+        schedule.setName(taskExecution.getName());
+        schedule
+            .setDescription("This schedule was generated through a Run Scheduled Workflow task.");
+        schedule.setParams(newParamList);
+        schedule.setDateSchedule(executionCal.getTime());
+        schedule.setTimezone(timezone);
+        schedule.setType(WorkflowScheduleType.runOnce);
+        try {
+          WorkflowSchedule workflowSchedule = workflowClient.createSchedule(schedule);
+          if (workflowSchedule != null && workflowSchedule.getId() != null) {
+            LOGGER.debug("Workflow Scheudle (" + workflowSchedule.getId() + ") created.");
+            taskExecution.setStatus(RunStatus.succeeded);
+            return;
+          }
+        } catch (Exception ex) {
+          taskExecution.setStatusMessage(ex.getMessage());
+          taskExecution.setStatus(RunStatus.failed);
+        }
+      }
+    }
+    taskExecution.setStatus(RunStatus.failed);
+  }
 
   private void processWaitForEventTask(TaskRunEntity taskExecution, boolean callEnd) {
     LOGGER.debug("[{}] Creating wait for event task", taskExecution.getId());

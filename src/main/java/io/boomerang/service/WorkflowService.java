@@ -9,7 +9,8 @@ import org.springframework.http.ResponseEntity;
 import io.boomerang.model.ChangeLogVersion;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowCount;
-import io.boomerang.model.WorkflowRunCount;
+import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.WorkflowSubmitRequest;
 
 public interface WorkflowService {
 
@@ -29,6 +30,9 @@ public interface WorkflowService {
 
   ResponseEntity<WorkflowCount> count(Optional<Date> from, Optional<Date> to,
       Optional<List<String>> labels, Optional<List<String>> ids);
+
+  WorkflowRun submit(String workflowId, WorkflowSubmitRequest request,
+      boolean start);
 
 //  WorkflowSummary updateWorkflowProperties(String workflowId, List<WorkflowProperty> properties);
 //

@@ -6,6 +6,7 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +29,12 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.boomerang.data.entity.TaskTemplateRevisionEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
+import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.TaskTemplateRevisionRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
@@ -43,10 +47,15 @@ import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.Trigger;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowCount;
+import io.boomerang.model.WorkflowRun;
+import io.boomerang.model.WorkflowRunRequest;
+import io.boomerang.model.WorkflowSubmitRequest;
 import io.boomerang.model.WorkflowTrigger;
+import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.model.enums.WorkflowStatus;
 import io.boomerang.util.ConvertUtil;
+import io.boomerang.util.ParameterUtil;
 
 /*
  * Service implements the CRUD ops on a Workflow
@@ -76,6 +85,9 @@ public class WorkflowServiceImpl implements WorkflowService {
   
   @Autowired
   private TaskTemplateService taskTemplateService;
+  
+  @Autowired
+  private WorkflowRunService workflowRunService;
 
   @Override
   public ResponseEntity<Workflow> get(String workflowId, Optional<Integer> version, boolean withTasks) {
@@ -427,6 +439,97 @@ public class WorkflowServiceImpl implements WorkflowService {
   }
   
   /*
+   * Queues the Workflow to be executed (and optionally starts the execution)
+   * 
+   * Trigger will be set to 'Engine' if empty
+   */
+  @Override
+  public WorkflowRun submit(String workflowId, WorkflowSubmitRequest request, boolean start) {
+    logPayload(request);
+    if (workflowId == null || workflowId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
+    }
+    final Optional<WorkflowEntity> optWorkflow =
+        workflowRepository.findById(workflowId);
+    if (optWorkflow.isEmpty()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
+    }
+    WorkflowEntity workflow = optWorkflow.get();
+
+    // Ensure Workflow is active to be able to be executed
+    if (!WorkflowStatus.active.equals(workflow.getStatus())) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_NOT_ACTIVE);
+    }
+
+    Optional<WorkflowRevisionEntity> optWorkflowRevisionEntity;
+    if (request.getWorkflowVersion() != null) {
+      optWorkflowRevisionEntity = workflowRevisionRepository
+          .findByWorkflowRefAndVersion(workflowId, request.getWorkflowVersion());
+    } else {
+      optWorkflowRevisionEntity =
+          workflowRevisionRepository.findByWorkflowRefAndLatestVersion(workflowId);
+    }
+
+    if (!optWorkflowRevisionEntity.isPresent()) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_REVISION_NOT_FOUND);
+    }
+
+    LOGGER.debug("Workflow Revision: " + optWorkflowRevisionEntity.get().toString());
+    WorkflowRevisionEntity wfRevision = optWorkflowRevisionEntity.get();
+    final WorkflowRunEntity wfRunEntity = new WorkflowRunEntity();
+    wfRunEntity.setWorkflowRevisionRef(wfRevision.getId());
+    wfRunEntity.setWorkflowRef(wfRevision.getWorkflowRef());
+    wfRunEntity.setCreationDate(new Date());
+    wfRunEntity.setStatus(RunStatus.notstarted);
+    wfRunEntity.putLabels(workflow.getLabels());
+    wfRunEntity.setParams(ParameterUtil.paramSpecToRunParam(wfRevision.getParams()));
+    wfRunEntity.setWorkspaces(wfRevision.getWorkspaces());
+    if (!Objects.isNull(wfRevision.getTimeout()) && wfRevision.getTimeout() != 0) {
+      wfRunEntity.setTimeout(wfRevision.getTimeout());
+    }
+    if (!Objects.isNull(wfRevision.getRetries()) && wfRevision.getRetries() != 0) {
+      wfRunEntity.setRetries(wfRevision.getRetries());
+    }
+
+    // Add values from Run Request if Present
+    if (request.getLabels() != null && !request.getLabels().isEmpty()) {
+      wfRunEntity.putLabels(request.getLabels());
+    }
+    if (request.getAnnotations() != null && !request.getAnnotations().isEmpty()) {
+      wfRunEntity.putAnnotations(request.getAnnotations());
+    }
+    if (request.getParams() != null && !request.getParams().isEmpty()) {
+      wfRunEntity
+          .setParams(ParameterUtil.addUniqueParams(wfRunEntity.getParams(), request.getParams()));
+    }
+    if (request.getWorkspaces() != null && !request.getWorkspaces().isEmpty()) {
+      wfRunEntity.getWorkspaces().addAll(request.getWorkspaces());
+    }
+    if (!Objects.isNull(request.getTimeout()) && request.getTimeout() != 0) {
+      wfRunEntity.setTimeout(request.getTimeout());
+    }
+    if (!Objects.isNull(request.getRetries()) && request.getRetries() != 0) {
+      wfRunEntity.setRetries(request.getRetries());
+    }
+    // Set Trigger
+    if (Objects.isNull(request.getTrigger()) || request.getTrigger().isBlank()) {
+      wfRunEntity.setTrigger("Engine");
+    } else {
+      wfRunEntity.setTrigger(request.getTrigger());
+    }
+    // Add System Generated Annotations
+    Map<String, Object> annotations = new HashMap<>();
+    annotations.put("boomerang.io/generation", "4");
+    annotations.put("boomerang.io/kind", "WorkflowRun");
+    if (start) {
+      // Add annotation to know this was created with ?start=true
+      wfRunEntity.getAnnotations().put("boomerang.io/submit-with-start", "true");
+    }
+    wfRunEntity.getAnnotations().putAll(annotations);
+    return workflowRunService.run(wfRunEntity, start);
+  }
+  
+  /*
    * Retrieve all the changelogs and return by version
    */
   public ResponseEntity<List<ChangeLogVersion>> changelog(String workflowId) {
@@ -485,5 +588,16 @@ public class WorkflowServiceImpl implements WorkflowService {
       }
     }
     return false;
+  }
+
+  private void logPayload(WorkflowRunRequest request) {
+    try {
+      ObjectMapper objectMapper = new ObjectMapper();
+      String payload = objectMapper.writeValueAsString(request);
+      LOGGER.info("Received Request Payload: ");
+      LOGGER.info(payload);
+    } catch (JsonProcessingException e) {
+      LOGGER.error(e.getStackTrace());
+    }
   }
 }

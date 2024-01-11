@@ -1,20 +1,10 @@
 package io.boomerang.model;
 
-public class WorkflowRunSubmitRequest extends WorkflowRunRequest {
-  
-  private String workflowRef;
+public class WorkflowSubmitRequest extends WorkflowRunRequest {
   
   private Integer workflowVersion;
   
   private String trigger;
-  
-  public String getWorkflowRef() {
-    return workflowRef;
-  }
-
-  public void setWorkflowRef(String workflowRef) {
-    this.workflowRef = workflowRef;
-  }
 
   public Integer getWorkflowVersion() {
     return workflowVersion;
