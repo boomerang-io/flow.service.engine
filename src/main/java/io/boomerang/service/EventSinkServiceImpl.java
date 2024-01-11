@@ -22,6 +22,7 @@ import io.boomerang.model.events.WorkflowRunStatusEvent;
 import io.boomerang.model.events.WorkflowStatusEvent;
 import io.boomerang.util.EventFactory;
 import io.cloudevents.CloudEvent;
+import io.cloudevents.core.format.EventFormat;
 import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
 
@@ -33,6 +34,9 @@ public class EventSinkServiceImpl implements EventSinkService {
 
   protected static final String LABEL_KEY_INITIATOR_CONTEXT = "initiatorContext";
 
+  private EventFormat CEFormat =
+      EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
+
   @Value("${flow.events.sink.urls}")
   private String sinkUrls;
 
@@ -42,7 +46,7 @@ public class EventSinkServiceImpl implements EventSinkService {
   @Autowired
   // @Qualifier("internalRestTemplate")
   public RestTemplate restTemplate;
-  
+
   @Autowired
   public EventQueueRepository eventRepository;
 
@@ -121,8 +125,8 @@ public class EventSinkServiceImpl implements EventSinkService {
     };
 
     return CompletableFuture.supplyAsync(supplier);
-  }  
-  
+  }
+
   @Override
   public Future<Boolean> publishStatusCloudEvent(WorkflowEntity workflowEntity) {
     Supplier<Boolean> supplier = () -> {
@@ -131,8 +135,7 @@ public class EventSinkServiceImpl implements EventSinkService {
       try {
         if (sinkEnabled) {
           // Create status update CloudEvent
-          WorkflowStatusEvent statusEvent =
-              EventFactory.buildStatusUpdateEvent(workflowEntity);
+          WorkflowStatusEvent statusEvent = EventFactory.buildStatusUpdateEvent(workflowEntity);
 
           httpSink(statusEvent.toCloudEvent());
         }
@@ -151,25 +154,25 @@ public class EventSinkServiceImpl implements EventSinkService {
       final HttpHeaders headers = new HttpHeaders();
       headers.add("Content-Type", JsonFormat.CONTENT_TYPE);
 
-      byte[] serialized = EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE).serialize(cloudEvent);
+      byte[] serialized = CEFormat.serialize(cloudEvent);
 
       final HttpEntity<byte[]> req = new HttpEntity<>(serialized, headers);
 
       String[] sinkUrlList = sinkUrls.split(",");
       for (String sinkUrl : sinkUrlList) {
         LOGGER.debug("httpSink() - URL: " + sinkUrl);
-        
+
         // 2023-09-12 WIP - Updates to a dead letter queue for replayable events
-//        try {
-          ResponseEntity<String> responseEntity =
-              restTemplate.exchange(sinkUrl, HttpMethod.POST, req, String.class);
-          LOGGER.debug("httpSink() - Status Code: " + responseEntity.getStatusCode());
-          if (responseEntity.getBody() != null) {
-            LOGGER.debug("httpSink() - Body: " + responseEntity.getBody().toString());
-          }
-//        } catch (ResourceAccessException rae) {
-//          eventRepository.save(new EventQueueEntity(sinkUrl, req));
-//        }
+        // try {
+        ResponseEntity<String> responseEntity =
+            restTemplate.exchange(sinkUrl, HttpMethod.POST, req, String.class);
+        LOGGER.debug("httpSink() - Status Code: " + responseEntity.getStatusCode());
+        if (responseEntity.getBody() != null) {
+          LOGGER.debug("httpSink() - Body: " + responseEntity.getBody().toString());
+        }
+        // } catch (ResourceAccessException rae) {
+        // eventRepository.save(new EventQueueEntity(sinkUrl, req));
+        // }
       }
     }
   }
