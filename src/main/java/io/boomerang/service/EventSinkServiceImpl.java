@@ -151,8 +151,7 @@ public class EventSinkServiceImpl implements EventSinkService {
       final HttpHeaders headers = new HttpHeaders();
       headers.add("Content-Type", JsonFormat.CONTENT_TYPE);
 
-      byte[] serialized = EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE)
-          .serialize(cloudEvent);
+      byte[] serialized = EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE).serialize(cloudEvent);
 
       final HttpEntity<byte[]> req = new HttpEntity<>(serialized, headers);
 

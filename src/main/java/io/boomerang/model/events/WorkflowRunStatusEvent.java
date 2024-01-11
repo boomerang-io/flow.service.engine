@@ -23,7 +23,7 @@ public class WorkflowRunStatusEvent extends Event {
     ObjectMapper mapper = new ObjectMapper();    
 //    JsonNode node = mapper.convertValue(workflowRunEntity, JsonNode.class);
     CloudEventData data = PojoCloudEventData.wrap(this.workflowRun, mapper::writeValueAsBytes);
-    LOGGER.info("Data: " + data.toString());
+    LOGGER.info("Data: " + new String(data.toBytes()));
     // @formatter:off
     CloudEventBuilder cloudEventBuilder = CloudEventBuilder.v1()
         .withId(getId())
