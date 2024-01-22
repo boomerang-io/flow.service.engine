@@ -25,6 +25,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import io.boomerang.client.LogClient;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.error.BoomerangError;
@@ -50,6 +52,10 @@ public class TaskRunServiceImpl implements TaskRunService {
   @Lazy
   @Autowired
   private TaskExecutionService taskExecutionService;
+  
+  @Lazy
+  @Autowired
+  private LogClient logClient;
 
   @Autowired
   private TaskRunRepository taskRunRepository;
@@ -220,6 +226,22 @@ public class TaskRunServiceImpl implements TaskRunService {
         TaskRun taskRun = new TaskRun(optTaskRunEntity.get());
         return ResponseEntity.ok(taskRun);
       }
+    }
+    throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
+  }
+  
+  @Override
+  public StreamingResponseBody streamLog(String taskRunId) {
+    if (!Objects.isNull(taskRunId) && !taskRunId.isBlank()) {
+      LOGGER.info("Getting TaskRun[{}] log...", taskRunId);
+      Optional<TaskRunEntity> optTaskRunEntity = taskRunRepository.findById(taskRunId);
+
+      //TODO sanitise and remove secure parameters
+//    List<String> removeList = buildRemovalList(taskId, taskExecution, activity);
+//    LOGGER.debug("Removal List Count: {} ", removeList.size());
+
+    return logClient.streamLog(optTaskRunEntity.get().getWorkflowRef(), optTaskRunEntity.get().getWorkflowRunRef(), optTaskRunEntity.get().getId());
+
     }
     throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
   }

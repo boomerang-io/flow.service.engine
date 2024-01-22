@@ -3,9 +3,11 @@ package io.boomerang.controller;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,7 +15,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import io.boomerang.model.TaskRun;
 import io.boomerang.model.TaskRunEndRequest;
 import io.boomerang.model.TaskRunStartRequest;
@@ -112,5 +116,19 @@ public class TaskRunV1Controller {
       @Parameter(name = "taskRunId", description = "ID of Task Run to Cancel",
           required = true) @PathVariable(required = true) String taskRunId) {
     return taskRunService.cancel(taskRunId);
+  }
+
+  @GetMapping(value = "/{taskRunId}/log")
+  @Operation(summary = "Start a Task Run. The Task Run has to already be queued.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  @ResponseBody
+  public ResponseEntity<StreamingResponseBody> getTaskRunLog(
+      HttpServletResponse response,
+      @Parameter(name = "taskRunId", description = "ID of Task Run to Start",
+          required = true) @PathVariable(required = true) String taskRunId) {
+    response.setContentType("text/plain");
+    response.setCharacterEncoding("UTF-8");
+    return new ResponseEntity<StreamingResponseBody>(taskRunService.streamLog(taskRunId), HttpStatus.OK);
   }
 }

@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
-import io.boomerang.data.entity.TaskRunEntity;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import io.boomerang.model.TaskRun;
 import io.boomerang.model.TaskRunEndRequest;
 import io.boomerang.model.TaskRunStartRequest;
@@ -25,4 +25,6 @@ public interface TaskRunService {
   ResponseEntity<TaskRun> get(String taskRunId);
   
   ResponseEntity<TaskRun> cancel(String taskRunId);
+
+  StreamingResponseBody streamLog(String taskRunId);
 }
