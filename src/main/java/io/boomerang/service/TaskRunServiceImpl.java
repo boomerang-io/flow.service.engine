@@ -196,7 +196,7 @@ public class TaskRunServiceImpl implements TaskRunService {
               && !optRunRequest.get().getStatusMessage().isEmpty()) {
             taskRunEntity.setStatusMessage(optRunRequest.get().getStatusMessage());
           }
-          taskRunEntity.setResults(optRunRequest.get().getResults());
+          taskRunEntity.getResults().addAll(optRunRequest.get().getResults());
           if (optRunRequest.get().getStatus() == null) {
             taskRunEntity.setStatus(RunStatus.succeeded);
           } else if (!(RunStatus.failed.equals(optRunRequest.get().getStatus())
@@ -239,9 +239,9 @@ public class TaskRunServiceImpl implements TaskRunService {
       //TODO sanitise and remove secure parameters
 //    List<String> removeList = buildRemovalList(taskId, taskExecution, activity);
 //    LOGGER.debug("Removal List Count: {} ", removeList.size());
-
-    return logClient.streamLog(optTaskRunEntity.get().getWorkflowRef(), optTaskRunEntity.get().getWorkflowRunRef(), optTaskRunEntity.get().getId());
-
+      if (optTaskRunEntity.isPresent()) {
+        return logClient.streamLog(optTaskRunEntity.get().getWorkflowRef(), optTaskRunEntity.get().getWorkflowRunRef(), optTaskRunEntity.get().getId());
+      }
     }
     throw new BoomerangException(BoomerangError.TASKRUN_INVALID_REF);
   }
