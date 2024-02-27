@@ -4,17 +4,19 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.springframework.data.annotation.Transient;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.boomerang.model.enums.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
-@JsonPropertyOrder({"name", "type", "templateRef", "templateVersion", "timeout", "retries", "dependencies" })
+@JsonPropertyOrder({"name", "type", "templateRef", "templateVersion", "templateUpgradesAvailable", "timeout", "retries", "dependencies" })
 public class Task {
   
   private String name;
@@ -24,6 +26,10 @@ public class Task {
   private String templateRef;
   
   private Integer templateVersion;
+  
+  @Transient
+  @JsonSerialize
+  private Boolean templateUpgradesAvailable = false;
   
   private Long timeout;
   
@@ -88,6 +94,14 @@ public class Task {
 
   public void setTemplateVersion(Integer templateVersion) {
     this.templateVersion = templateVersion;
+  }
+
+  public Boolean getTemplateUpgradesAvailable() {
+    return templateUpgradesAvailable;
+  }
+
+  public void setTemplateUpgradesAvailable(Boolean templateUpgradesAvailable) {
+    this.templateUpgradesAvailable = templateUpgradesAvailable;
   }
 
   public List<RunParam> getParams() {
