@@ -48,7 +48,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   
   private static final String CHANGELOG_UPDATE = "Updated Task Template";
   
-  private static final String NAME_REGEX = "^([0-9a-zA-Z\\\\-]+)$";
+  private static final String NAME_REGEX = "^([0-9a-zA-Z\\\\-]*)([~]{2}|)([0-9a-zA-Z\\\\-]+)$";
   
   private static final String ANNOTATION_GENERATION = "4";
   private static final String ANNOTATION_KIND = "TaskTemplate";
