@@ -35,6 +35,7 @@ import io.boomerang.data.entity.TaskTemplateRevisionEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
+import io.boomerang.data.repository.ActionRepository;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.TaskTemplateRevisionRepository;
 import io.boomerang.data.repository.WorkflowRepository;
@@ -46,13 +47,11 @@ import io.boomerang.model.ChangeLog;
 import io.boomerang.model.ChangeLogVersion;
 import io.boomerang.model.Task;
 import io.boomerang.model.TaskTemplate;
-import io.boomerang.model.Trigger;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowCount;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.WorkflowSubmitRequest;
-import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.model.enums.WorkflowStatus;
@@ -84,6 +83,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 
   @Autowired
   private TaskRunRepository taskRunRepository;
+
+  @Autowired
+  private ActionRepository actionRepository;
+
 
   @Autowired
   private TaskTemplateRevisionRepository taskTemplateRevisionRepository;
@@ -377,9 +380,10 @@ public class WorkflowServiceImpl implements WorkflowService {
     
     //Update the Workflow Entity with new details
     WorkflowEntity workflowEntity = workflowRepository.findById(workflow.getId()).get();
-    if (WorkflowStatus.archived.equals(workflowEntity.getStatus())) {
-      throw new BoomerangException(BoomerangError.WORKFLOW_DELETED);
-    }
+    //TODO: remove legacy code - if deletion remains the go to.
+//    if (WorkflowStatus.archived.equals(workflowEntity.getStatus())) {
+//      throw new BoomerangException(BoomerangError.WORKFLOW_DELETED);
+//    }
     if (workflow.getName()!= null && !workflow.getName().isBlank()) {
       workflowEntity.setName(workflow.getName());
     }
@@ -578,6 +582,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     if (cascade) {
       workflowRunRepository.deleteByWorkflowRef(workflowId);
       taskRunRepository.deleteByWorkflowRef(workflowId);
+      actionRepository.deleteByWorkflowRef(workflowId);
     }
   }
 

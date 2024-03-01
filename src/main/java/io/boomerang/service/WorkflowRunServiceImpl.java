@@ -32,6 +32,7 @@ import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
+import io.boomerang.data.repository.ActionRepository;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
@@ -65,6 +66,9 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
   @Autowired
   private TaskRunRepository taskRunRepository;
+
+  @Autowired
+  private ActionRepository actionRepository;
 
   @Autowired
   private WorkflowExecutionClient workflowExecutionClient;
@@ -524,6 +528,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     }
     workflowRunRepository.deleteById(workflowRunId);
     taskRunRepository.deleteByWorkflowRunRef(workflowRunId);
+    actionRepository.deleteByWorkflowRunRef(workflowRunId);
   }
 
   private List<TaskRun> getTaskRuns(String workflowRunId) {
