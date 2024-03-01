@@ -149,13 +149,16 @@ public class WorkflowV1Controller {
   }
 
   @DeleteMapping(value = "/{workflowId}")
-  @Operation(summary = "Delete a Workflow")
+  @Operation(summary = "Delete all versions of a Workflow. This is destructive and irreversible.")
   @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public void archiveWorkflow(
+  public void deleteWorkflow(
       @Parameter(name = "workflowId",
       description = "ID of Workflow",
-      required = true) @PathVariable String workflowId) {
-    workflowService.delete(workflowId);
+      required = true) @PathVariable String workflowId,
+      @Parameter(name = "cascade",
+      description = "Delete associated WorkflowRuns and TaskRuns",
+      required = false) @RequestParam(required = false, defaultValue = "true") boolean cascade) {
+    workflowService.delete(workflowId, cascade);
   }
 }

@@ -37,4 +37,6 @@ public interface WorkflowRunService {
       Optional<List<String>> labels, Optional<List<String>> workflows);
 
   WorkflowRun run(WorkflowRunEntity request, boolean start);
+
+  void delete(String workflowRunId);
 }

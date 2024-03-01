@@ -24,8 +24,6 @@ public interface WorkflowService {
 
   ResponseEntity<Workflow> apply(Workflow workflow, Boolean replace);
 
-  void delete(String workflowId);
-
   ResponseEntity<List<ChangeLogVersion>> changelog(String workflowId);
 
   ResponseEntity<WorkflowCount> count(Optional<Date> from, Optional<Date> to,
@@ -33,6 +31,8 @@ public interface WorkflowService {
 
   WorkflowRun submit(String workflowId, WorkflowSubmitRequest request,
       boolean start);
+
+  void delete(String workflowId, boolean cascade);
 
 //  WorkflowSummary updateWorkflowProperties(String workflowId, List<WorkflowProperty> properties);
 //

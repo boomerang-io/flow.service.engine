@@ -5,4 +5,6 @@ import io.boomerang.data.entity.WorkflowRunEntity;
 
 public interface WorkflowRunRepository extends MongoRepository<WorkflowRunEntity, String> {
   
+  void deleteByWorkflowRef(String workflowRef);
+  
 }

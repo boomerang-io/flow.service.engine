@@ -35,9 +35,11 @@ import io.boomerang.data.entity.TaskTemplateRevisionEntity;
 import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
+import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.TaskTemplateRevisionRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
+import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
@@ -76,6 +78,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 
   @Autowired
   private WorkflowRevisionRepository workflowRevisionRepository;
+
+  @Autowired
+  private WorkflowRunRepository workflowRunRepository;
+
+  @Autowired
+  private TaskRunRepository taskRunRepository;
 
   @Autowired
   private TaskTemplateRevisionRepository taskTemplateRevisionRepository;
@@ -369,7 +377,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     
     //Update the Workflow Entity with new details
     WorkflowEntity workflowEntity = workflowRepository.findById(workflow.getId()).get();
-    if (WorkflowStatus.deleted.equals(workflowEntity.getStatus())) {
+    if (WorkflowStatus.archived.equals(workflowEntity.getStatus())) {
       throw new BoomerangException(BoomerangError.WORKFLOW_DELETED);
     }
     if (workflow.getName()!= null && !workflow.getName().isBlank()) {
@@ -558,22 +566,19 @@ public class WorkflowServiceImpl implements WorkflowService {
   }
   
   /*
-   * Marks the Workflow as 'deleted' status. This allows WorkflowRuns to still be visualised.
+   * Deletes the Workflow and its Revisions. Optionally cascades to the WorkflowRuns and TaskRuns
    */
   @Override
-  public void delete(String workflowId) {
+  public void delete(String workflowId, boolean cascade) {
     if (workflowId == null || workflowId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
-    WorkflowEntity wfEntity = workflowRepository.findById(workflowId).get();
-    if (WorkflowStatus.deleted.equals(wfEntity.getStatus())) {
-      //TODO: better status to say invalid status. Once deleted you can't move to not deleted.
-      throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
+    workflowRevisionRepository.deleteByWorkflowRef(workflowId);
+    workflowRepository.deleteById(workflowId);
+    if (cascade) {
+      workflowRunRepository.deleteByWorkflowRef(workflowId);
+      taskRunRepository.deleteByWorkflowRef(workflowId);
     }
-    wfEntity.setStatus(WorkflowStatus.deleted);
-    wfEntity.setTriggers(new WorkflowTrigger());
-    wfEntity.getTriggers().setManual(new Trigger(false));
-    workflowRepository.save(wfEntity);
   }
 
   // This will set both the Workflow and Tasks flags for upgrades available

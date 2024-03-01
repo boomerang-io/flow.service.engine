@@ -20,5 +20,7 @@ public interface WorkflowRevisionRepository
           "{'$sort': {version: -1}}",
           "{'$limit': 1}"
     })
-  Optional<WorkflowRevisionEntity> findByWorkflowRefAndLatestVersion(String workflowRef);
+  Optional<WorkflowRevisionEntity> findByWorkflowRefAndLatestVersion(String workflowRef);  
+  
+  void deleteByWorkflowRef(String workflowRef);
 }

@@ -11,4 +11,8 @@ public interface TaskRunRepository
   List<TaskRunEntity> findByWorkflowRunRef(String workflowRunRef);
 
   Optional<TaskRunEntity> findFirstByNameAndWorkflowRunRef(String name, String workflowRunRef);
+  
+  void deleteByWorkflowRef(String workflowRef);
+  
+  void deleteByWorkflowRunRef(String workflowRunRef);
 }

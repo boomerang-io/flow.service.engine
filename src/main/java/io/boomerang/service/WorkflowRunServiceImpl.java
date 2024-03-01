@@ -6,11 +6,9 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.EnumUtils;
@@ -27,7 +25,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.support.PageableExecutionUtils;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,11 +43,9 @@ import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunCount;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
-import io.boomerang.model.WorkflowSubmitRequest;
 import io.boomerang.model.WorkflowRunSummary;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
-import io.boomerang.model.enums.WorkflowStatus;
 import io.boomerang.util.ConvertUtil;
 import io.boomerang.util.ParameterUtil;
 
@@ -517,6 +512,18 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     wfRun.getAnnotations().remove("boomerang.io/global-params");
     wfRun.getAnnotations().remove("boomerang.io/context-params");
     wfRun.getAnnotations().remove("boomerang.io/team-params");
+  }
+  
+  /*
+   * Deletes the WorkflowRun and associated TaskRuns
+   */
+  @Override
+  public void delete(String workflowRunId) {
+    if (workflowRunId == null || workflowRunId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
+    }
+    workflowRunRepository.deleteById(workflowRunId);
+    taskRunRepository.deleteByWorkflowRunRef(workflowRunId);
   }
 
   private List<TaskRun> getTaskRuns(String workflowRunId) {
