@@ -19,4 +19,6 @@ public interface TaskTemplateRevisionRepository extends MongoRepository<TaskTemp
           "{'$limit': 1}"
     })
   Optional<TaskTemplateRevisionEntity> findByParentAndLatestVersion(String parent);
+
+  void deleteByParent(String parent);
 }

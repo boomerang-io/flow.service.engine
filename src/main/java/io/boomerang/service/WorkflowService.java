@@ -32,7 +32,7 @@ public interface WorkflowService {
   WorkflowRun submit(String workflowId, WorkflowSubmitRequest request,
       boolean start);
 
-  void delete(String workflowId, boolean cascade);
+  void delete(String workflowId);
 
 //  WorkflowSummary updateWorkflowProperties(String workflowId, List<WorkflowProperty> properties);
 //

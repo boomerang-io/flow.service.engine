@@ -10,4 +10,6 @@ public interface TaskTemplateRepository extends MongoRepository<TaskTemplateEnti
   Integer countByNameAndStatus(String name, TaskTemplateStatus status);
 
   Optional<TaskTemplateEntity> findByName(String name);
+  
+  void deleteByName(String name);
 }

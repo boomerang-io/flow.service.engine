@@ -155,10 +155,7 @@ public class WorkflowV1Controller {
   public void deleteWorkflow(
       @Parameter(name = "workflowId",
       description = "ID of Workflow",
-      required = true) @PathVariable String workflowId,
-      @Parameter(name = "cascade",
-      description = "Delete associated WorkflowRuns and TaskRuns",
-      required = false) @RequestParam(required = false, defaultValue = "true") boolean cascade) {
-    workflowService.delete(workflowId, cascade);
+      required = true) @PathVariable String workflowId) {
+    workflowService.delete(workflowId);
   }
 }

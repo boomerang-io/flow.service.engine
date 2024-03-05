@@ -20,7 +20,7 @@ public class TaskTemplateRevisionEntity {
 
   @Id
   private String id;
-  @DocumentReference(lookup="{'name':?#{#target} }") 
+  @DocumentReference(lookup="{'name':?#{#target}}", lazy=true) 
   private TaskTemplateEntity parent;
   private String displayName;
   private String description;

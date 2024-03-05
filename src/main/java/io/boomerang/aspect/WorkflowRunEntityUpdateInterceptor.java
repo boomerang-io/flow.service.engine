@@ -1,16 +1,22 @@
 package io.boomerang.aspect;
 
+import java.util.Map;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import io.boomerang.audit.AuditInterceptor;
+import io.boomerang.audit.AuditType;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.WorkflowRunRepository;
+import io.boomerang.model.enums.RunStatus;
 import io.boomerang.service.EventSinkService;
 
 @Aspect
@@ -24,6 +30,9 @@ public class WorkflowRunEntityUpdateInterceptor {
   
   @Autowired
   EventSinkService eventSinkService;
+  
+  @Autowired
+  AuditInterceptor auditInterceptor;
 
   @Before("execution(* io.boomerang.data.repository.WorkflowRunRepository.save(..))"
       + " && args(entityToBeSaved)")
@@ -34,6 +43,20 @@ public class WorkflowRunEntityUpdateInterceptor {
 
     if (entityToBeSaved instanceof WorkflowRunEntity) {
       workflowRunEntityToBeUpdated((WorkflowRunEntity) entityToBeSaved);
+    }
+  }
+  
+  @AfterReturning(pointcut="execution(* io.boomerang.data.repository.WorkflowRunRepository.save(..)) && args(request)", returning="entity")
+  public void saveInvoked(JoinPoint thisJoinPoint, WorkflowRunEntity request, WorkflowRunEntity entity) {
+
+    LOGGER.info("Intercepted save action on entity {} from {}", request,
+        thisJoinPoint.getSignature().getDeclaringTypeName());
+
+    if (request.getStatus().equals(RunStatus.notstarted)) {
+      auditInterceptor.createWfRunLog(entity.getId(), entity.getWorkflowRef(), Optional.empty());
+    } else {
+      LOGGER.info("Status Label: {}, Audit Type: {}", entity.getStatus().getStatus(), AuditType.valueOfLabel(entity.getStatus().getStatus()));
+      auditInterceptor.updateWfRunLog(AuditType.valueOfLabel(entity.getStatus().getStatus()), entity.getId(), Optional.of(Map.of("duration", String.valueOf(entity.getDuration()))));
     }
   }
 

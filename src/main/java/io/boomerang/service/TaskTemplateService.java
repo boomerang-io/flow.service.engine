@@ -22,4 +22,6 @@ public interface TaskTemplateService {
   TaskTemplate retrieveAndValidateTaskTemplate(Task wfTask);
 
   List<ChangeLogVersion> changelog(String name);
+
+  void delete(String name);
 }

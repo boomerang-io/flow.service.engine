@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -48,10 +49,13 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   
   private static final String CHANGELOG_UPDATE = "Updated Task Template";
   
-  private static final String NAME_REGEX = "^([0-9a-zA-Z\\\\-]*)([~]{2}|)([0-9a-zA-Z\\\\-]+)$";
+  private static final String NAME_REGEX = "^([0-9a-zA-Z\\-]*)([_]{1}|)([0-9a-zA-Z\\-]+)$";
   
   private static final String ANNOTATION_GENERATION = "4";
   private static final String ANNOTATION_KIND = "TaskTemplate";
+  
+//  @Value("${flow.refs.useId}")
+//  private boolean useIdAsRef;
 
   @Autowired
   private TaskTemplateRepository taskTemplateRepository;
@@ -64,7 +68,6 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
 
   @Override
   public TaskTemplate get(String name, Optional<Integer> version) {   
-    // Retrieve TaskTemplateRevision
     Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity;
     if (version.isPresent()) {
       taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndVersion(name, version.get());
@@ -77,6 +80,22 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     
     return convertEntityToModel(taskTemplateRevisionEntity.get().getParent(), taskTemplateRevisionEntity.get());
   }
+
+//  /**
+//   * @param name
+//   * @param version
+//   * @return
+//   */
+//  private Optional<TaskTemplateRevisionEntity> retrieveTaskTemplate(String name,
+//      Optional<Integer> version) {
+//    Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity;
+//    if (version.isPresent()) {
+//      taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndVersion(name, version.get());
+//    } else {
+//      taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndLatestVersion(name);
+//    }
+//    return taskTemplateRevisionEntity;
+//  }
 
   /*
    * Create TaskTemplate
@@ -298,6 +317,12 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
            wfTask.getTemplateVersion());
      }
      return taskTemplate;
+   }
+   
+   @Override
+   public void delete(String name) {
+     taskTemplateRevisionRepository.deleteByParent(name);
+     taskTemplateRepository.deleteByName(name);
    }
 
    private TaskTemplate convertEntityToModel(TaskTemplateEntity entity,

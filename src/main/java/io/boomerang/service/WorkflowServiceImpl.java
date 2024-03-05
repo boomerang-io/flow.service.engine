@@ -52,6 +52,7 @@ import io.boomerang.model.WorkflowCount;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.WorkflowSubmitRequest;
+import io.boomerang.model.WorkflowTrigger;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.model.enums.WorkflowStatus;
@@ -380,10 +381,9 @@ public class WorkflowServiceImpl implements WorkflowService {
     
     //Update the Workflow Entity with new details
     WorkflowEntity workflowEntity = workflowRepository.findById(workflow.getId()).get();
-    //TODO: remove legacy code - if deletion remains the go to.
-//    if (WorkflowStatus.archived.equals(workflowEntity.getStatus())) {
-//      throw new BoomerangException(BoomerangError.WORKFLOW_DELETED);
-//    }
+    if (WorkflowStatus.deleted.equals(workflowEntity.getStatus())) {
+      throw new BoomerangException(BoomerangError.WORKFLOW_DELETED);
+    }
     if (workflow.getName()!= null && !workflow.getName().isBlank()) {
       workflowEntity.setName(workflow.getName());
     }
@@ -407,7 +407,9 @@ public class WorkflowServiceImpl implements WorkflowService {
         workflowEntity.getAnnotations().putAll(workflow.getAnnotations());
       }
     }
-    if (!Objects.isNull(workflow.getTriggers())) {
+    if (WorkflowStatus.deleted.equals(workflow.getStatus())) {
+      workflowEntity.setTriggers(new WorkflowTrigger());
+    } else if (!Objects.isNull(workflow.getTriggers())) {
       if (!Objects.isNull(workflow.getTriggers().getManual())) {
         workflowEntity.getTriggers().setManual(workflow.getTriggers().getManual());
       }
@@ -573,17 +575,15 @@ public class WorkflowServiceImpl implements WorkflowService {
    * Deletes the Workflow and its Revisions. Optionally cascades to the WorkflowRuns and TaskRuns
    */
   @Override
-  public void delete(String workflowId, boolean cascade) {
+  public void delete(String workflowId) {
     if (workflowId == null || workflowId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOW_INVALID_REF);
     }
+    actionRepository.deleteByWorkflowRef(workflowId);
+    taskRunRepository.deleteByWorkflowRef(workflowId);
+    workflowRunRepository.deleteByWorkflowRef(workflowId);
     workflowRevisionRepository.deleteByWorkflowRef(workflowId);
     workflowRepository.deleteById(workflowId);
-    if (cascade) {
-      workflowRunRepository.deleteByWorkflowRef(workflowId);
-      taskRunRepository.deleteByWorkflowRef(workflowId);
-      actionRepository.deleteByWorkflowRef(workflowId);
-    }
   }
 
   // This will set both the Workflow and Tasks flags for upgrades available

@@ -16,7 +16,7 @@ import io.boomerang.model.enums.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
-@JsonPropertyOrder({"name", "type", "templateRef", "templateVersion", "templateUpgradesAvailable", "timeout", "retries", "dependencies" })
+@JsonPropertyOrder({"name", "type", "templateRef", "templateVersion", "templateOwner", "templateUpgradesAvailable", "timeout", "retries", "dependencies" })
 public class Task {
   
   private String name;
@@ -26,6 +26,10 @@ public class Task {
   private String templateRef;
   
   private Integer templateVersion;
+  
+  @Transient
+  @JsonSerialize
+  private String templateOwner;
   
   @Transient
   @JsonSerialize
@@ -94,6 +98,14 @@ public class Task {
 
   public void setTemplateVersion(Integer templateVersion) {
     this.templateVersion = templateVersion;
+  }
+
+  public String getTemplateOwner() {
+    return templateOwner;
+  }
+
+  public void setTemplateOwner(String templateOwner) {
+    this.templateOwner = templateOwner;
   }
 
   public Boolean getTemplateUpgradesAvailable() {

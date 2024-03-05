@@ -526,9 +526,9 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     if (workflowRunId == null || workflowRunId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
-    workflowRunRepository.deleteById(workflowRunId);
-    taskRunRepository.deleteByWorkflowRunRef(workflowRunId);
     actionRepository.deleteByWorkflowRunRef(workflowRunId);
+    taskRunRepository.deleteByWorkflowRunRef(workflowRunId);
+    workflowRunRepository.deleteById(workflowRunId);
   }
 
   private List<TaskRun> getTaskRuns(String workflowRunId) {

@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -98,5 +99,16 @@ public class TaskTemplateV1Controller {
       description = "Name of Task Template",
       required = true) @PathVariable String name) {
     return taskTemplateService.changelog(name);
+  }
+  
+  @DeleteMapping(value = "/{name}")
+  @Operation(summary = "Delete a TaskTemplate and associated versions. This is destructive and irreversible.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public void deleteWorkflowRun(
+      @Parameter(name = "name",
+      description = "Name of Task Template",
+      required = true) @PathVariable String name) {
+    taskTemplateService.delete(name);
   }
 }
