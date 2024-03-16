@@ -21,7 +21,6 @@ import io.boomerang.service.EventSinkService;
 
 @Aspect
 @Component
-@ConditionalOnProperty(name="flow.events.sink.enabled", havingValue="true", matchIfMissing = false)
 public class WorkflowRunEntityUpdateInterceptor {
   private static final Logger LOGGER = LogManager.getLogger();
 
@@ -36,6 +35,7 @@ public class WorkflowRunEntityUpdateInterceptor {
 
   @Before("execution(* io.boomerang.data.repository.WorkflowRunRepository.save(..))"
       + " && args(entityToBeSaved)")
+  @ConditionalOnProperty(name="flow.events.sink.enabled", havingValue="true", matchIfMissing = false)
   public void saveInvoked(JoinPoint thisJoinPoint, Object entityToBeSaved) {
 
     LOGGER.info("Intercepted save action on entity {} from {}", entityToBeSaved,
@@ -47,6 +47,7 @@ public class WorkflowRunEntityUpdateInterceptor {
   }
   
   @AfterReturning(pointcut="execution(* io.boomerang.data.repository.WorkflowRunRepository.save(..)) && args(request)", returning="entity")
+  @ConditionalOnProperty(name="flow.audit.enabled", havingValue="true", matchIfMissing = false)
   public void saveInvoked(JoinPoint thisJoinPoint, WorkflowRunEntity request, WorkflowRunEntity entity) {
 
     LOGGER.info("Intercepted save action on entity {} from {}", request,

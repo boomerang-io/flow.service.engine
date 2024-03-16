@@ -11,7 +11,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -49,13 +48,10 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   
   private static final String CHANGELOG_UPDATE = "Updated Task Template";
   
-  private static final String NAME_REGEX = "^([0-9a-zA-Z\\-]*)([_]{1}|)([0-9a-zA-Z\\-]+)$";
+  private static final String NAME_REGEX = "^([0-9a-zA-Z\\-]+)$";
   
   private static final String ANNOTATION_GENERATION = "4";
   private static final String ANNOTATION_KIND = "TaskTemplate";
-  
-//  @Value("${flow.refs.useId}")
-//  private boolean useIdAsRef;
 
   @Autowired
   private TaskTemplateRepository taskTemplateRepository;
@@ -67,35 +63,21 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
   private MongoTemplate mongoTemplate;
 
   @Override
-  public TaskTemplate get(String name, Optional<Integer> version) {   
-    Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity;
+  public TaskTemplate get(String id, Optional<Integer> version) {   
+    Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity;    
     if (version.isPresent()) {
-      taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndVersion(name, version.get());
+      taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentRefAndVersion(id, version.get());
     } else {
-      taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndLatestVersion(name);
+      taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentRefAndLatestVersion(id);
     }
-    if (taskTemplateRevisionEntity.isEmpty()) {
-      throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_REF, name, version.isPresent() ? version.get() : "latest");
+    if (taskTemplateRevisionEntity.isPresent()) {
+      Optional<TaskTemplateEntity> taskTemplateEntity  = taskTemplateRepository.findById(id);
+      if (taskTemplateEntity.isPresent()) {
+        return convertEntityToModel(taskTemplateEntity.get(), taskTemplateRevisionEntity.get());
+      }
     }
-    
-    return convertEntityToModel(taskTemplateRevisionEntity.get().getParent(), taskTemplateRevisionEntity.get());
+    throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_REF, id, version.isPresent() ? version.get() : "latest");
   }
-
-//  /**
-//   * @param name
-//   * @param version
-//   * @return
-//   */
-//  private Optional<TaskTemplateRevisionEntity> retrieveTaskTemplate(String name,
-//      Optional<Integer> version) {
-//    Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity;
-//    if (version.isPresent()) {
-//      taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndVersion(name, version.get());
-//    } else {
-//      taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndLatestVersion(name);
-//    }
-//    return taskTemplateRevisionEntity;
-//  }
 
   /*
    * Create TaskTemplate
@@ -105,15 +87,18 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
    */
   @Override
   public TaskTemplate create(TaskTemplate taskTemplate) {
+    //Remove ID
+    taskTemplate.setId(null);
+    
     //Name Check
     if (!taskTemplate.getName().matches(NAME_REGEX)) {
       throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_NAME, taskTemplate.getName());
     }
     
     //Unique Name Check
-    if (taskTemplateRepository.countByName(taskTemplate.getName().toLowerCase()) > 0) {
-      throw new BoomerangException(BoomerangError.TASKTEMPLATE_ALREADY_EXISTS, taskTemplate.getName());
-    }
+//    if (taskTemplateRepository.countByName(taskTemplate.getName().toLowerCase()) > 0) {
+//      throw new BoomerangException(BoomerangError.TASKTEMPLATE_ALREADY_EXISTS, taskTemplate.getName());
+//    }
     
     //Set Display Name if not provided
     if (taskTemplate.getDisplayName() == null || taskTemplate.getDisplayName().isBlank()) {
@@ -133,7 +118,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     //Save
     TaskTemplateEntity taskTemplateEntity = new TaskTemplateEntity(taskTemplate);
     TaskTemplateRevisionEntity taskTemplateRevisionEntity = new TaskTemplateRevisionEntity(taskTemplate);
-    taskTemplateRevisionEntity.setParent(taskTemplateEntity);
+    taskTemplateRevisionEntity.setParentRef(taskTemplateEntity.getId());
     taskTemplateRepository.save(taskTemplateEntity);
     taskTemplateRevisionRepository.save(taskTemplateRevisionEntity);
     
@@ -147,10 +132,13 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     if (!taskTemplate.getName().matches(NAME_REGEX)) {
       throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_NAME, taskTemplate.getName());
     }
-    
+
     //Does it already exist?
-    Optional<TaskTemplateEntity> taskTemplateEntityOpt = taskTemplateRepository.findByName(taskTemplate.getName());
-    if (!taskTemplateEntityOpt.isPresent()) {
+    Optional<TaskTemplateEntity> taskTemplateEntityOpt = Optional.empty();
+    if (!taskTemplate.getId().isEmpty()) {
+      taskTemplateEntityOpt = taskTemplateRepository.findById(taskTemplate.getId());
+    }
+    if (taskTemplate.getId().isEmpty() || !taskTemplateEntityOpt.isPresent()) {
       return this.create(taskTemplate);
     }
     TaskTemplateEntity taskTemplateEntity = taskTemplateEntityOpt.get();
@@ -161,15 +149,15 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     }
     
     //Get latest revision
-    Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentAndLatestVersion(taskTemplate.getName());
+    Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity = taskTemplateRevisionRepository.findByParentRefAndLatestVersion(taskTemplate.getName());
     if (taskTemplateRevisionEntity.isEmpty()) {
       throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_REF, taskTemplate.getName(), "latest");
     }
-
-    //Set System Generated Annotations
     
     //Update TaskTemplateEntity
+    //Set System Generated Annotations
     //Name (slug), Type, Creation Date, and Verified cannot be updated
+    taskTemplateEntity.setName(taskTemplate.getName());
     taskTemplateEntity.setStatus(taskTemplate.getStatus());
     taskTemplateEntity.getAnnotations().putAll(taskTemplate.getAnnotations());
     taskTemplateEntity.getAnnotations().put("boomerang.io/generation", ANNOTATION_GENERATION);
@@ -178,13 +166,18 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
 
     //Create / Replace TaskTemplateRevisionEntity
     TaskTemplateRevisionEntity newTaskTemplateRevisionEntity = new TaskTemplateRevisionEntity(taskTemplate);
-//    newTaskTemplateRevisionEntity.setParentRef(taskTemplateEntity.getId());
+    newTaskTemplateRevisionEntity.setParentRef(taskTemplateEntity.getId());
     if (replace) {
       newTaskTemplateRevisionEntity.setId(taskTemplateRevisionEntity.get().getId());
       newTaskTemplateRevisionEntity.setVersion(taskTemplateRevisionEntity.get().getVersion());
     } else {
       newTaskTemplateRevisionEntity.setVersion(taskTemplateRevisionEntity.get().getVersion() + 1);
     }
+    //Set Display Name if not provided
+    if (newTaskTemplateRevisionEntity.getDisplayName() == null || newTaskTemplateRevisionEntity.getDisplayName().isBlank()) {
+      newTaskTemplateRevisionEntity.setDisplayName(taskTemplate.getName());
+    }
+
     
     //Update changelog
     ChangeLog changelog = new ChangeLog(taskTemplateRevisionEntity.get().getVersion().equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE);
@@ -192,7 +185,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     newTaskTemplateRevisionEntity.setChangelog(changelog);
     
     //Save entities
-    newTaskTemplateRevisionEntity.setParent(taskTemplateEntity);
+    newTaskTemplateRevisionEntity.setParentRef(taskTemplateEntity.getId());
     TaskTemplateEntity savedEntity = taskTemplateRepository.save(taskTemplateEntity);
     TaskTemplateRevisionEntity savedRevision = taskTemplateRevisionRepository.save(newTaskTemplateRevisionEntity);
     return convertEntityToModel(savedEntity, savedRevision);
@@ -214,7 +207,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
 
   @Override
   public Page<TaskTemplate> query(Optional<Integer> queryLimit, Optional<Integer> queryPage, Optional<Direction> querySort, Optional<List<String>> queryLabels,
-      Optional<List<String>> queryStatus, Optional<List<String>> queryNames) {
+      Optional<List<String>> queryStatus, Optional<List<String>> queryNames, Optional<List<String>> queryIds) {
     Pageable pageable = Pageable.unpaged();
     final Sort sort = Sort.by(new Order(querySort.orElse(Direction.ASC), "creationDate"));
     if (queryLimit.isPresent()) {
@@ -252,6 +245,11 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
         Criteria criteria = Criteria.where("name").in(queryNames.get());
         criteriaList.add(criteria);
       }
+      
+      if (queryIds.isPresent()) {
+        Criteria criteria = Criteria.where("id").in(queryIds.get());
+        criteriaList.add(criteria);
+      }
 
       Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);
       Criteria allCriteria = new Criteria();
@@ -270,7 +268,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
       List<TaskTemplate> taskTemplates = new LinkedList<>();
       taskTemplateEntities.forEach(e -> {
         Optional<TaskTemplateRevisionEntity> taskTemplateRevisionEntity =
-            taskTemplateRevisionRepository.findByParentAndLatestVersion(e.getName());
+            taskTemplateRevisionRepository.findByParentRefAndLatestVersion(e.getId());
         if (taskTemplateRevisionEntity.isPresent()) {
           TaskTemplate tt = convertEntityToModel(e, taskTemplateRevisionEntity.get());
           taskTemplates.add(tt);
@@ -288,10 +286,10 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
    * Retrieve all the changelogs and return by version
    */
   @Override
-  public List<ChangeLogVersion> changelog(String name) {
-      List<TaskTemplateRevisionEntity> taskTemplateRevisionEntities = taskTemplateRevisionRepository.findByParent(name);
+  public List<ChangeLogVersion> changelog(String id) {
+      List<TaskTemplateRevisionEntity> taskTemplateRevisionEntities = taskTemplateRevisionRepository.findByParentRef(id);
       if (taskTemplateRevisionEntities.isEmpty()) {
-        throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_NAME, name);
+        throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_NAME, id);
       }
       List<ChangeLogVersion> changelogs = new LinkedList<>();
       taskTemplateRevisionEntities.forEach(v -> {
@@ -321,15 +319,34 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
    
    @Override
    public void delete(String name) {
-     taskTemplateRevisionRepository.deleteByParent(name);
-     taskTemplateRepository.deleteByName(name);
+     taskTemplateRevisionRepository.deleteByParentRef(name);
+     taskTemplateRepository.deleteById(name);
    }
 
    private TaskTemplate convertEntityToModel(TaskTemplateEntity entity,
        TaskTemplateRevisionEntity revision) {
      TaskTemplate taskTemplate = new TaskTemplate();
      BeanUtils.copyProperties(entity, taskTemplate);
-     BeanUtils.copyProperties(revision, taskTemplate);
+     BeanUtils.copyProperties(revision, taskTemplate, "id");
      return taskTemplate;
    }
+   
+//   private String convertId(String prefix, String id) {
+//     MessageDigest digest;
+//     try {
+//       digest = MessageDigest.getInstance("SHA-256");
+//       byte[] hash = digest.digest(id.getBytes(StandardCharsets.UTF_8));
+//       StringBuilder hexString = new StringBuilder();
+//       for (byte element : hash) {
+//         String hex = Integer.toHexString(0xff & element);
+//         if (hex.length() == 1) {
+//           hexString.append('0');
+//         }
+//         hexString.append(hex);
+//       }
+//       return prefix + hexString.toString();
+//     } catch (NoSuchAlgorithmException e) {
+//       return null;
+//     }
+//   }
 }

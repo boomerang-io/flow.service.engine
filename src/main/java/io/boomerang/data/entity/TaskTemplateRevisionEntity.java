@@ -4,7 +4,6 @@ import java.util.List;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -13,6 +12,11 @@ import io.boomerang.model.ChangeLog;
 import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.TaskTemplateSpec;
 
+/*
+ * The versioned elements of a task_template
+ * 
+ * Ref: https://docs.spring.io/spring-data/mongodb/reference/mongodb/mapping/document-references.html
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
 @Document(collection = "#{@mongoConfiguration.fullCollectionName('task_template_revisions')}")
@@ -20,8 +24,7 @@ public class TaskTemplateRevisionEntity {
 
   @Id
   private String id;
-  @DocumentReference(lookup="{'name':?#{#target}}", lazy=true) 
-  private TaskTemplateEntity parent;
+  private String parentRef;
   private String displayName;
   private String description;
   private String category;
@@ -36,7 +39,7 @@ public class TaskTemplateRevisionEntity {
   }
 
   public TaskTemplateRevisionEntity(TaskTemplate taskTemplate) {
-    BeanUtils.copyProperties(taskTemplate, this, "id", "parent");
+    BeanUtils.copyProperties(taskTemplate, this, "id", "parentRef");
   }
 
   public String getId() {
@@ -47,12 +50,12 @@ public class TaskTemplateRevisionEntity {
     this.id = id;
   }
 
-  public TaskTemplateEntity getParent() {
-    return parent;
+  public String getParentRef() {
+    return parentRef;
   }
   
-  public void setParent(TaskTemplateEntity parent) {
-    this.parent = parent;
+  public void setParentRef(String parentRef) {
+    this.parentRef = parentRef;
   }
 
   public String getDescription() {

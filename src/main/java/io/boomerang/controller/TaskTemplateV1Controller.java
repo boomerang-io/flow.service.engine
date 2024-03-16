@@ -32,18 +32,18 @@ public class TaskTemplateV1Controller {
   @Autowired
   private TaskTemplateService taskTemplateService;
   
-  @GetMapping(value = "/{name}")
+  @GetMapping(value = "/{id}")
   @Operation(summary = "Retrieve a specific task template. If no version specified, the latest version is returned.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public TaskTemplate getTaskTemplateWithId(
-      @Parameter(name = "name",
-      description = "Name of Task Template",
-      required = true) @PathVariable String name,
+  public TaskTemplate getTaskTemplate(
+      @Parameter(name = "id",
+      description = "Id of Task Template",
+      required = true) @PathVariable String id,
       @Parameter(name = "version",
       description = "Task Template Version",
       required = false) @RequestParam(required = false) Optional<Integer> version) {
-    return taskTemplateService.get(name, version);
+    return taskTemplateService.get(id, version);
   }
   
   @GetMapping(value = "/query")
@@ -58,15 +58,18 @@ public class TaskTemplateV1Controller {
       description = "List of statuses to filter for.", example = "inactive",
       required = false) @RequestParam(required = false, defaultValue = "active")  Optional<List<String>> status,
       @Parameter(name = "names",
-      description = "List of TaskTemplate Names  to filter for. Defaults to all.", example = "switch,event-wait",
+      description = "List of TaskTemplate Names to filter for. Defaults to all.", example = "switch,event-wait",
       required = false) @RequestParam(required = false)  Optional<List<String>> names,
+      @Parameter(name = "ids",
+      description = "List of TaskTemplate Ids to filter for. Defaults to all.",
+      required = false) @RequestParam(required = false)  Optional<List<String>> ids,
       @Parameter(name = "limit", description = "Result Size", example = "10",
           required = true) @RequestParam(required = false) Optional<Integer> limit,
       @Parameter(name = "page", description = "Page Number", example = "0",
           required = true) @RequestParam(defaultValue = "0") Optional<Integer> page,
       @Parameter(name = "sort", description = "Ascending (ASC) or Descending (DESC) sort on creationDate", example = "ASC",
       required = true) @RequestParam(defaultValue = "ASC") Optional<Direction> sort) {
-    return taskTemplateService.query(limit, page, sort, labels, status, names);
+    return taskTemplateService.query(limit, page, sort, labels, status, names, ids);
   }
 
   @PostMapping(value = "")
@@ -80,7 +83,7 @@ public class TaskTemplateV1Controller {
 
   @PutMapping(value = "")
   @Operation(summary = "Update, replace, or create new, Task Template",
-            description = "The name must only contain alphanumeric and - characeters. If the name exists, apply will create a new version.")
+            description = "The name must only contain alphanumeric and - characeters. If the id exists, apply will create a new version.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public TaskTemplate applyTaskTemplate(@RequestBody TaskTemplate taskTemplate,
@@ -90,25 +93,25 @@ public class TaskTemplateV1Controller {
     return taskTemplateService.apply(taskTemplate, replace);
   }
   
-  @GetMapping(value = "/{name}/changelog")
+  @GetMapping(value = "/{id}/changelog")
   @Operation(summary = "Retrieve the changlog", description = "Retrieves each versions changelog and returns them all as a list.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public List<ChangeLogVersion> getChangelog(
-      @Parameter(name = "name",
-      description = "Name of Task Template",
-      required = true) @PathVariable String name) {
-    return taskTemplateService.changelog(name);
+      @Parameter(name = "id",
+      description = "Id of Task Template",
+      required = true) @PathVariable String id) {
+    return taskTemplateService.changelog(id);
   }
   
-  @DeleteMapping(value = "/{name}")
+  @DeleteMapping(value = "/{id}")
   @Operation(summary = "Delete a TaskTemplate and associated versions. This is destructive and irreversible.")
   @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public void deleteWorkflowRun(
-      @Parameter(name = "name",
-      description = "Name of Task Template",
-      required = true) @PathVariable String name) {
-    taskTemplateService.delete(name);
+      @Parameter(name = "id",
+      description = "Id",
+      required = true) @PathVariable String id) {
+    taskTemplateService.delete(id);
   }
 }

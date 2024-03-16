@@ -24,7 +24,7 @@ public class TaskTemplateEntity {
   @Indexed
   private String name;
   private TaskType type;
-  private TaskTemplateStatus status = TaskTemplateStatus.active;
+  private TaskTemplateStatus status =  TaskTemplateStatus.active;
   private Date creationDate = new Date();
   private boolean verified = false;
   private Map<String, String> labels = new HashMap<>();

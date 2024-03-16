@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.data.annotation.Id;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.model.enums.TaskTemplateStatus;
@@ -12,6 +13,8 @@ import io.boomerang.model.enums.TaskType;
 @JsonInclude(Include.NON_NULL)
 public class TaskTemplate {
   
+  @Id
+  private String id;
   private String name;
   private String displayName;
   private TaskType type;
@@ -30,6 +33,14 @@ public class TaskTemplate {
 
   public TaskTemplate() {
 
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
   }
 
   public String getName() {

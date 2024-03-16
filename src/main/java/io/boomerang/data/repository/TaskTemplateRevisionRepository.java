@@ -7,18 +7,18 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import io.boomerang.data.entity.TaskTemplateRevisionEntity;
 
 public interface TaskTemplateRevisionRepository extends MongoRepository<TaskTemplateRevisionEntity, String> {
-  Integer countByParent(String parent);
+  Integer countByParentRef(String parent);
 
-  List<TaskTemplateRevisionEntity> findByParent(String parent);
+  List<TaskTemplateRevisionEntity> findByParentRef(String parent);
   
-  Optional<TaskTemplateRevisionEntity> findByParentAndVersion(String parent, Integer version);
+  Optional<TaskTemplateRevisionEntity> findByParentRefAndVersion(String parent, Integer version);
   
   @Aggregation(pipeline = {
-          "{'$match':{'parent': ?0}}",
+          "{'$match':{'parentRef': ?0}}",
           "{'$sort': {version: -1}}",
           "{'$limit': 1}"
     })
-  Optional<TaskTemplateRevisionEntity> findByParentAndLatestVersion(String parent);
+  Optional<TaskTemplateRevisionEntity> findByParentRefAndLatestVersion(String parent);
 
-  void deleteByParent(String parent);
+  void deleteByParentRef(String parent);
 }

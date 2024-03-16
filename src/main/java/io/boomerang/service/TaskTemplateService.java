@@ -14,14 +14,16 @@ public interface TaskTemplateService {
 
   TaskTemplate create(TaskTemplate taskTemplate);
 
-  Page<TaskTemplate> query(Optional<Integer> queryLimit, Optional<Integer> queryPage,
-      Optional<Direction> querySort, Optional<List<String>> labels, Optional<List<String>> status, Optional<List<String>> queryNames);
-
   TaskTemplate apply(TaskTemplate taskTemplate, boolean replace);
 
   TaskTemplate retrieveAndValidateTaskTemplate(Task wfTask);
 
-  List<ChangeLogVersion> changelog(String name);
+  List<ChangeLogVersion> changelog(String id);
 
-  void delete(String name);
+  void delete(String id);
+
+  Page<TaskTemplate> query(Optional<Integer> queryLimit, Optional<Integer> queryPage,
+      Optional<Direction> querySort, Optional<List<String>> queryLabels,
+      Optional<List<String>> queryStatus, Optional<List<String>> queryNames,
+      Optional<List<String>> queryIds);
 }

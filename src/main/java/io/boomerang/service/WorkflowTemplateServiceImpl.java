@@ -325,7 +325,7 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
   private boolean areTemplateUpgradesAvailable(WorkflowTemplateEntity entity) {
     for (Task t : entity.getTasks()) {
       Optional<TaskTemplateRevisionEntity> taskTemplate =
-          taskTemplateRevisionRepository.findByParentAndLatestVersion(t.getTemplateRef());
+          taskTemplateRevisionRepository.findByParentRefAndLatestVersion(t.getTemplateRef());
       if (taskTemplate.isPresent()) {
         if (t.getTemplateVersion() != null
             && (t.getTemplateVersion() < taskTemplate.get().getVersion())) {
