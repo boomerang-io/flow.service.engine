@@ -32,18 +32,18 @@ public class TaskV1Controller {
   @Autowired
   private TaskService taskService;
   
-  @GetMapping(value = "/{id}")
+  @GetMapping(value = "/{ref}")
   @Operation(summary = "Retrieve a specific task. If no version specified, the latest version is returned.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public Task get(
-      @Parameter(name = "id",
-      description = "Id of Task",
-      required = true) @PathVariable String id,
+      @Parameter(name = "ref",
+      description = "Task reference",
+      required = true) @PathVariable String ref,
       @Parameter(name = "version",
       description = "Task Version",
       required = false) @RequestParam(required = false) Optional<Integer> version) {
-    return taskService.get(id, version);
+    return taskService.get(ref, version);
   }
   
   @GetMapping(value = "/query")
@@ -93,25 +93,25 @@ public class TaskV1Controller {
     return taskService.apply(task, replace);
   }
   
-  @GetMapping(value = "/{id}/changelog")
+  @GetMapping(value = "/{ref}/changelog")
   @Operation(summary = "Retrieve the changlog", description = "Retrieves each versions changelog and returns them all as a list.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public List<ChangeLogVersion> getChangelog(
-      @Parameter(name = "id",
-      description = "Id of Task",
-      required = true) @PathVariable String id) {
-    return taskService.changelog(id);
+      @Parameter(name = "ref",
+      description = "Task reference",
+      required = true) @PathVariable String ref) {
+    return taskService.changelog(ref);
   }
   
-  @DeleteMapping(value = "/{id}")
+  @DeleteMapping(value = "/{ref}")
   @Operation(summary = "Delete a Task and associated versions. This is destructive and irreversible.")
   @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
   public void delete(
-      @Parameter(name = "id",
-      description = "Id",
-      required = true) @PathVariable String id) {
-    taskService.delete(id);
+      @Parameter(name = "ref",
+      description = "Task reference",
+      required = true) @PathVariable String ref) {
+    taskService.delete(ref);
   }
 }

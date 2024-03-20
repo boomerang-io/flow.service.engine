@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -49,6 +50,9 @@ public class TaskServiceImpl implements TaskService {
   private static final String NAME_REGEX = "^([0-9a-zA-Z\\-]+)$";
   private static final String ANNOTATION_GENERATION = "4";
   private static final String ANNOTATION_KIND = "Task";
+  
+  @Value("${flow.uniquenames.enabled}")
+  private boolean uniqueNamesEnabled;
 
   @Autowired
   private TaskRepository taskRepository;
@@ -60,20 +64,21 @@ public class TaskServiceImpl implements TaskService {
   private MongoTemplate mongoTemplate;
 
   @Override
-  public Task get(String id, Optional<Integer> version) {   
-    Optional<TaskRevisionEntity> taskRevisionEntity;    
-    if (version.isPresent()) {
-      taskRevisionEntity = taskRevisionRepository.findByParentRefAndVersion(id, version.get());
-    } else {
-      taskRevisionEntity = taskRevisionRepository.findByParentRefAndLatestVersion(id);
-    }
-    if (taskRevisionEntity.isPresent()) {
-      Optional<TaskEntity> taskEntity  = taskRepository.findById(id);
-      if (taskEntity.isPresent()) {
-        return convertEntityToModel(taskEntity.get(), taskRevisionEntity.get());
+  public Task get(String ref, Optional<Integer> version) {   
+    
+    Optional<TaskEntity> taskEntity = uniqueNamesEnabled ? taskRepository.findByName(ref) : taskRepository.findById(ref);
+    if (taskEntity.isPresent()) {
+      Optional<TaskRevisionEntity> taskRevisionEntity;
+      if (version.isPresent()) {
+        taskRevisionEntity = taskRevisionRepository.findByParentRefAndVersion(taskEntity.get().getId(), version.get());
+      } else {
+        taskRevisionEntity = taskRevisionRepository.findByParentRefAndLatestVersion(taskEntity.get().getId());
+      }
+      if (taskRevisionEntity.isPresent()) {
+          return convertEntityToModel(taskEntity.get(), taskRevisionEntity.get());
       }
     }
-    throw new BoomerangException(BoomerangError.TASK_INVALID_REF, id, version.isPresent() ? version.get() : "latest");
+    throw new BoomerangException(BoomerangError.TASK_INVALID_REF, ref, version.isPresent() ? version.get() : "latest");
   }
 
   /*
@@ -92,10 +97,9 @@ public class TaskServiceImpl implements TaskService {
     }
     
     //Unique Name Check
-    //TODO is this needed
-//    if (taskTemplateRepository.countByName(taskTemplate.getName().toLowerCase()) > 0) {
-//      throw new BoomerangException(BoomerangError.TASKTEMPLATE_ALREADY_EXISTS, taskTemplate.getName());
-//    }
+    if (uniqueNamesEnabled && taskRepository.existsByName(request.getName().toLowerCase())) {
+      throw new BoomerangException(BoomerangError.TASK_ALREADY_EXISTS, request.getName());
+    }
     
     //Set Display Name if not provided
     if (request.getDisplayName() == null || request.getDisplayName().isBlank()) {
@@ -122,20 +126,20 @@ public class TaskServiceImpl implements TaskService {
     return convertEntityToModel(taskTemplateEntity, taskTemplateRevisionEntity);
   }
   
-  //TODO: handle more of the apply i.e. if original has element, and new does not, keep the original element.
   @Override
   public Task apply(Task request, boolean replace) {
     //Name Check
     if (!request.getName().matches(NAME_REGEX)) {
       throw new BoomerangException(BoomerangError.TASK_INVALID_NAME, request.getName());
     }
+    
+    if (!uniqueNamesEnabled && request.getId().isEmpty()) {
+      throw new BoomerangException(BoomerangError.TASK_INVALID_REF, request.getName(), "latest");
+    }
 
     //Does it already exist?
-    Optional<TaskEntity> taskOpt = Optional.empty();
-    if (!request.getId().isEmpty()) {
-      taskOpt = taskRepository.findById(request.getId());
-    }
-    if (request.getId().isEmpty() || !taskOpt.isPresent()) {
+    Optional<TaskEntity> taskOpt = uniqueNamesEnabled ? taskRepository.findByName(request.getName()) : taskRepository.findById(request.getId());
+    if (taskOpt.isEmpty()) {
       return this.create(request);
     }
     TaskEntity taskEntity = taskOpt.get();
@@ -154,16 +158,23 @@ public class TaskServiceImpl implements TaskService {
     //Update TaskTemplateEntity
     //Set System Generated Annotations
     //Name (slug), Type, Creation Date, and Verified cannot be updated
-    taskEntity.setName(request.getName());
-    taskEntity.setStatus(request.getStatus());
-    taskEntity.getAnnotations().putAll(request.getAnnotations());
+    if (!request.getName().isBlank()) {
+      taskEntity.setName(request.getName());
+    }
+    if (request.getStatus() != null) {      
+      taskEntity.setStatus(request.getStatus());
+    }
+    if (!request.getAnnotations().isEmpty()) {
+      taskEntity.getAnnotations().putAll(request.getAnnotations());
+    }
     taskEntity.getAnnotations().put("boomerang.io/generation", ANNOTATION_GENERATION);
     taskEntity.getAnnotations().put("boomerang.io/kind", ANNOTATION_KIND);
-    taskEntity.getLabels().putAll(request.getLabels());
+    if (!request.getLabels().isEmpty()) {      
+      taskEntity.getLabels().putAll(request.getLabels());
+    }
 
     //Create / Replace TaskRevisionEntity
     TaskRevisionEntity newTaskRevisionEntity = new TaskRevisionEntity(request);
-    newTaskRevisionEntity.setParentRef(taskEntity.getId());
     if (replace) {
       newTaskRevisionEntity.setId(taskRevisionEntity.get().getId());
       newTaskRevisionEntity.setVersion(taskRevisionEntity.get().getVersion());
@@ -175,15 +186,14 @@ public class TaskServiceImpl implements TaskService {
       newTaskRevisionEntity.setDisplayName(request.getName());
     }
 
-    
     //Update changelog
     ChangeLog changelog = new ChangeLog(taskRevisionEntity.get().getVersion().equals(1) ? CHANGELOG_INITIAL : CHANGELOG_UPDATE);
     updateChangeLog(request, changelog);
     newTaskRevisionEntity.setChangelog(changelog);
     
     //Save entities
-    newTaskRevisionEntity.setParentRef(taskEntity.getId());
     TaskEntity savedEntity = taskRepository.save(taskEntity);
+    newTaskRevisionEntity.setParentRef(taskEntity.getId());
     TaskRevisionEntity savedRevision = taskRevisionRepository.save(newTaskRevisionEntity);
     return convertEntityToModel(savedEntity, savedRevision);
   }
@@ -283,10 +293,11 @@ public class TaskServiceImpl implements TaskService {
    * Retrieve all the changelogs and return by version
    */
   @Override
-  public List<ChangeLogVersion> changelog(String id) {
-      List<TaskRevisionEntity> taskRevisionEntities = taskRevisionRepository.findByParentRef(id);
+  public List<ChangeLogVersion> changelog(String ref) {
+      Task task = this.get(ref, Optional.empty());
+      List<TaskRevisionEntity> taskRevisionEntities = taskRevisionRepository.findByParentRef(task.getId());
       if (taskRevisionEntities.isEmpty()) {
-        throw new BoomerangException(BoomerangError.TASK_INVALID_NAME, id);
+        throw new BoomerangException(BoomerangError.TASK_INVALID_REF, ref, "latest");
       }
       List<ChangeLogVersion> changelogs = new LinkedList<>();
       taskRevisionEntities.forEach(v -> {
@@ -327,23 +338,4 @@ public class TaskServiceImpl implements TaskService {
      BeanUtils.copyProperties(revision, task, "id"); // want to keep the TaskEntity ID
      return task;
    }
-   
-//   private String convertId(String prefix, String id) {
-//     MessageDigest digest;
-//     try {
-//       digest = MessageDigest.getInstance("SHA-256");
-//       byte[] hash = digest.digest(id.getBytes(StandardCharsets.UTF_8));
-//       StringBuilder hexString = new StringBuilder();
-//       for (byte element : hash) {
-//         String hex = Integer.toHexString(0xff & element);
-//         if (hex.length() == 1) {
-//           hexString.append('0');
-//         }
-//         hexString.append(hex);
-//       }
-//       return prefix + hexString.toString();
-//     } catch (NoSuchAlgorithmException e) {
-//       return null;
-//     }
-//   }
 }
