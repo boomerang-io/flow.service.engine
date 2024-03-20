@@ -33,7 +33,7 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
-import io.boomerang.model.TaskDependency;
+import io.boomerang.model.WorkflowTaskDependency;
 import io.boomerang.model.TaskWorkspace;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowSubmitRequest;
@@ -875,8 +875,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     LOGGER.debug("[{}] Task Dependencies: {}", currentTask.getId(), nextNodes.toString());
     for (TaskRunEntity next : nextNodes) {
       if (TaskType.end.equals(next.getType())) {
-        List<TaskDependency> deps = next.getDependencies();
-        for (TaskDependency dep : deps) {
+        List<WorkflowTaskDependency> deps = next.getDependencies();
+        for (WorkflowTaskDependency dep : deps) {
           Optional<TaskRunEntity> taskRunEntity = this.taskRunRepository
               .findFirstByNameAndWorkflowRunRef(dep.getTaskRef(), wfRunEntity.getId());
           if (!taskRunEntity.isPresent() && taskRunEntity != null) {
@@ -897,9 +897,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   }
 
   private boolean canExecuteTask(WorkflowRunEntity wfRunEntity, TaskRunEntity next) {
-    List<TaskDependency> deps = next.getDependencies();
+    List<WorkflowTaskDependency> deps = next.getDependencies();
     LOGGER.debug("Found {} dependencies", deps.size());
-    for (TaskDependency dep : deps) {
+    for (WorkflowTaskDependency dep : deps) {
       Optional<TaskRunEntity> taskRunEntity = this.taskRunRepository
           .findFirstByNameAndWorkflowRunRef(dep.getTaskRef(), wfRunEntity.getId());
       if (taskRunEntity.isPresent()) {

@@ -9,18 +9,18 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.model.AbstractParam;
 import io.boomerang.model.ChangeLog;
-import io.boomerang.model.TaskTemplate;
-import io.boomerang.model.TaskTemplateSpec;
+import io.boomerang.model.Task;
+import io.boomerang.model.TaskSpec;
 
 /*
- * The versioned elements of a task_template
+ * The versioned elements of a task
  * 
  * Ref: https://docs.spring.io/spring-data/mongodb/reference/mongodb/mapping/document-references.html
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
-@Document(collection = "#{@mongoConfiguration.fullCollectionName('task_template_revisions')}")
-public class TaskTemplateRevisionEntity {
+@Document(collection = "#{@mongoConfiguration.fullCollectionName('task_revisions')}")
+public class TaskRevisionEntity {
 
   @Id
   private String id;
@@ -31,15 +31,15 @@ public class TaskTemplateRevisionEntity {
   private String icon;
   private Integer version;
   private ChangeLog changelog;
-  private TaskTemplateSpec spec = new TaskTemplateSpec();
+  private TaskSpec spec = new TaskSpec();
   private List<AbstractParam> config;
 
-  public TaskTemplateRevisionEntity() {
+  public TaskRevisionEntity() {
     // Do nothing
   }
 
-  public TaskTemplateRevisionEntity(TaskTemplate taskTemplate) {
-    BeanUtils.copyProperties(taskTemplate, this, "id", "parentRef");
+  public TaskRevisionEntity(Task task) {
+    BeanUtils.copyProperties(task, this, "id", "parentRef");
   }
 
   public String getId() {
@@ -98,11 +98,11 @@ public class TaskTemplateRevisionEntity {
     this.version = version;
   }
 
-  public TaskTemplateSpec getSpec() {
+  public TaskSpec getSpec() {
     return spec;
   }
 
-  public void setSpec(TaskTemplateSpec spec) {
+  public void setSpec(TaskSpec spec) {
     this.spec = spec;
   }
 

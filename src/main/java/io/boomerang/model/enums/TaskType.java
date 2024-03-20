@@ -4,7 +4,7 @@ import java.util.Arrays;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /*
- * TaskTypes map to TaskTemplates and also determine the logic gates for TaskExecution.
+ * TaskTypes map to Tasks and also determine the logic gates for TaskExecution.
  * 
  * If new TaskTypes are added, additional logic is needed in TaskExecutionServiceImpl
  * 

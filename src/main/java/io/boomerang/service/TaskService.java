@@ -5,24 +5,24 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort.Direction;
 import io.boomerang.model.ChangeLogVersion;
+import io.boomerang.model.WorkflowTask;
 import io.boomerang.model.Task;
-import io.boomerang.model.TaskTemplate;
 
-public interface TaskTemplateService {
+public interface TaskService {
 
-  TaskTemplate get(String id, Optional<Integer> version);
+  Task get(String id, Optional<Integer> version);
 
-  TaskTemplate create(TaskTemplate taskTemplate);
+  Task create(Task task);
 
-  TaskTemplate apply(TaskTemplate taskTemplate, boolean replace);
+  Task apply(Task task, boolean replace);
 
-  TaskTemplate retrieveAndValidateTaskTemplate(Task wfTask);
+  Task retrieveAndValidateTask(WorkflowTask wfTask);
 
   List<ChangeLogVersion> changelog(String id);
 
   void delete(String id);
 
-  Page<TaskTemplate> query(Optional<Integer> queryLimit, Optional<Integer> queryPage,
+  Page<Task> query(Optional<Integer> queryLimit, Optional<Integer> queryPage,
       Optional<Direction> querySort, Optional<List<String>> queryLabels,
       Optional<List<String>> queryStatus, Optional<List<String>> queryNames,
       Optional<List<String>> queryIds);
