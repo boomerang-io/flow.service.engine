@@ -169,6 +169,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     }
 
     if (queryTriggers.isPresent()) {
+      LOGGER.debug("Triggers: {}", queryTriggers.get().toString());
       Criteria criteria = Criteria.where("trigger").in(queryTriggers.get());
       criteriaList.add(criteria);
     }

@@ -6,9 +6,11 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bson.types.ObjectId;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,8 +33,8 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.ChangeLogVersion;
-import io.boomerang.model.WorkflowTask;
 import io.boomerang.model.Task;
+import io.boomerang.model.WorkflowTask;
 import io.boomerang.model.enums.TaskStatus;
 
 /*
@@ -119,8 +121,8 @@ public class TaskServiceImpl implements TaskService {
     //Save
     TaskEntity taskTemplateEntity = new TaskEntity(request);
     TaskRevisionEntity taskTemplateRevisionEntity = new TaskRevisionEntity(request);
-    taskTemplateRevisionEntity.setParentRef(taskTemplateEntity.getId());
     taskRepository.save(taskTemplateEntity);
+    taskTemplateRevisionEntity.setParentRef(taskTemplateEntity.getId());
     taskRevisionRepository.save(taskTemplateRevisionEntity);
     
     return convertEntityToModel(taskTemplateEntity, taskTemplateRevisionEntity);
@@ -254,7 +256,10 @@ public class TaskServiceImpl implements TaskService {
       }
       
       if (queryIds.isPresent()) {
-        Criteria criteria = Criteria.where("_id").in(queryIds.get());
+        List<ObjectId> queryOIds = queryIds.get().stream()
+            .map(ObjectId::new)
+            .collect(Collectors.toList());
+        Criteria criteria = Criteria.where("_id").in(queryOIds);
         criteriaList.add(criteria);
       }
 
@@ -270,21 +275,22 @@ public class TaskServiceImpl implements TaskService {
         query.with(sort);
       }
       
-      List<TaskEntity> taskTemplateEntities = mongoTemplate.find(query.with(pageable), TaskEntity.class);
+      List<TaskEntity> taskEntities = mongoTemplate.find(query.with(pageable), TaskEntity.class);
       
-      List<Task> taskTemplates = new LinkedList<>();
-      taskTemplateEntities.forEach(e -> {
-        Optional<TaskRevisionEntity> taskTemplateRevisionEntity =
+      List<Task> tasks = new LinkedList<>();
+      taskEntities.forEach(e -> {
+        LOGGER.debug(e.toString());
+        Optional<TaskRevisionEntity> taskRevisionEntity =
             taskRevisionRepository.findByParentRefAndLatestVersion(e.getId());
-        if (taskTemplateRevisionEntity.isPresent()) {
-          Task tt = convertEntityToModel(e, taskTemplateRevisionEntity.get());
-          taskTemplates.add(tt);
+        if (taskRevisionEntity.isPresent()) {
+          Task tt = convertEntityToModel(e, taskRevisionEntity.get());
+          tasks.add(tt);
         }
       });
 
       Page<Task> pages = PageableExecutionUtils.getPage(
-          taskTemplates, pageable,
-          () -> taskTemplates.size());
+          tasks, pageable,
+          () -> tasks.size());
 
       return pages;
   }  
