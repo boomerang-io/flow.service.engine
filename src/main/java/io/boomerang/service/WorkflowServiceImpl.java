@@ -381,9 +381,6 @@ public class WorkflowServiceImpl implements WorkflowService {
     
     //Update the Workflow Entity with new details
     WorkflowEntity workflowEntity = workflowRepository.findById(workflow.getId()).get();
-    if (WorkflowStatus.deleted.equals(workflowEntity.getStatus())) {
-      throw new BoomerangException(BoomerangError.WORKFLOW_DELETED);
-    }
     if (workflow.getName()!= null && !workflow.getName().isBlank()) {
       workflowEntity.setName(workflow.getName());
     }
@@ -407,9 +404,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         workflowEntity.getAnnotations().putAll(workflow.getAnnotations());
       }
     }
-    if (WorkflowStatus.deleted.equals(workflow.getStatus())) {
-      workflowEntity.setTriggers(new WorkflowTrigger());
-    } else if (!Objects.isNull(workflow.getTriggers())) {
+    if (!Objects.isNull(workflow.getTriggers())) {
       if (!Objects.isNull(workflow.getTriggers().getManual())) {
         workflowEntity.getTriggers().setManual(workflow.getTriggers().getManual());
       }
@@ -572,7 +567,7 @@ public class WorkflowServiceImpl implements WorkflowService {
   }
   
   /*
-   * Deletes the Workflow and its Revisions. Optionally cascades to the WorkflowRuns and TaskRuns
+   * Deletes the Workflow and its Revisions. Cascades to the WorkflowRuns and TaskRuns
    */
   @Override
   public void delete(String workflowId) {
