@@ -1,5 +1,6 @@
 package io.boomerang.aspect;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
@@ -52,12 +53,21 @@ public class WorkflowRunEntityUpdateInterceptor {
 
     LOGGER.info("Intercepted save action on entity {} from {}", request,
         thisJoinPoint.getSignature().getDeclaringTypeName());
-
     if (request.getStatus().equals(RunStatus.notstarted)) {
-      auditInterceptor.createWfRunLog(entity.getId(), entity.getWorkflowRef(), Optional.empty());
+      Map<String, String> data = new HashMap<>();
+      data.put("duration", String.valueOf(entity.getDuration()));
+      data.put("workflowRef", request.getWorkflowRef());
+      data.put("phase", request.getPhase().toString());
+      data.put("status", request.getStatus().toString());
+      auditInterceptor.createWfRunLog(entity.getId(), entity.getWorkflowRef(), Optional.of(data));
     } else {
       LOGGER.info("Status Label: {}, Audit Type: {}", entity.getStatus().getStatus(), AuditType.valueOfLabel(entity.getStatus().getStatus()));
-      auditInterceptor.updateWfRunLog(AuditType.valueOfLabel(entity.getStatus().getStatus()), entity.getId(), Optional.of(Map.of("duration", String.valueOf(entity.getDuration()))));
+      Map<String, String> data = new HashMap<>();
+      data.put("duration", String.valueOf(entity.getDuration()));
+      data.put("phase", request.getPhase().toString());
+      data.put("status", request.getStatus().toString());
+      data.put("startTime", request.getStartTime().toString());
+      auditInterceptor.updateWfRunLog(AuditType.valueOfLabel(entity.getStatus().getStatus()), entity.getId(), Optional.of(data));
     }
   }
 
