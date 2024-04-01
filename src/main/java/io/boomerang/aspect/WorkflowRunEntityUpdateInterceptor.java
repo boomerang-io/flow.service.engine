@@ -66,7 +66,9 @@ public class WorkflowRunEntityUpdateInterceptor {
       data.put("duration", String.valueOf(entity.getDuration()));
       data.put("phase", request.getPhase().toString());
       data.put("status", request.getStatus().toString());
-      data.put("startTime", request.getStartTime().toString());
+      if (request.getStartTime() != null) {        
+        data.put("startTime", request.getStartTime().toString());
+      }
       auditInterceptor.updateWfRunLog(AuditType.valueOfLabel(entity.getStatus().getStatus()), entity.getId(), Optional.of(data));
     }
   }
