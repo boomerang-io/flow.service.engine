@@ -1,5 +1,6 @@
 package io.boomerang.aspect;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
@@ -21,7 +22,6 @@ import io.boomerang.service.EventSinkService;
 
 @Aspect
 @Component
-@ConditionalOnProperty(name="flow.events.sink.enabled", havingValue="true", matchIfMissing = false)
 public class WorkflowRunEntityUpdateInterceptor {
   private static final Logger LOGGER = LogManager.getLogger();
 
@@ -36,6 +36,7 @@ public class WorkflowRunEntityUpdateInterceptor {
 
   @Before("execution(* io.boomerang.data.repository.WorkflowRunRepository.save(..))"
       + " && args(entityToBeSaved)")
+  @ConditionalOnProperty(name="flow.events.sink.enabled", havingValue="true", matchIfMissing = false)
   public void saveInvoked(JoinPoint thisJoinPoint, Object entityToBeSaved) {
 
     LOGGER.info("Intercepted save action on entity {} from {}", entityToBeSaved,
@@ -47,16 +48,28 @@ public class WorkflowRunEntityUpdateInterceptor {
   }
   
   @AfterReturning(pointcut="execution(* io.boomerang.data.repository.WorkflowRunRepository.save(..)) && args(request)", returning="entity")
+  @ConditionalOnProperty(name="flow.audit.enabled", havingValue="true", matchIfMissing = false)
   public void saveInvoked(JoinPoint thisJoinPoint, WorkflowRunEntity request, WorkflowRunEntity entity) {
 
     LOGGER.info("Intercepted save action on entity {} from {}", request,
         thisJoinPoint.getSignature().getDeclaringTypeName());
-
     if (request.getStatus().equals(RunStatus.notstarted)) {
-      auditInterceptor.createWfRunLog(entity.getId(), entity.getWorkflowRef(), Optional.empty());
+      Map<String, String> data = new HashMap<>();
+      data.put("duration", String.valueOf(entity.getDuration()));
+      data.put("workflowRef", request.getWorkflowRef());
+      data.put("phase", request.getPhase().toString());
+      data.put("status", request.getStatus().toString());
+      auditInterceptor.createWfRunLog(entity.getId(), entity.getWorkflowRef(), Optional.of(data));
     } else {
       LOGGER.info("Status Label: {}, Audit Type: {}", entity.getStatus().getStatus(), AuditType.valueOfLabel(entity.getStatus().getStatus()));
-      auditInterceptor.updateWfRunLog(AuditType.valueOfLabel(entity.getStatus().getStatus()), entity.getId(), Optional.of(Map.of("duration", String.valueOf(entity.getDuration()))));
+      Map<String, String> data = new HashMap<>();
+      data.put("duration", String.valueOf(entity.getDuration()));
+      data.put("phase", request.getPhase().toString());
+      data.put("status", request.getStatus().toString());
+      if (request.getStartTime() != null) {        
+        data.put("startTime", request.getStartTime().toString());
+      }
+      auditInterceptor.updateWfRunLog(AuditType.valueOfLabel(entity.getStatus().getStatus()), entity.getId(), Optional.of(data));
     }
   }
 

@@ -169,6 +169,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     }
 
     if (queryTriggers.isPresent()) {
+      LOGGER.debug("Triggers: {}", queryTriggers.get().toString());
       Criteria criteria = Criteria.where("trigger").in(queryTriggers.get());
       criteriaList.add(criteria);
     }
@@ -238,14 +239,11 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
       });
     }
 
-    if (queryWorkflowRuns.isPresent()) {
-      Criteria criteria = Criteria.where("id").in(queryWorkflowRuns.get());
-      criteriaList.add(criteria);
-    }
-
     if (queryWorkflows.isPresent()) {
       Criteria criteria = Criteria.where("workflowRef").in(queryWorkflows.get());
       criteriaList.add(criteria);
+    } else {
+      //TODO find all Workflows based on team, then 
     }
 
     Criteria[] criteriaArray = criteriaList.toArray(new Criteria[criteriaList.size()]);
@@ -255,14 +253,14 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     }
     Query query = new Query(allCriteria);
     LOGGER.debug("Query: " + query.toString());
-    List<WorkflowRunEntity> wfRunEntities = mongoTemplate.find(query, WorkflowRunEntity.class);
+    List<WorkflowRunEntity> entities = mongoTemplate.find(query, WorkflowRunEntity.class);
 
     // Collect the Stats
     Long totalDuration = 0L;
     Long duration;
 
-    for (WorkflowRunEntity wfRunEntity : wfRunEntities) {
-      duration = wfRunEntity.getDuration();
+    for (WorkflowRunEntity entity : entities) {
+      duration = entity.getDuration();
       if (duration != null) {
         totalDuration += duration;
       }
@@ -270,17 +268,13 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     }
 
     WorkflowRunInsight wfRunInsight = new WorkflowRunInsight();
-    wfRunInsight.setTotalRuns(Long.valueOf(wfRunEntities.size()));
+    wfRunInsight.setTotalRuns(Long.valueOf(entities.size()));
     wfRunInsight.setConcurrentRuns(
-        wfRunEntities.stream().filter(run -> RunPhase.running.equals(run.getPhase())).count());
+        entities.stream().filter(run -> RunPhase.running.equals(run.getPhase())).count());
     wfRunInsight.setTotalDuration(totalDuration);
-    if (wfRunEntities.size() != 0) {
-      wfRunInsight.setMedianDuration(totalDuration / wfRunEntities.size());
-    } else {
-      wfRunInsight.setMedianDuration(0L);
-    }
+    wfRunInsight.setMedianDuration(entities.size() != 0 ? totalDuration / entities.size() : 0L);
     List<WorkflowRunSummary> runs = new LinkedList<>();
-    wfRunEntities.forEach(e -> {
+    entities.forEach(e -> {
       WorkflowRunSummary summary = ConvertUtil.entityToModel(e, WorkflowRunSummary.class);
       final Optional<WorkflowEntity> optWorkflow =
           workflowRepository.findById(e.getWorkflowRef());

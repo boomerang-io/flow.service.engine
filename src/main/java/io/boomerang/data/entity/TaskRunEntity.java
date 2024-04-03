@@ -13,7 +13,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
-import io.boomerang.model.TaskDependency;
+import io.boomerang.model.WorkflowTaskDependency;
 import io.boomerang.model.TaskRunSpec;
 import io.boomerang.model.TaskWorkspace;
 import io.boomerang.model.enums.RunPhase;
@@ -48,9 +48,9 @@ public class TaskRunEntity {
   @JsonIgnore
   private String decisionValue;
   @JsonIgnore
-  private List<TaskDependency> dependencies;
-  private String templateRef;
-  private Integer templateVersion;
+  private List<WorkflowTaskDependency> dependencies;
+  private String taskRef;
+  private Integer taskVersion;
   private String workflowRef;
   private String workflowRevisionRef;
   private String workflowRunRef;
@@ -218,28 +218,28 @@ public class TaskRunEntity {
     this.decisionValue = decisionValue;
   }
 
-  public List<TaskDependency> getDependencies() {
+  public List<WorkflowTaskDependency> getDependencies() {
     return dependencies;
   }
 
-  public void setDependencies(List<TaskDependency> dependencies) {
+  public void setDependencies(List<WorkflowTaskDependency> dependencies) {
     this.dependencies = dependencies;
   }
 
-  public String getTemplateRef() {
-    return templateRef;
+  public String getTaskRef() {
+    return taskRef;
   }
 
-  public void setTemplateRef(String templateRef) {
-    this.templateRef = templateRef;
+  public void setTaskRef(String taskRef) {
+    this.taskRef = taskRef;
   }
 
-  public Integer getTemplateVersion() {
-    return templateVersion;
+  public Integer getTaskVersion() {
+    return taskVersion;
   }
 
-  public void setTemplateVersion(Integer templateVersion) {
-    this.templateVersion = templateVersion;
+  public void setTaskVersion(Integer taskVersion) {
+    this.taskVersion = taskVersion;
   }
 
   public String getWorkflowRunRef() {

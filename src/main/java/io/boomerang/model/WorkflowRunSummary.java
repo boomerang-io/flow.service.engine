@@ -1,33 +1,20 @@
 package io.boomerang.model;
 
 import java.util.Date;
-import org.springframework.beans.BeanUtils;
-import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.model.enums.RunStatus;
 
 public class WorkflowRunSummary {
 
-  private String id;
   private Date creationDate;
-  private Date startTime;
-  private long duration;
-  private RunStatus status;
+  private long duration = 0L;
+  private RunStatus status = RunStatus.notstarted;
   private String workflowRef;
   private String workflowName;
 
   @Override
   public String toString() {
-    return "WorkflowRunSummary [id=" + id + ", creationDate=" + creationDate + ", startTime="
-        + startTime + ", duration=" + duration + ", status=" + status + ", workflowRef="
+    return "WorkflowRunSummary [creationDate=" + creationDate + ", duration=" + duration + ", status=" + status + ", workflowRef="
         + workflowRef + "]";
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
   }
 
   public Date getCreationDate() {
@@ -36,14 +23,6 @@ public class WorkflowRunSummary {
 
   public void setCreationDate(Date creationDate) {
     this.creationDate = creationDate;
-  }
-
-  public Date getStartTime() {
-    return startTime;
-  }
-
-  public void setStartTime(Date startTime) {
-    this.startTime = startTime;
   }
 
   public long getDuration() {

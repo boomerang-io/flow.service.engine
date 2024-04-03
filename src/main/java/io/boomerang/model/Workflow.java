@@ -39,7 +39,7 @@ public class Workflow {
   private boolean upgradesAvailable = false;
   //TODO: adjust the triggers model
   private WorkflowTrigger triggers = new WorkflowTrigger();
-  private List<Task> tasks = new LinkedList<>();
+  private List<WorkflowTask> tasks = new LinkedList<>();
   private List<ParamSpec> params = new LinkedList<>();
   private List<WorkflowWorkspace> workspaces = new LinkedList<>();  
   private List<AbstractParam> config = new LinkedList<>();;
@@ -155,11 +155,11 @@ public class Workflow {
     this.annotations = annotations;
   }
 
-  public List<Task> getTasks() {
+  public List<WorkflowTask> getTasks() {
     return tasks;
   }
 
-  public void setTasks(List<Task> tasks) {
+  public void setTasks(List<WorkflowTask> tasks) {
     this.tasks = tasks;
   }
 

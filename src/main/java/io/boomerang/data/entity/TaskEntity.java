@@ -10,32 +10,32 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.boomerang.model.TaskTemplate;
-import io.boomerang.model.enums.TaskTemplateStatus;
+import io.boomerang.model.Task;
+import io.boomerang.model.enums.TaskStatus;
 import io.boomerang.model.enums.TaskType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
-@Document(collection = "#{@mongoConfiguration.fullCollectionName('task_templates')}")
-public class TaskTemplateEntity {
+@Document(collection = "#{@mongoConfiguration.fullCollectionName('tasks')}")
+public class TaskEntity {
 
   @Id
   private String id;
   @Indexed
   private String name;
   private TaskType type;
-  private TaskTemplateStatus status = TaskTemplateStatus.active;
+  private TaskStatus status =  TaskStatus.active;
   private Date creationDate = new Date();
   private boolean verified = false;
   private Map<String, String> labels = new HashMap<>();
   private Map<String, Object> annotations = new HashMap<>();
 
-  public TaskTemplateEntity() {
+  public TaskEntity() {
     // Do nothing
   }
 
-  public TaskTemplateEntity(TaskTemplate taskTemplate) {
-    BeanUtils.copyProperties(taskTemplate, this, "id", "creationDate", "verified");
+  public TaskEntity(Task task) {
+    BeanUtils.copyProperties(task, this, "id", "creationDate", "verified");
   }
 
   public String getId() {
@@ -62,11 +62,11 @@ public class TaskTemplateEntity {
     this.type = type;
   }
 
-  public TaskTemplateStatus getStatus() {
+  public TaskStatus getStatus() {
     return status;
   }
 
-  public void setStatus(TaskTemplateStatus status) {
+  public void setStatus(TaskStatus status) {
     this.status = status;
   }
 

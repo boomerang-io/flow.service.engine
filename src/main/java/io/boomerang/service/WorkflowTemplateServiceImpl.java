@@ -22,14 +22,14 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Service;
-import io.boomerang.data.entity.TaskTemplateRevisionEntity;
+import io.boomerang.data.entity.TaskRevisionEntity;
 import io.boomerang.data.entity.WorkflowTemplateEntity;
-import io.boomerang.data.repository.TaskTemplateRevisionRepository;
+import io.boomerang.data.repository.TaskRevisionRepository;
 import io.boomerang.data.repository.WorkflowTemplateRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
-import io.boomerang.model.Task;
+import io.boomerang.model.WorkflowTask;
 import io.boomerang.model.WorkflowTemplate;
 import io.boomerang.model.enums.TaskType;
 
@@ -54,10 +54,10 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
   private MongoTemplate mongoTemplate;
   
   @Autowired
-  private TaskTemplateService taskTemplateService;
+  private TaskService taskService;
   
   @Autowired
-  private TaskTemplateRevisionRepository taskTemplateRevisionRepository;
+  private TaskRevisionRepository taskRevisionRepository;
 
   /*
    * Get WorklfowTemplate
@@ -70,13 +70,13 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
       wfTemplateEntity = wfTemplateRepository.findByNameAndLatestVersion(name);
       if (wfTemplateEntity.isEmpty()) {
         //TODO change to correct error
-        throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_REF, name, "latest");
+        throw new BoomerangException(BoomerangError.TASK_INVALID_REF, name, "latest");
       }
     } else {
       wfTemplateEntity = wfTemplateRepository.findByNameAndVersion(name, version.get());
       if (wfTemplateEntity.isEmpty()) {
         //TODO change to correct error
-        throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_REF, name, version.get());
+        throw new BoomerangException(BoomerangError.TASK_INVALID_REF, name, version.get());
       }
     }
     return new WorkflowTemplate(wfTemplateEntity.get());
@@ -153,13 +153,13 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
     //Name Check
     if (!request.getName().matches(NAME_REGEX)) {
       //TODO change the error
-      throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_NAME, request.getName());
+      throw new BoomerangException(BoomerangError.TASK_INVALID_NAME, request.getName());
     }
     
     //Unique Name Check
     if (wfTemplateRepository.findByNameAndLatestVersion(request.getName().toLowerCase()).isPresent()) {
       //TODO change the error
-      throw new BoomerangException(BoomerangError.TASKTEMPLATE_ALREADY_EXISTS, request.getName());
+      throw new BoomerangException(BoomerangError.TASK_ALREADY_EXISTS, request.getName());
     }
     WorkflowTemplateEntity wfTemplateEntity = new WorkflowTemplateEntity();
     wfTemplateEntity.setName(request.getName());
@@ -204,12 +204,12 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
     }
 
     // Check Task Template references are valid
-    for (final Task wfTemplateTask : wfTemplateEntity.getTasks()) {
+    for (final WorkflowTask wfTemplateTask : wfTemplateEntity.getTasks()) {
       if (!TaskType.start.equals(wfTemplateTask.getType())
           && !TaskType.end.equals(wfTemplateTask.getType())) {
 
         //Shared utility with DAGUtility
-        taskTemplateService.retrieveAndValidateTaskTemplate(wfTemplateTask);
+        taskService.retrieveAndValidateTask(wfTemplateTask);
       }
     }
 
@@ -230,7 +230,7 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
     //Name Check
     if (!request.getName().matches(NAME_REGEX)) {
       //TODO change the error
-      throw new BoomerangException(BoomerangError.TASKTEMPLATE_INVALID_NAME, request.getName());
+      throw new BoomerangException(BoomerangError.TASK_INVALID_NAME, request.getName());
     }
     
     //Does it already exist?
@@ -300,7 +300,7 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
     WorkflowTemplateEntity savedEntity = wfTemplateRepository.save(wfTemplateEntity);
 //    appliedWorkflow.setTasks(TaskMapper.workflowTasksToListOfTasks(newWorkflowRevisionEntity.getTasks()));
      WorkflowTemplate template = new WorkflowTemplate(savedEntity);
-     template.setUpgradesAvailable(areTemplateUpgradesAvailable(savedEntity));
+     template.setUpgradesAvailable(areTaskUpgradesAvailable(savedEntity));
     return template;
   }
 
@@ -322,13 +322,13 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
     }
   }
 
-  private boolean areTemplateUpgradesAvailable(WorkflowTemplateEntity entity) {
-    for (Task t : entity.getTasks()) {
-      Optional<TaskTemplateRevisionEntity> taskTemplate =
-          taskTemplateRevisionRepository.findByParentAndLatestVersion(t.getTemplateRef());
-      if (taskTemplate.isPresent()) {
-        if (t.getTemplateVersion() != null
-            && (t.getTemplateVersion() < taskTemplate.get().getVersion())) {
+  private boolean areTaskUpgradesAvailable(WorkflowTemplateEntity entity) {
+    for (WorkflowTask t : entity.getTasks()) {
+      Optional<TaskRevisionEntity> task =
+          taskRevisionRepository.findByParentRefAndLatestVersion(t.getTaskRef());
+      if (task.isPresent()) {
+        if (t.getTaskVersion() != null
+            && (t.getTaskVersion() < task.get().getVersion())) {
           return true;
         }
       }

@@ -11,7 +11,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import io.boomerang.data.entity.TaskRunEntity;
 import io.boomerang.data.repository.TaskRunRepository;
-import io.boomerang.model.enums.RunStatus;
 import io.boomerang.service.EventSinkService;
 
 @Aspect

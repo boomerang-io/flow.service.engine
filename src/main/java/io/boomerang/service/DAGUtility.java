@@ -29,9 +29,9 @@ import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
+import io.boomerang.model.WorkflowTask;
+import io.boomerang.model.WorkflowTaskDependency;
 import io.boomerang.model.Task;
-import io.boomerang.model.TaskDependency;
-import io.boomerang.model.TaskTemplate;
 import io.boomerang.model.enums.ExecutionCondition;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
@@ -49,7 +49,7 @@ public class DAGUtility {
   private TaskRunRepository taskRunRepository;
 
   @Autowired
-  private TaskTemplateService taskTemplateService;
+  private TaskService taskService;
 
   public boolean validateWorkflow(WorkflowRunEntity wfRunEntity, List<TaskRunEntity> tasks) {
     if (tasks.size() == 2) {
@@ -74,7 +74,7 @@ public class DAGUtility {
 
     final List<Pair<String, String>> edgeList = new LinkedList<>();
     for (final TaskRunEntity task : tasks) {
-      for (final TaskDependency dep : task.getDependencies()) {
+      for (final WorkflowTaskDependency dep : task.getDependencies()) {
         try {
           String depTaskRefAsId = tasks.stream().filter(t -> t.getName().equals(dep.getTaskRef()))
               .findFirst().get().getId();
@@ -99,7 +99,7 @@ public class DAGUtility {
   public List<TaskRunEntity> createTaskList(WorkflowRevisionEntity wfRevisionEntity,
       WorkflowRunEntity wfRunEntity) {
     final List<TaskRunEntity> taskList = new LinkedList<>();
-    for (final Task wfRevisionTask : wfRevisionEntity.getTasks()) {
+    for (final WorkflowTask wfRevisionTask : wfRevisionEntity.getTasks()) {
       Optional<TaskRunEntity> existingTaskRunEntity = taskRunRepository
           .findFirstByNameAndWorkflowRunRef(wfRevisionTask.getName(), wfRunEntity.getId());
       if (existingTaskRunEntity.isPresent() && existingTaskRunEntity.get() != null) {
@@ -117,7 +117,7 @@ public class DAGUtility {
         }
         taskRunEntity.setType(wfRevisionTask.getType());
         taskRunEntity.setCreationDate(new Date());
-        taskRunEntity.setTemplateVersion(wfRevisionTask.getTemplateVersion());
+        taskRunEntity.setTaskVersion(wfRevisionTask.getTaskVersion());
         taskRunEntity.setAnnotations(wfRevisionTask.getAnnotations());
         taskRunEntity.setDependencies(wfRevisionTask.getDependencies());
         taskRunEntity.setWorkflowRef(wfRevisionEntity.getWorkflowRef());
@@ -127,16 +127,16 @@ public class DAGUtility {
         if (!TaskType.start.equals(wfRevisionTask.getType())
             && !TaskType.end.equals(wfRevisionTask.getType())) {
 
-          TaskTemplate taskTemplate =
-              taskTemplateService.retrieveAndValidateTaskTemplate(wfRevisionTask);
-          taskRunEntity.setTemplateRef(wfRevisionTask.getTemplateRef());
-          taskRunEntity.setTemplateVersion(taskTemplate.getVersion());
-          LOGGER.debug("[{}] Found Task Template: {} @ {}", wfRunEntity.getId(),
-              taskTemplate.getName(), taskTemplate.getVersion());
+          Task task =
+              taskService.retrieveAndValidateTask(wfRevisionTask);
+          taskRunEntity.setTaskRef(wfRevisionTask.getTaskRef());
+          taskRunEntity.setTaskVersion(task.getVersion());
+          LOGGER.debug("[{}] Found Task: {} @ {}", wfRunEntity.getId(),
+              task.getName(), task.getVersion());
 
           // Stack the labels based on label propagation
           // Task Template -> Workflow Task -> Run
-          taskRunEntity.getLabels().putAll(taskTemplate.getLabels());
+          taskRunEntity.getLabels().putAll(task.getLabels());
           taskRunEntity.getLabels().putAll(wfRevisionTask.getLabels());
           taskRunEntity.getLabels().putAll(wfRunEntity.getLabels());
 
@@ -151,17 +151,17 @@ public class DAGUtility {
           taskRunEntity.getAnnotations().putAll(annotations);
 
           // Set Task RunResults
-          taskRunEntity.setResults(ResultUtil.resultSpecToRunResult(taskTemplate.getSpec().getResults()));
+          taskRunEntity.setResults(ResultUtil.resultSpecToRunResult(task.getSpec().getResults()));
 
           // Set Task RunParams
-          if (taskTemplate.getSpec().getParams() != null
-              && !taskTemplate.getSpec().getParams().isEmpty()) {
+          if (task.getSpec().getParams() != null
+              && !task.getSpec().getParams().isEmpty()) {
             LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(),
-                taskTemplate.getSpec().getParams().toString());
+                task.getSpec().getParams().toString());
             LOGGER.debug("[{}] Revision Task Params: {}", wfRunEntity.getId(),
                 wfRevisionTask.getParams().toString());
             taskRunEntity.setParams(ParameterUtil.addUniqueParams(
-                ParameterUtil.paramSpecToRunParam(taskTemplate.getSpec().getParams()),
+                ParameterUtil.paramSpecToRunParam(task.getSpec().getParams()),
                 wfRevisionTask.getParams()));
           } else {
             LOGGER.debug("[{}] Task Template Params: {}", wfRunEntity.getId(),
@@ -172,33 +172,33 @@ public class DAGUtility {
           if (!Objects.isNull(wfRevisionTask.getTimeout()) && wfRevisionTask.getTimeout() != 0) {
             taskRunEntity.setTimeout(wfRevisionTask.getTimeout());
           }
-          // Set TaskRun Spec from TaskTemplate Spec - Debug and Deletion come from an alternate
+          // Set TaskRun Spec from Task Spec - Debug and Deletion come from an alternate
           // source
-          if (!Objects.isNull(taskTemplate.getSpec().getImage())
-              && !taskTemplate.getSpec().getImage().isEmpty()) {
-            taskRunEntity.getSpec().setImage(taskTemplate.getSpec().getImage());
+          if (!Objects.isNull(task.getSpec().getImage())
+              && !task.getSpec().getImage().isEmpty()) {
+            taskRunEntity.getSpec().setImage(task.getSpec().getImage());
           } else if (TaskType.template.equals(wfRevisionTask.getType()) || TaskType.script.equals(wfRevisionTask.getType())) {
             taskRunEntity.getSpec().setImage(
                 wfRunEntity.getAnnotations().get("boomerang.io/task-default-image").toString());
           }
-          if (!Objects.isNull(taskTemplate.getSpec().getCommand())) {
-            taskRunEntity.getSpec().setCommand(taskTemplate.getSpec().getCommand());
+          if (!Objects.isNull(task.getSpec().getCommand())) {
+            taskRunEntity.getSpec().setCommand(task.getSpec().getCommand());
           }
-          if (!Objects.isNull(taskTemplate.getSpec().getArguments())) {
-            taskRunEntity.getSpec().setArguments(taskTemplate.getSpec().getArguments());
+          if (!Objects.isNull(task.getSpec().getArguments())) {
+            taskRunEntity.getSpec().setArguments(task.getSpec().getArguments());
           }
-          if (!Objects.isNull(taskTemplate.getSpec().getEnvs())) {
-            taskRunEntity.getSpec().setEnvs(taskTemplate.getSpec().getEnvs());
+          if (!Objects.isNull(task.getSpec().getEnvs())) {
+            taskRunEntity.getSpec().setEnvs(task.getSpec().getEnvs());
           }
-          if (!Objects.isNull(taskTemplate.getSpec().getScript())) {
-            taskRunEntity.getSpec().setScript(taskTemplate.getSpec().getScript());
+          if (!Objects.isNull(task.getSpec().getScript())) {
+            taskRunEntity.getSpec().setScript(task.getSpec().getScript());
           }
-          if (!Objects.isNull(taskTemplate.getSpec().getWorkingDir())) {
-            taskRunEntity.getSpec().setWorkingDir(taskTemplate.getSpec().getWorkingDir());
+          if (!Objects.isNull(task.getSpec().getWorkingDir())) {
+            taskRunEntity.getSpec().setWorkingDir(task.getSpec().getWorkingDir());
           }
-          if (!Objects.isNull(taskTemplate.getSpec().getAdditionalProperties())) {
+          if (!Objects.isNull(task.getSpec().getAdditionalProperties())) {
             taskRunEntity.getSpec().getAdditionalProperties()
-                .putAll(taskTemplate.getSpec().getAdditionalProperties());
+                .putAll(task.getSpec().getAdditionalProperties());
           }
           taskRunEntity.getSpec().setDeletion(TaskDeletion.getDeletion(
               wfRunEntity.getAnnotations().get("boomerang.io/task-deletion").toString()));
@@ -286,10 +286,10 @@ public class DAGUtility {
       TaskRunEntity destTask =
           tasksToRun.stream().filter(t -> t.getId().equals(destination)).findFirst().orElse(null);
       if (destTask != null) {
-        Optional<TaskDependency> optionalDependency =
+        Optional<WorkflowTaskDependency> optionalDependency =
             getOptionalDependency(currentTask.getName(), destTask);
         if (optionalDependency.isPresent()) {
-          TaskDependency dependency = optionalDependency.get();
+          WorkflowTaskDependency dependency = optionalDependency.get();
           String linkValue = dependency.getDecisionCondition();
           String node = destTask.getId();
           boolean matched = false;
@@ -334,10 +334,10 @@ public class DAGUtility {
       TaskRunEntity destTask =
           tasksToRun.stream().filter(t -> t.getId().equals(destination)).findFirst().orElse(null);
       if (destTask != null) {
-        Optional<TaskDependency> optionalDependency =
+        Optional<WorkflowTaskDependency> optionalDependency =
             getOptionalDependency(currentTask.getName(), destTask);
         if (optionalDependency.isPresent()) {
-          TaskDependency dependency = optionalDependency.get();
+          WorkflowTaskDependency dependency = optionalDependency.get();
           ExecutionCondition condition = dependency.getExecutionCondition();
           String node = destTask.getId();
           if (condition != null
@@ -363,9 +363,9 @@ public class DAGUtility {
     }
   }
 
-  private Optional<TaskDependency> getOptionalDependency(final String currentVert,
+  private Optional<WorkflowTaskDependency> getOptionalDependency(final String currentVert,
       TaskRunEntity destTask) {
-    Optional<TaskDependency> optionalDependency = destTask.getDependencies().stream()
+    Optional<WorkflowTaskDependency> optionalDependency = destTask.getDependencies().stream()
         .filter(d -> d.getTaskRef().equals(currentVert)).findAny();
     return optionalDependency;
   }

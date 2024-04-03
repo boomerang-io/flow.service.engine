@@ -43,7 +43,7 @@ public class AuditInterceptor {
   public AuditEntity updateWfRunLog(AuditType type, String selfRef, Optional<Map<String, String>> data) {
     try {
       LOGGER.debug("AuditInterceptor - Updating Audit for: {} with event: {}.", selfRef, type);
-      Optional<AuditEntity> auditEntity = auditRepository.findFirstBySelfRef(selfRef);
+      Optional<AuditEntity> auditEntity = auditRepository.findFirstByScopeAndSelfRef(AuditScope.WORKFLOWRUN, selfRef);
       if (auditEntity.isPresent()) {
         if (data.isPresent()) {
           auditEntity.get().getData().putAll(data.get());
@@ -63,10 +63,10 @@ public class AuditInterceptor {
       return wfRunIdToParentAuditId.get(wfRunId);
     }
     //Retrieve the WORKFLOW Audit and get its parentRef which is the parent we need
-    Optional<AuditEntity> parentEntity = auditRepository.findFirstBySelfRef(parent);
-    if (parentEntity.isPresent()) {
-      wfRunIdToParentAuditId.put(wfRunId, parentEntity.get().getParent());
-      return parentEntity.get().getParent();
+    Optional<AuditEntity> wfEntity = auditRepository.findFirstByScopeAndSelfRef(AuditScope.WORKFLOW, parent);
+    if (wfEntity.isPresent()) {
+      wfRunIdToParentAuditId.put(wfRunId, wfEntity.get().getParent());
+      return wfEntity.get().getParent();
     }
     LOGGER.error("Unable to find Audit record for WorkflowRun: {}", wfRunId);
     return "";

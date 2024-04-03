@@ -56,9 +56,6 @@ public class ParameterManagerImpl implements ParameterManager {
   @Autowired
   public WorkflowClient workflowClient;
 
-  @Value("${flow.workflow.params.enabled}")
-  private boolean workflowParamsEnabled;
-
   final String[] reservedScope = {"global", "team", "workflow", "context"};
 
   /*
@@ -118,10 +115,7 @@ public class ParameterManagerImpl implements ParameterManager {
     if (wfRun.getAnnotations().containsKey("boomerang.io/context-params") && wfRun.getAnnotations().get("boomerang.io/context-params") != null) {
       paramLayers.setContextParams((Map<String, Object>) wfRun.getAnnotations().get("boomerang.io/context-params"));
     }
-//    if (workflowParamsEnabled) {
-//      // Retrieve Global, Team, and some Context from the Workflow Service
-//      paramLayers = workflowClient.getParamLayers(wfRun.getWorkflowRef());
-//    }
+
     // Override particular context Parameters. Additional Context Params come from the Workflow
     // service.
     Map<String, Object> contextParams = paramLayers.getContextParams();

@@ -38,7 +38,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Retrieve a specific WorkflowRun.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public WorkflowRun getWorkflowRuns(
+  public WorkflowRun get(
       @Parameter(name = "workflowRunId",
       description = "ID of WorkflowRun",
       required = true) @PathVariable String workflowRunId,
@@ -52,7 +52,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Search for WorkflowRuns")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public Page<WorkflowRun> queryWorkflowRuns(
+  public Page<WorkflowRun> query(
       @Parameter(name = "labels",
       description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
       required = false) @RequestParam(required = false) Optional<List<String>> labels,
@@ -95,7 +95,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Retrieve WorkflowRun Insights.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public WorkflowRunInsight workflowRunInsights(
+  public WorkflowRunInsight insights(
       @Parameter(name = "labels",
       description = "List of url encoded labels. For example Organization=Boomerang,customKey=test would be encoded as Organization%3DBoomerang,customKey%3Dtest)",
       required = false) @RequestParam(required = false) Optional<List<String>> labels,
@@ -153,7 +153,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Start WorkflowRun execution. The WorkflowRun has to already have been queued.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public WorkflowRun startWorkflowRun(
+  public WorkflowRun start(
       @Parameter(name = "workflowRunId",
       description = "ID of WorkflowRun to Start",
       required = true) @PathVariable(required = true) String workflowRunId,
@@ -165,7 +165,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "End a WorkflowRun")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public WorkflowRun endWorkflowRun(
+  public WorkflowRun finalize(
       @Parameter(name = "workflowRunId",
       description = "ID of WorkflowRun to Finalize",
       required = true) @PathVariable(required = true) String workflowRunId) {
@@ -176,7 +176,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Cancel a WorkflowRun")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public WorkflowRun cancelWorkflowRun(
+  public WorkflowRun cancel(
       @Parameter(name = "workflowRunId",
       description = "ID of WorkflowRun to Cancel",
       required = true) @PathVariable(required = true) String workflowRunId) {
@@ -187,7 +187,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Retry WorkflowRun execution.")
   @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public WorkflowRun retryWorkflowRun(
+  public WorkflowRun retry(
       @Parameter(name = "workflowRunId",
       description = "ID of WorkflowRun to Retry.",
       required = true) @PathVariable(required = true) String workflowRunId,
@@ -201,7 +201,7 @@ public class WorkflowRunV1Controller {
   @Operation(summary = "Delete a WorkflowRun and associated TaskRuns. This is destructive and irreversible.")
   @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "No Content"),
       @ApiResponse(responseCode = "400", description = "Bad Request")})
-  public void deleteWorkflowRun(
+  public void delete(
       @Parameter(name = "workflowRunId",
       description = "ID of WorkflowRun to Retry.",
       required = true) @PathVariable(required = true) String workflowRunId) {

@@ -1,5 +1,6 @@
 package io.boomerang.model;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class WorkflowRunInsight {
@@ -8,7 +9,7 @@ public class WorkflowRunInsight {
   private Long concurrentRuns = 0L;
   private Long totalDuration = 0L;
   private Long medianDuration = 0L;
-  private List<WorkflowRunSummary> runs;
+  private List<WorkflowRunSummary> runs = new LinkedList<>();
 
   public Long getTotalRuns() {
     return totalRuns;

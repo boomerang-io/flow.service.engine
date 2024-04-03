@@ -1,6 +1,6 @@
 package io.boomerang.model.enums;
 
-public enum TaskTemplateStatus {
+public enum TaskStatus {
   active, inactive // NOSONAR
 
 }
