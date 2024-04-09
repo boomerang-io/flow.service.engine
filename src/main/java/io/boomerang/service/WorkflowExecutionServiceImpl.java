@@ -123,9 +123,14 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
   @Override
   public void cancel(WorkflowRunEntity workflowExecution) {
-    workflowExecution.setStatus(RunStatus.cancelled);
-    workflowExecution.setPhase(RunPhase.completed);
-    workflowRunRepository.save(workflowExecution);
+    long duration = new Date().getTime() - workflowExecution.getStartTime().getTime();
+    workflowExecution.setDuration(duration);
+    String statusMessage = "The WorkflowRun was requested to be cancelled.";
+    updateStatusAndSaveWorkflow(workflowExecution, RunStatus.cancelled, RunPhase.completed,
+        Optional.of(statusMessage));
+
+    //Cancel Running & Pending Tasks
+    cancelPendingAndRunningTasks(workflowExecution);
   }
 
   @Override
@@ -223,32 +228,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
               Optional.of(statusMessage),
               wfRunEntity.getTimeout());
 
-          // Cancel Running Tasks
-          Optional<WorkflowRevisionEntity> wfRevisionEntity =
-              workflowRevisionRepository.findById(wfRunEntity.getWorkflowRevisionRef());
-          List<TaskRunEntity> tasks =
-              dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity);
-
-          // If running tasks are found, the TaskRun execution loop will automatically cancel in
-          // flight tasks when you end them based on workflow status and skip all queued
-          List<TaskRunEntity> runningTasks =
-              tasks.stream().filter(t -> RunPhase.running.equals(t.getPhase())).toList();
-          LOGGER.info("Timeout - # of Running Tasks: " + runningTasks.size());
-          if (runningTasks.size() > 0) {
-            runningTasks.forEach(t -> {
-              taskClient.end(taskService, t);
-            });
-          } 
-          // Check pending tasks and queue to force them to skip - will be
-          // trapped by queue task before task order is checked
-          List<TaskRunEntity> pendingTasks =
-              tasks.stream().filter(t -> RunPhase.pending.equals(t.getPhase())).toList();
-          LOGGER.info("Timeout - # of Pending Tasks: " + pendingTasks.size());
-          if (pendingTasks.size() > 0) {
-            pendingTasks.forEach(t -> {
-              taskClient.queue(taskService, t);
-            });
-          }
+          //Cancel Running & Pending Tasks
+          cancelPendingAndRunningTasks(wfRunEntity);
+          
           // Retry workflow and set required details
           if (!Objects.isNull(wfRunEntity.getRetries()) && wfRunEntity.getRetries() != -1
               && wfRunEntity.getRetries() != 0) {
@@ -271,6 +253,35 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       }
       return true;
     };
+  }
+
+  private void cancelPendingAndRunningTasks(WorkflowRunEntity wfRunEntity) {
+    // Cancel Running Tasks
+    Optional<WorkflowRevisionEntity> wfRevisionEntity =
+        workflowRevisionRepository.findById(wfRunEntity.getWorkflowRevisionRef());
+    List<TaskRunEntity> tasks =
+        dagUtility.createTaskList(wfRevisionEntity.get(), wfRunEntity);
+
+    // If running tasks are found, the TaskRun execution loop will automatically cancel in
+    // flight tasks when you end them based on workflow status and skip all queued
+    List<TaskRunEntity> runningTasks =
+        tasks.stream().filter(t -> RunPhase.running.equals(t.getPhase())).toList();
+    LOGGER.info("Timeout - # of Running Tasks: " + runningTasks.size());
+    if (runningTasks.size() > 0) {
+      runningTasks.forEach(t -> {
+        taskClient.end(taskService, t);
+      });
+    } 
+    // Check pending tasks and queue to force them to skip - will be
+    // trapped by queue task before task order is checked
+    List<TaskRunEntity> pendingTasks =
+        tasks.stream().filter(t -> RunPhase.pending.equals(t.getPhase())).toList();
+    LOGGER.info("Timeout - # of Pending Tasks: " + pendingTasks.size());
+    if (pendingTasks.size() > 0) {
+      pendingTasks.forEach(t -> {
+        taskClient.queue(taskService, t);
+      });
+    }
   }
 
   private void updateStatusAndSaveWorkflow(WorkflowRunEntity workflowExecution, RunStatus status,
