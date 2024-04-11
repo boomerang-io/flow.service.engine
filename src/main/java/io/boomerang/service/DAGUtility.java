@@ -61,7 +61,7 @@ public class DAGUtility {
     final TaskRunEntity end =
         tasks.stream().filter(tsk -> TaskType.end.equals(tsk.getType())).findAny().orElse(null);
     Graph<String, DefaultEdge> graph = this.createGraph(tasks);
-    updateTaskExecutionStatus(graph, tasks);
+    updateGraphWithTaskRunStatus(graph, tasks);
     DijkstraShortestPath<String, DefaultEdge> dijkstraAlg = new DijkstraShortestPath<>(graph);
     final SingleSourcePaths<String, DefaultEdge> pathFromStart =
         dijkstraAlg.getPaths(start.getId());
@@ -213,10 +213,17 @@ public class DAGUtility {
     return taskList;
   }
 
-  public boolean canCompleteTask(List<TaskRunEntity> tasks, TaskRunEntity current) {
+  /* 
+   * Determine if there is a valid path for this task taking into account dependency and execution conditions
+   */
+  public boolean canRunTask(List<TaskRunEntity> tasks, TaskRunEntity current) {
     final TaskRunEntity start = this.getTaskByType(tasks, TaskType.start);
     Graph<String, DefaultEdge> graph = this.createGraph(tasks);
-    updateTaskExecutionStatus(graph, tasks);
+    updateGraphWithTaskRunStatus(graph, tasks);
+    // After graph has been updated and edges removed per 
+    // individual task conditions. Validate that all conditions are met for current task
+    // Remove or gate this call if you want an OR rather than an AND on dependencies.
+    allDependenciesValid(graph, current);
     DijkstraShortestPath<String, DefaultEdge> dijkstraAlg = new DijkstraShortestPath<>(graph);
     final SingleSourcePaths<String, DefaultEdge> pathFromStart =
         dijkstraAlg.getPaths(start.getId());
@@ -226,8 +233,20 @@ public class DAGUtility {
   public TaskRunEntity getTaskByType(List<TaskRunEntity> tasks, TaskType type) {
     return tasks.stream().filter(tsk -> type.equals(tsk.getType())).findAny().orElse(null);
   }
+  
+  // Implement an AND check - all dependencies are met (all paths exist)
+  // Validates that there are the same number of edges remaining as dependencies
+  // If not, remove all edges. There will then no longer be a shortest path.
+  private void allDependenciesValid(Graph<String, DefaultEdge> graph, TaskRunEntity current) {
+    int noOfEdges = graph.inDegreeOf(current.getId());
+    LOGGER.debug("Dependencies met: {} <= {}", noOfEdges, current.getDependencies().size());
+    if (noOfEdges != current.getDependencies().size()) {
+      graph.removeAllEdges(graph.incomingEdgesOf(current.getId()));
+    }
+    
+  }
 
-  private void updateTaskExecutionStatus(Graph<String, DefaultEdge> graph,
+  private void updateGraphWithTaskRunStatus(Graph<String, DefaultEdge> graph,
       List<TaskRunEntity> tasks) {
     TopologicalOrderIterator<String, DefaultEdge> orderIterator =
         new TopologicalOrderIterator<>(graph);
@@ -256,24 +275,29 @@ public class DAGUtility {
     }
   }
 
+  /*
+   * Get the decision value and map the edges to next nodes
+   * If next nodes don't have an edge with the correct value, then remove the edge (and hence no path will be found)
+   */
   private void processDecision(Graph<String, DefaultEdge> graph, List<TaskRunEntity> tasksToRun,
       String value, final String currentVertex, TaskRunEntity currentTask) {
-    List<String> removeList =
-        calculateNodesToRemove(graph, tasksToRun, value, currentVertex, currentTask);
+    List<String> matchedNodes =
+        calculateMatchedNodes(graph, tasksToRun, value, currentVertex, currentTask);
+    LOGGER.debug("Nodes Matched: {}", matchedNodes.toString());
     Iterator<DefaultEdge> itrerator = graph.edgesOf(currentVertex).iterator();
     while (itrerator.hasNext()) {
       DefaultEdge e = itrerator.next();
       String destination = graph.getEdgeTarget(e);
       String source = graph.getEdgeSource(e);
-
       if (source.equals(currentVertex)
-          && removeList.stream().noneMatch(str -> str.trim().equals(destination))) {
+          && matchedNodes.stream().noneMatch(str -> str.trim().equals(destination))) {
+        LOGGER.debug("Removing Edge: {}", e.toString());
         graph.removeEdge(e);
       }
     }
   }
 
-  private List<String> calculateNodesToRemove(Graph<String, DefaultEdge> graph,
+  private List<String> calculateMatchedNodes(Graph<String, DefaultEdge> graph,
       List<TaskRunEntity> tasksToRun, String value, final String currentVert,
       TaskRunEntity currentTask) {
     Set<DefaultEdge> outgoingEdges = graph.outgoingEdgesOf(currentVert);
@@ -294,7 +318,7 @@ public class DAGUtility {
           String node = destTask.getId();
           boolean matched = false;
 
-          if (linkValue != null) {
+          if (linkValue != null && !linkValue.isEmpty()) {
             String[] lines = linkValue.split("\\r?\\n");
             for (String line : lines) {
               String patternString = line;
@@ -307,19 +331,18 @@ public class DAGUtility {
             if (matched) {
               matchedNodes.add(node);
             }
+            LOGGER.debug("[{}] Matched: {}, Decision Value: {}, Condition: {}", currentVert, matched,
+                value, linkValue);
           } else {
             defaultNodes.add(node);
           }
-          LOGGER.debug("[{}] Matched: {}, Decision Value: {}, Condition: {}", currentVert, matched,
-              value, linkValue);
         }
       }
     }
-    List<String> removeList = matchedNodes;
     if (matchedNodes.isEmpty()) {
-      removeList = defaultNodes;
+      return defaultNodes;
     }
-    return removeList;
+    return matchedNodes;
   }
 
   private void updateTaskInGraph(Graph<String, DefaultEdge> graph, List<TaskRunEntity> tasksToRun,

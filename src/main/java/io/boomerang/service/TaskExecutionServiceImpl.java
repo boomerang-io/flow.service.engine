@@ -122,7 +122,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     // Ensure Task is valid as part of Graph
     List<TaskRunEntity> tasks = dagUtility.retrieveTaskList(wfRunEntity.get().getId());
-    boolean canRunTask = dagUtility.canCompleteTask(tasks, taskExecution);
+    boolean canRunTask = dagUtility.canRunTask(tasks, taskExecution);
     LOGGER.debug("[{}] Can run task? {}", taskExecutionId, canRunTask);
 
     if (canRunTask) {
