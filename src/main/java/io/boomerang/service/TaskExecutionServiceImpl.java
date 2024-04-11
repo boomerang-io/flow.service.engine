@@ -131,19 +131,19 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
       // Update Status and Phase
       updateStatusAndSaveTask(taskExecution, RunStatus.ready, RunPhase.pending, Optional.empty());
+
+      // Auto start System related tasks skipping the start checks
+      if (!TaskType.template.equals(taskExecution.getType())
+          && !TaskType.script.equals(taskExecution.getType())
+          && !TaskType.custom.equals(taskExecution.getType())
+          && !TaskType.generic.equals(taskExecution.getType())) {
+        LOGGER.debug("[{}] Moving task to Executing: {}", taskExecutionId, taskExecution.getName());
+        taskExecutionClient.execute(this, taskExecution, wfRunEntity.get());
+      }
     } else {
       LOGGER.debug("[{}] Skipping task: {}", taskExecutionId, taskExecution.getName());
       taskExecution.setStatus(RunStatus.skipped);
       taskExecutionClient.end(this, taskExecution);
-    }
-
-    // Auto start System related tasks skipping the start checks
-    if (!TaskType.template.equals(taskExecution.getType())
-        && !TaskType.script.equals(taskExecution.getType())
-        && !TaskType.custom.equals(taskExecution.getType())
-        && !TaskType.generic.equals(taskExecution.getType())) {
-      LOGGER.debug("[{}] Moving task to Executing: {}", taskExecutionId, taskExecution.getName());
-      taskExecutionClient.execute(this, taskExecution, wfRunEntity.get());
     }
   }
 

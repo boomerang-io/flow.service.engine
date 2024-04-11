@@ -141,7 +141,7 @@ public class EventSinkServiceImpl implements EventSinkService {
         }
         isSuccess = Boolean.TRUE;
       } catch (Exception e) {
-        LOGGER.fatal("A fatal error has occurred while publishing the message!", e);
+        LOGGER.fatal("A fatal error has occurred while publishing the message!", e.getMessage());
       }
       return isSuccess;
     };

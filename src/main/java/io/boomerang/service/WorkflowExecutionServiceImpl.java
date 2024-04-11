@@ -123,7 +123,10 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
   @Override
   public void cancel(WorkflowRunEntity workflowExecution) {
-    long duration = new Date().getTime() - workflowExecution.getStartTime().getTime();
+    long duration = 0;
+    if (workflowExecution.getStartTime() != null) {
+      duration = new Date().getTime() - workflowExecution.getStartTime().getTime();
+    }
     workflowExecution.setDuration(duration);
     String statusMessage = "The WorkflowRun was requested to be cancelled.";
     updateStatusAndSaveWorkflow(workflowExecution, RunStatus.cancelled, RunPhase.completed,
