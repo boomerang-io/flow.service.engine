@@ -241,7 +241,9 @@ public class DAGUtility {
     int noOfEdges = graph.inDegreeOf(current.getId());
     LOGGER.debug("Dependencies met: {} <= {}", noOfEdges, current.getDependencies().size());
     if (noOfEdges != current.getDependencies().size()) {
-      graph.removeAllEdges(graph.incomingEdgesOf(current.getId()));
+      //Copy set to not get a ConcurrentModificationException
+      final Set<DefaultEdge> edgesToRemove = Set.copyOf(graph.incomingEdgesOf(current.getId()));
+      graph.removeAllEdges(edgesToRemove);
     }
     
   }
