@@ -30,7 +30,7 @@ public class AuditEntity {
   @Indexed
   private String selfName;
   @Indexed
-  private ObjectId parent; //Reference to the parent audit object
+  private String parent; //Reference to the parent audit object
   private Date creationDate = new Date();
   private List<AuditEvent> events = new LinkedList<>();
   private Map<String, String> data = new HashMap<>();
@@ -46,7 +46,8 @@ public class AuditEntity {
       this.selfName = selfName.get();
     }
     if (parent.isPresent()) {
-      this.parent = new ObjectId(parent.get());
+//      this.parent = new ObjectId(parent.get());
+      this.parent = parent.get();
     }
     this.events.add(event);
     if (data.isPresent()) {
@@ -98,7 +99,8 @@ public class AuditEntity {
   }
 
   public void setParent(String parent) {
-    this.parent = new ObjectId(parent);
+//    this.parent = new ObjectId(parent);
+    this.parent = parent;
   }
 
   public List<AuditEvent> getEvents() {
