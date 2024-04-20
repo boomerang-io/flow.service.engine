@@ -29,8 +29,6 @@ public interface WorkflowRunService {
 
   WorkflowRun retry(String workflowRunId, boolean start, long retryCount);
 
-  WorkflowRun timeout(String workflowRunId, boolean taskRunTimeout);
-
   WorkflowRunInsight insights(Optional<Date> from, Optional<Date> to, Optional<List<String>> labels, Optional<List<String>> status, Optional<List<String>> workflows);
 
   WorkflowRunCount count(Optional<Date> from, Optional<Date> to,

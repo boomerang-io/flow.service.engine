@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jobrunr.scheduling.JobScheduler;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,11 +34,11 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
-import io.boomerang.model.WorkflowTaskDependency;
 import io.boomerang.model.TaskWorkspace;
 import io.boomerang.model.WorkflowRun;
-import io.boomerang.model.WorkflowSubmitRequest;
 import io.boomerang.model.WorkflowSchedule;
+import io.boomerang.model.WorkflowSubmitRequest;
+import io.boomerang.model.WorkflowTaskDependency;
 import io.boomerang.model.WorkflowWorkspaceSpec;
 import io.boomerang.model.enums.ActionStatus;
 import io.boomerang.model.enums.ActionType;
@@ -63,7 +64,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   private WorkflowRunRepository workflowRunRepository;
 
   @Autowired
-  private WorkflowRunService workflowRunService;
+  private WorkflowRunServiceImpl workflowRunService;
 
   @Autowired
   private WorkflowService workflowService;
@@ -82,6 +83,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
   @Autowired
   private TaskExecutionClient taskExecutionClient;
+  
+  @Autowired
+  private JobScheduler jobScheduler;
 
   @Autowired
   @Lazy
@@ -201,7 +205,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       lockManager.releaseLock(taskExecutionId, lockId);
       LOGGER.info("[{}] Released TaskRun lock", taskExecutionId);
       // Checking WorkflowRun Timeout
-      // Check prior to starting the TaskRun before further execution can happen
+      // prior to starting the TaskRun before further execution can happen
       // Timeout will mark the task as skipped.
       workflowRunService.timeout(wfRunEntity.get().getId(), false);
       return;
@@ -526,6 +530,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     String value = ParameterUtil.getValue(taskExecution.getParams(), "duration").toString();
     long duration = Long.parseLong(value);
 
+//    jobScheduler.schedule(Instant.now().plus(duration, ChronoUnit.MILLIS), () -> timeoutWorkflowAsync(wfRunEntity.getId()));
     try {
       Thread.sleep(duration);
       taskExecution.setStatus(RunStatus.succeeded);

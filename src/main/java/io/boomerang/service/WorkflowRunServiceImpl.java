@@ -435,8 +435,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
   /*
    * To be used internally within the Engine
    */
-  @Override
-  public WorkflowRun timeout(String workflowRunId, boolean taskRunTimeout) {
+  protected WorkflowRun timeout(String workflowRunId, boolean taskRunTimeout) {
     if (workflowRunId == null || workflowRunId.isBlank()) {
       throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
     }
