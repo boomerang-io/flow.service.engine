@@ -8,6 +8,7 @@ import org.springframework.data.domain.Sort.Direction;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunCount;
+import io.boomerang.model.WorkflowRunEventRequest;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
 
@@ -37,4 +38,6 @@ public interface WorkflowRunService {
   WorkflowRun run(WorkflowRunEntity request, boolean start);
 
   void delete(String workflowRunId);
+
+  void event(String workflowRunId, WorkflowRunEventRequest request);
 }

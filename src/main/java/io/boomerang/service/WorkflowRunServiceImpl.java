@@ -40,13 +40,16 @@ import io.boomerang.data.repository.WorkflowRunRepository;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.TaskRun;
+import io.boomerang.model.TaskRunEndRequest;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunCount;
+import io.boomerang.model.WorkflowRunEventRequest;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.WorkflowRunSummary;
 import io.boomerang.model.enums.RunPhase;
 import io.boomerang.model.enums.RunStatus;
+import io.boomerang.model.enums.TaskType;
 import io.boomerang.util.ConvertUtil;
 import io.boomerang.util.ParameterUtil;
 
@@ -66,6 +69,9 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
 
   @Autowired
   private TaskRunRepository taskRunRepository;
+  
+  @Autowired
+  private TaskRunService taskRunService;
 
   @Autowired
   private ActionRepository actionRepository;
@@ -522,6 +528,39 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     actionRepository.deleteByWorkflowRunRef(workflowRunId);
     taskRunRepository.deleteByWorkflowRunRef(workflowRunId);
     workflowRunRepository.deleteById(workflowRunId);
+  }
+  
+  /*
+   * Deletes the WorkflowRun and associated TaskRuns
+   */
+  @Override
+  public void event(String workflowRunId, WorkflowRunEventRequest request) {
+    if (workflowRunId == null || workflowRunId.isBlank()) {
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
+    }
+    
+    final Optional<WorkflowRunEntity> optWfRunEntity =
+        workflowRunRepository.findById(workflowRunId);
+    if (optWfRunEntity.isEmpty()) {
+      throw new BoomerangException(BoomerangError.WORKFLOWRUN_INVALID_REF);
+    }
+    List<TaskRun> taskRuns = getTaskRuns(workflowRunId);
+    //Set preApproved or call endTaskRun for each with the status.
+    List<TaskRun> topicTaskRuns = taskRuns.stream().filter(tr -> TaskType.eventwait.equals(tr.getType()) && request.getTopic().equals(ParameterUtil.getValue(tr.getParams(), "topic"))).toList();
+    //Process the non waiting tasks first so as not to mess with the tree. This will only set preApproved = true
+    topicTaskRuns.stream().filter(tr -> !RunStatus.waiting.equals(tr.getStatus())).forEach(tr -> {
+      tr.getAnnotations().put("boomerang.io/status", request.getStatus());
+      tr.setPreApproved(true);
+      tr.getResults().addAll(request.getResults());
+      taskRunRepository.save(tr);
+    });
+    //Process the waiting tasks
+    topicTaskRuns.stream().filter(tr -> RunStatus.waiting.equals(tr.getStatus())).forEach(tr -> {
+      TaskRunEndRequest endRequest = new TaskRunEndRequest();
+      endRequest.setStatus(request.getStatus());
+      endRequest.setResults(request.getResults());
+      taskRunService.end(tr.getId(), Optional.of(endRequest));
+    });
   }
 
   private List<TaskRun> getTaskRuns(String workflowRunId) {

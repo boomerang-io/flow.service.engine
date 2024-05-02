@@ -726,7 +726,11 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     taskExecution = taskRunRepository.save(taskExecution);
 
     if (taskExecution.isPreApproved()) {
-      taskExecution.setStatus(RunStatus.succeeded);
+      if (taskExecution.getAnnotations().get("boomerang.io/status") != null) {
+        taskExecution.setStatus(RunStatus.getRunStatus((String) taskExecution.getAnnotations().get("boomerang.io/status")));
+      } else {
+        taskExecution.setStatus(RunStatus.succeeded);
+      }
       callEnd = true;
     }
   }

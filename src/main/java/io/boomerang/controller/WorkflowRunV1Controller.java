@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunCount;
+import io.boomerang.model.WorkflowRunEventRequest;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.service.WorkflowRunService;
@@ -159,6 +160,18 @@ public class WorkflowRunV1Controller {
       required = true) @PathVariable(required = true) String workflowRunId,
       @RequestBody Optional<WorkflowRunRequest> runRequest) {
     return workflowRunService.start(workflowRunId, runRequest);
+  }
+  
+  @PutMapping(value = "/{workflowRunId}/event")
+  @Operation(summary = "Provide an event to the WorkflowRun execution. The WorkflowRun has to already have been started.")
+  @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "OK"),
+      @ApiResponse(responseCode = "400", description = "Bad Request")})
+  public void event(
+      @Parameter(name = "workflowRunId",
+      description = "ID of WorkflowRun to Start",
+      required = true) @PathVariable(required = true) String workflowRunId,
+      @RequestBody WorkflowRunEventRequest request) {
+    workflowRunService.event(workflowRunId, request);
   }
 
   @PutMapping(value = "/{workflowRunId}/finalize")
