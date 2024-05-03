@@ -2,6 +2,8 @@ package io.boomerang.data.repository;
 
 import java.util.Date;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+import org.springframework.data.mongodb.repository.Update;
 import io.boomerang.data.entity.ActionEntity;
 import io.boomerang.model.enums.ActionStatus;
 import io.boomerang.model.enums.ActionType;
@@ -30,5 +32,9 @@ public interface ActionRepository extends MongoRepository<ActionEntity, String> 
   void deleteByWorkflowRef(String workflowRef);
   
   void deleteByWorkflowRunRef(String workflowRunRef);
+  
+  @Query("{'workflowRunRef': ?0")
+  @Update("{ '$set' : { 'status' : ?1 } }")
+  long updateStatusByWorkflowRunRef(String ref, ActionStatus status);
 }
 
