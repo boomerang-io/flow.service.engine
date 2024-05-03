@@ -33,7 +33,7 @@ public interface ActionRepository extends MongoRepository<ActionEntity, String> 
   
   void deleteByWorkflowRunRef(String workflowRunRef);
   
-  @Query("{'workflowRunRef': ?0")
+  @Query("{'workflowRunRef': ?0 }")
   @Update("{ '$set' : { 'status' : ?1 } }")
   long updateStatusByWorkflowRunRef(String ref, ActionStatus status);
 }
