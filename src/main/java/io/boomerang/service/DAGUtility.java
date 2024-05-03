@@ -169,9 +169,15 @@ public class DAGUtility {
             taskRunEntity.setParams(wfRevisionTask.getParams());
           }
           LOGGER.debug("[{}] Task Run Params: {}", wfRunEntity.getId(), taskRunEntity.getParams());
-          if (!Objects.isNull(wfRevisionTask.getTimeout()) && wfRevisionTask.getTimeout() != 0) {
-            taskRunEntity.setTimeout(wfRevisionTask.getTimeout());
+          Long timeout = 0L;
+          if (wfRunEntity.getAnnotations() != null && !wfRunEntity.getAnnotations().isEmpty() && wfRunEntity.getAnnotations().containsKey("boomerang.io/task-timeout")) {
+            timeout = Long.valueOf(wfRunEntity.getAnnotations().get("boomerang.io/task-timeout").toString());
           }
+          if (!Objects.isNull(wfRevisionTask.getTimeout()) && wfRevisionTask.getTimeout() < timeout) {
+            timeout = wfRevisionTask.getTimeout();
+          }
+          taskRunEntity.setTimeout(timeout);
+          
           // Set TaskRun Spec from Task Spec - Debug and Deletion come from an alternate
           // source
           if (!Objects.isNull(task.getSpec().getImage())
@@ -200,8 +206,12 @@ public class DAGUtility {
             taskRunEntity.getSpec().getAdditionalProperties()
                 .putAll(task.getSpec().getAdditionalProperties());
           }
-          taskRunEntity.getSpec().setDeletion(TaskDeletion.getDeletion(
-              wfRunEntity.getAnnotations().get("boomerang.io/task-deletion").toString()));
+          TaskDeletion taskDeletion = TaskDeletion.Never;
+          if (wfRunEntity.getAnnotations() != null && !wfRunEntity.getAnnotations().isEmpty() && wfRunEntity.getAnnotations().containsKey("boomerang.io/task-deletion")) {
+            taskDeletion = TaskDeletion.getDeletion(
+                wfRunEntity.getAnnotations().get("boomerang.io/task-deletion").toString());
+          }
+          taskRunEntity.getSpec().setDeletion(taskDeletion);
         }
         taskRunRepository.save(taskRunEntity);
         LOGGER.debug("[{}] TaskRunEntity ({}) created for: {}", wfRunEntity.getId(),

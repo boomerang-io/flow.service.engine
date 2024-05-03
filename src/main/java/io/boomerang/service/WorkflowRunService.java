@@ -8,6 +8,7 @@ import org.springframework.data.domain.Sort.Direction;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunCount;
+import io.boomerang.model.WorkflowRunEventRequest;
 import io.boomerang.model.WorkflowRunInsight;
 import io.boomerang.model.WorkflowRunRequest;
 
@@ -29,8 +30,6 @@ public interface WorkflowRunService {
 
   WorkflowRun retry(String workflowRunId, boolean start, long retryCount);
 
-  WorkflowRun timeout(String workflowRunId, boolean taskRunTimeout);
-
   WorkflowRunInsight insights(Optional<Date> from, Optional<Date> to, Optional<List<String>> labels, Optional<List<String>> status, Optional<List<String>> workflows);
 
   WorkflowRunCount count(Optional<Date> from, Optional<Date> to,
@@ -39,4 +38,6 @@ public interface WorkflowRunService {
   WorkflowRun run(WorkflowRunEntity request, boolean start);
 
   void delete(String workflowRunId);
+
+  void event(String workflowRunId, WorkflowRunEventRequest request);
 }

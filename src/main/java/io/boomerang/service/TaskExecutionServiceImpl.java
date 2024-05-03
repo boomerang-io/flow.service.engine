@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jobrunr.scheduling.JobScheduler;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,11 +34,11 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.RunParam;
 import io.boomerang.model.RunResult;
-import io.boomerang.model.WorkflowTaskDependency;
 import io.boomerang.model.TaskWorkspace;
 import io.boomerang.model.WorkflowRun;
-import io.boomerang.model.WorkflowSubmitRequest;
 import io.boomerang.model.WorkflowSchedule;
+import io.boomerang.model.WorkflowSubmitRequest;
+import io.boomerang.model.WorkflowTaskDependency;
 import io.boomerang.model.WorkflowWorkspaceSpec;
 import io.boomerang.model.enums.ActionStatus;
 import io.boomerang.model.enums.ActionType;
@@ -63,7 +64,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
   private WorkflowRunRepository workflowRunRepository;
 
   @Autowired
-  private WorkflowRunService workflowRunService;
+  private WorkflowRunServiceImpl workflowRunService;
 
   @Autowired
   private WorkflowService workflowService;
@@ -82,6 +83,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
   @Autowired
   private TaskExecutionClient taskExecutionClient;
+  
+  @Autowired
+  private JobScheduler jobScheduler;
 
   @Autowired
   @Lazy
@@ -201,7 +205,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       lockManager.releaseLock(taskExecutionId, lockId);
       LOGGER.info("[{}] Released TaskRun lock", taskExecutionId);
       // Checking WorkflowRun Timeout
-      // Check prior to starting the TaskRun before further execution can happen
+      // prior to starting the TaskRun before further execution can happen
       // Timeout will mark the task as skipped.
       workflowRunService.timeout(wfRunEntity.get().getId(), false);
       return;
@@ -280,8 +284,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         this.createActionTask(taskExecution, wfRunEntity, ActionType.manual);
       }
       case eventwait -> {
-        // Task will wait for event and does not end.
-        this.processWaitForEventTask(taskExecution, endTask);
+        // Task will wait for event and does not end unless preapproved.
+        endTask = this.processWaitForEventTask(taskExecution);
+        LOGGER.debug("[{}] TaskRun set to end? {}",
+            taskExecution.getId(), endTask);
       }
       case sleep -> {
         this.createSleepTask(taskExecution);
@@ -291,19 +297,17 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       default -> throw new BoomerangException(BoomerangError.TASKRUN_INVALID_TYPE, taskType);
     }
 
-    // Check if task has a timeout set
+    // Check if task has a timeout set and task is not auto ending
     // If set, create Timeout Delayed CompletableFuture
     // TODO migrate to a scheduled task rather than using Future so that it works across horizontal
     // scaling
-    if (!Objects.isNull(taskExecution.getTimeout()) && taskExecution.getTimeout() != 0) {
+    if (endTask) {
+      taskExecutionClient.end(this, taskExecution);
+    } else if (!Objects.isNull(taskExecution.getTimeout()) && taskExecution.getTimeout() != 0) {
       LOGGER.debug("[{}] TaskRun Timeout provided of {} minutes. Creating future timeout check.",
           taskExecution.getId(), taskExecution.getTimeout());
       CompletableFuture.supplyAsync(timeoutTaskAsync(taskExecution.getId()), CompletableFuture
           .delayedExecutor(taskExecution.getTimeout(), TimeUnit.MINUTES, asyncTaskExecutor));
-    }
-
-    if (endTask) {
-      taskExecutionClient.end(this, taskExecution);
     }
   }
 
@@ -526,6 +530,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     String value = ParameterUtil.getValue(taskExecution.getParams(), "duration").toString();
     long duration = Long.parseLong(value);
 
+//    jobScheduler.schedule(Instant.now().plus(duration, ChronoUnit.MILLIS), () -> timeoutWorkflowAsync(wfRunEntity.getId()));
     try {
       Thread.sleep(duration);
       taskExecution.setStatus(RunStatus.succeeded);
@@ -715,15 +720,21 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     taskExecution.setStatus(RunStatus.failed);
   }
 
-  private void processWaitForEventTask(TaskRunEntity taskExecution, boolean callEnd) {
-    LOGGER.debug("[{}] Creating wait for event task", taskExecution.getId());
+  private boolean processWaitForEventTask(TaskRunEntity taskExecution) {
+    LOGGER.debug("[{}] Processing Wait for Event task: {}", taskExecution.getId(), taskExecution.getName());
     taskExecution.setStatus(RunStatus.waiting);
     taskExecution = taskRunRepository.save(taskExecution);
 
     if (taskExecution.isPreApproved()) {
-      taskExecution.setStatus(RunStatus.succeeded);
-      callEnd = true;
+      if (taskExecution.getAnnotations().get("boomerang.io/status") != null) {
+        taskExecution.setStatus(RunStatus.getRunStatus((String) taskExecution.getAnnotations().get("boomerang.io/status")));
+      } else {
+        taskExecution.setStatus(RunStatus.succeeded);
+      }
+      LOGGER.debug("[{}]  Wait for Task is already approved, with status: {}.", taskExecution.getId(), taskExecution.getStatus());
+      return true;
     }
+    return false;
   }
 
   /*
