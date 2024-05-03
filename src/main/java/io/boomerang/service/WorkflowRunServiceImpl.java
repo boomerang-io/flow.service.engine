@@ -549,6 +549,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     List<TaskRun> topicTaskRuns = taskRuns.stream().filter(tr -> TaskType.eventwait.equals(tr.getType()) && request.getTopic().equals(ParameterUtil.getValue(tr.getParams(), "topic"))).toList();
     //Process the non waiting tasks first so as not to mess with the tree. This will only set preApproved = true
     topicTaskRuns.stream().filter(tr -> !RunStatus.waiting.equals(tr.getStatus())).forEach(tr -> {
+      LOGGER.debug("TaskRun Update: {}", tr.getName());
       tr.getAnnotations().put("boomerang.io/status", request.getStatus());
       tr.setPreApproved(true);
       tr.getResults().addAll(request.getResults());
@@ -556,6 +557,7 @@ public class WorkflowRunServiceImpl implements WorkflowRunService {
     });
     //Process the waiting tasks
     topicTaskRuns.stream().filter(tr -> RunStatus.waiting.equals(tr.getStatus())).forEach(tr -> {
+      LOGGER.debug("TaskRun End: {}", tr.getName());
       TaskRunEndRequest endRequest = new TaskRunEndRequest();
       endRequest.setStatus(request.getStatus());
       endRequest.setResults(request.getResults());

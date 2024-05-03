@@ -284,8 +284,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         this.createActionTask(taskExecution, wfRunEntity, ActionType.manual);
       }
       case eventwait -> {
-        // Task will wait for event and does not end.
-        this.processWaitForEventTask(taskExecution, endTask);
+        // Task will wait for event and does not end unless preapproved.
+        endTask = this.processWaitForEventTask(taskExecution);
+        LOGGER.debug("[{}] TaskRun set to end? {}",
+            taskExecution.getId(), endTask);
       }
       case sleep -> {
         this.createSleepTask(taskExecution);
@@ -295,19 +297,17 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       default -> throw new BoomerangException(BoomerangError.TASKRUN_INVALID_TYPE, taskType);
     }
 
-    // Check if task has a timeout set
+    // Check if task has a timeout set and task is not auto ending
     // If set, create Timeout Delayed CompletableFuture
     // TODO migrate to a scheduled task rather than using Future so that it works across horizontal
     // scaling
-    if (!Objects.isNull(taskExecution.getTimeout()) && taskExecution.getTimeout() != 0) {
+    if (endTask) {
+      taskExecutionClient.end(this, taskExecution);
+    } else if (!Objects.isNull(taskExecution.getTimeout()) && taskExecution.getTimeout() != 0) {
       LOGGER.debug("[{}] TaskRun Timeout provided of {} minutes. Creating future timeout check.",
           taskExecution.getId(), taskExecution.getTimeout());
       CompletableFuture.supplyAsync(timeoutTaskAsync(taskExecution.getId()), CompletableFuture
           .delayedExecutor(taskExecution.getTimeout(), TimeUnit.MINUTES, asyncTaskExecutor));
-    }
-
-    if (endTask) {
-      taskExecutionClient.end(this, taskExecution);
     }
   }
 
@@ -720,8 +720,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     taskExecution.setStatus(RunStatus.failed);
   }
 
-  private void processWaitForEventTask(TaskRunEntity taskExecution, boolean callEnd) {
-    LOGGER.debug("[{}] Creating wait for event task", taskExecution.getId());
+  private boolean processWaitForEventTask(TaskRunEntity taskExecution) {
+    LOGGER.debug("[{}] Processing Wait for Event task: {}", taskExecution.getId(), taskExecution.getName());
     taskExecution.setStatus(RunStatus.waiting);
     taskExecution = taskRunRepository.save(taskExecution);
 
@@ -731,8 +731,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
       } else {
         taskExecution.setStatus(RunStatus.succeeded);
       }
-      callEnd = true;
+      LOGGER.debug("[{}]  Wait for Task is already approved, with status: {}.", taskExecution.getId(), taskExecution.getStatus());
+      return true;
     }
+    return false;
   }
 
   /*
