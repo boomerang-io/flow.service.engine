@@ -106,11 +106,11 @@ public class ParameterManagerImpl implements ParameterManager {
     LOGGER.debug("Received Team Params: " + wfRun.getAnnotations().get("boomerang.io/team-params"));
     LOGGER.debug("Received Context Params: " + wfRun.getAnnotations().get("boomerang.io/context-params"));
 
-    if (wfRun.getAnnotations().containsKey("boomerang.io/global-params") && wfRun.getAnnotations().get("boomerang.io/global-params") != null) {
-      paramLayers.setGlobalParams((Map<String, Object>) wfRun.getAnnotations().get("boomerang.io/global-params"));
-    }
     if (wfRun.getAnnotations().containsKey("boomerang.io/team-params") && wfRun.getAnnotations().get("boomerang.io/team-params") != null) {
       paramLayers.setTeamParams((Map<String, Object>) wfRun.getAnnotations().get("boomerang.io/team-params"));
+    }
+    if (wfRun.getAnnotations().containsKey("boomerang.io/global-params") && wfRun.getAnnotations().get("boomerang.io/global-params") != null) {
+      paramLayers.setGlobalParams((Map<String, Object>) wfRun.getAnnotations().get("boomerang.io/global-params"));
     }
     if (wfRun.getAnnotations().containsKey("boomerang.io/context-params") && wfRun.getAnnotations().get("boomerang.io/context-params") != null) {
       paramLayers.setContextParams((Map<String, Object>) wfRun.getAnnotations().get("boomerang.io/context-params"));
@@ -124,9 +124,6 @@ public class ParameterManagerImpl implements ParameterManager {
         Objects.isNull(wfRun.getInitiatedByRef()) || wfRun.getInitiatedByRef().isBlank() ? ""
             : wfRun.getInitiatedByRef());
     contextParams.put("workflowrun-id", wfRun.getId());
-    contextParams.put("workflow-id", wfRun.getWorkflowRef());
-    contextParams.put("workflow-name", "");
-    contextParams.put("workflow-version", "");
     if (optTaskRun.isPresent()) {
       contextParams.put("taskrun-id", optTaskRun.get().getId());
       contextParams.put("taskrun-name", optTaskRun.get().getName());
