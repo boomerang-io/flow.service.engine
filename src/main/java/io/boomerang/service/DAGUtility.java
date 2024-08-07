@@ -152,7 +152,10 @@ public class DAGUtility {
 
           // Set Task RunResults
           taskRunEntity.setResults(ResultUtil.resultSpecToRunResult(task.getSpec().getResults()));
-
+          if (TaskType.script.equals(wfRevisionTask.getType()) || TaskType.custom.equals(wfRevisionTask.getType()) || TaskType.generic.equals(wfRevisionTask.getType())) {
+            taskRunEntity.setResults(ResultUtil.resultSpecToRunResult(wfRevisionTask.getResults()));
+          }
+          
           // Set Task RunParams
           if (task.getSpec().getParams() != null
               && !task.getSpec().getParams().isEmpty()) {
