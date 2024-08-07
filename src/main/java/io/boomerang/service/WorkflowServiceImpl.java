@@ -36,8 +36,8 @@ import io.boomerang.data.entity.WorkflowEntity;
 import io.boomerang.data.entity.WorkflowRevisionEntity;
 import io.boomerang.data.entity.WorkflowRunEntity;
 import io.boomerang.data.repository.ActionRepository;
-import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.TaskRevisionRepository;
+import io.boomerang.data.repository.TaskRunRepository;
 import io.boomerang.data.repository.WorkflowRepository;
 import io.boomerang.data.repository.WorkflowRevisionRepository;
 import io.boomerang.data.repository.WorkflowRunRepository;
@@ -45,14 +45,13 @@ import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
 import io.boomerang.model.ChangeLog;
 import io.boomerang.model.ChangeLogVersion;
-import io.boomerang.model.WorkflowTask;
 import io.boomerang.model.Task;
 import io.boomerang.model.Workflow;
 import io.boomerang.model.WorkflowCount;
 import io.boomerang.model.WorkflowRun;
 import io.boomerang.model.WorkflowRunRequest;
 import io.boomerang.model.WorkflowSubmitRequest;
-import io.boomerang.model.WorkflowTrigger;
+import io.boomerang.model.WorkflowTask;
 import io.boomerang.model.enums.RunStatus;
 import io.boomerang.model.enums.TaskType;
 import io.boomerang.model.enums.WorkflowStatus;
@@ -519,6 +518,9 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
     if (!Objects.isNull(request.getRetries()) && request.getRetries() != 0) {
       wfRunEntity.setRetries(request.getRetries());
+    }
+    if (!Objects.isNull(request.getDebug())) {
+      wfRunEntity.setDebug(request.getDebug());
     }
     // Set Trigger
     if (Objects.isNull(request.getTrigger()) || request.getTrigger().isBlank()) {

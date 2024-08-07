@@ -212,6 +212,9 @@ public class DAGUtility {
                 wfRunEntity.getAnnotations().get("boomerang.io/task-deletion").toString());
           }
           taskRunEntity.getSpec().setDeletion(taskDeletion);
+          if (!Objects.isNull(wfRunEntity.getDebug())) {            
+            taskRunEntity.getSpec().setDebug(wfRunEntity.getDebug());
+          }
         }
         taskRunRepository.save(taskRunEntity);
         LOGGER.debug("[{}] TaskRunEntity ({}) created for: {}", wfRunEntity.getId(),
