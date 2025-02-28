@@ -4,15 +4,15 @@ import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Date;
 import java.util.UUID;
-import io.boomerang.data.entity.TaskRunEntity;
-import io.boomerang.data.entity.WorkflowEntity;
-import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.model.TaskRun;
-import io.boomerang.model.WorkflowRun;
-import io.boomerang.model.enums.EventType;
-import io.boomerang.model.events.TaskRunStatusEvent;
-import io.boomerang.model.events.WorkflowRunStatusEvent;
-import io.boomerang.model.events.WorkflowStatusEvent;
+import io.boomerang.engine.entity.TaskRunEntity;
+import io.boomerang.engine.entity.WorkflowEntity;
+import io.boomerang.engine.entity.WorkflowRunEntity;
+import io.boomerang.engine.model.TaskRun;
+import io.boomerang.engine.model.WorkflowRun;
+import io.boomerang.engine.model.enums.EventType;
+import io.boomerang.engine.events.TaskRunStatusEvent;
+import io.boomerang.engine.events.WorkflowRunStatusEvent;
+import io.boomerang.engine.events.WorkflowStatusEvent;
 
 public class EventFactory {
 

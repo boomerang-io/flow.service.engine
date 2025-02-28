@@ -3,6 +3,8 @@ package io.boomerang.aspect;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import io.boomerang.engine.EventSinkService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -10,35 +12,33 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import io.boomerang.audit.AuditInterceptor;
 import io.boomerang.audit.AuditType;
-import io.boomerang.data.entity.WorkflowRunEntity;
-import io.boomerang.data.repository.WorkflowRunRepository;
-import io.boomerang.model.enums.RunStatus;
-import io.boomerang.service.EventSinkService;
+import io.boomerang.engine.entity.WorkflowRunEntity;
+import io.boomerang.engine.repository.WorkflowRunRepository;
+import io.boomerang.engine.model.enums.RunStatus;
 
 @Aspect
 @Component
 public class WorkflowRunEntityUpdateInterceptor {
   private static final Logger LOGGER = LogManager.getLogger();
 
-  @Autowired
-  WorkflowRunRepository workflowRunRepository;
-  
-  @Autowired
-  EventSinkService eventSinkService;
-  
-  @Autowired
-  AuditInterceptor auditInterceptor;
+  private final WorkflowRunRepository workflowRunRepository;
+  private final EventSinkService eventSinkService;
+  private final AuditInterceptor auditInterceptor;
+
+  public WorkflowRunEntityUpdateInterceptor(WorkflowRunRepository workflowRunRepository, EventSinkService eventSinkService, AuditInterceptor auditInterceptor) {
+    this.workflowRunRepository = workflowRunRepository;
+    this.eventSinkService = eventSinkService;
+    this.auditInterceptor = auditInterceptor;
+  }
 
   @Before("execution(* io.boomerang.data.repository.WorkflowRunRepository.save(..))"
       + " && args(entityToBeSaved)")
   @ConditionalOnProperty(name="flow.events.sink.enabled", havingValue="true", matchIfMissing = false)
   public void saveInvoked(JoinPoint thisJoinPoint, Object entityToBeSaved) {
-
     LOGGER.info("Intercepted save action on entity {} from {}", entityToBeSaved,
         thisJoinPoint.getSignature().getDeclaringTypeName());
 
@@ -74,7 +74,6 @@ public class WorkflowRunEntityUpdateInterceptor {
   }
 
   private void workflowRunEntityToBeUpdated(WorkflowRunEntity newEntity) {
-
     // Check if activity and workflow IDs are not empty
     if (StringUtils.isNotBlank(newEntity.getWorkflowRef())
         && StringUtils.isNotBlank(newEntity.getId())) {

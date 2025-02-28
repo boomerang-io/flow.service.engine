@@ -3,11 +3,11 @@ package io.boomerang.util;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import org.springframework.beans.BeanUtils;
-import io.boomerang.data.entity.WorkflowEntity;
-import io.boomerang.data.entity.WorkflowRevisionEntity;
+import io.boomerang.engine.entity.WorkflowEntity;
+import io.boomerang.engine.entity.WorkflowRevisionEntity;
 import io.boomerang.error.BoomerangError;
 import io.boomerang.error.BoomerangException;
-import io.boomerang.model.Workflow;
+import io.boomerang.engine.model.Workflow;
 
 /*
  * This class will do the BeanUtils.copyproperties from Entity to Model ensuring its not in the

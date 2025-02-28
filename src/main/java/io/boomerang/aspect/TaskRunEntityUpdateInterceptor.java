@@ -1,17 +1,16 @@
 package io.boomerang.aspect;
 
+import io.boomerang.engine.EventSinkService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-import io.boomerang.data.entity.TaskRunEntity;
-import io.boomerang.data.repository.TaskRunRepository;
-import io.boomerang.service.EventSinkService;
+import io.boomerang.engine.entity.TaskRunEntity;
+import io.boomerang.engine.repository.TaskRunRepository;
 
 @Aspect
 @Component
@@ -19,16 +18,17 @@ import io.boomerang.service.EventSinkService;
 public class TaskRunEntityUpdateInterceptor {
   private static final Logger LOGGER = LogManager.getLogger();
 
-  @Autowired
-  TaskRunRepository taskRunRepository;
-  
-  @Autowired
-  EventSinkService eventSinkService;
+  private final TaskRunRepository taskRunRepository;
+  private final EventSinkService eventSinkService;
+
+  public TaskRunEntityUpdateInterceptor(TaskRunRepository taskRunRepository, EventSinkService eventSinkService) {
+    this.taskRunRepository = taskRunRepository;
+    this.eventSinkService = eventSinkService;
+  }
 
   @Before("execution(* io.boomerang.data.repository.TaskRunRepository.save(..))"
       + " && args(entityToBeSaved)")
   public void saveInvoked(JoinPoint thisJoinPoint, Object entityToBeSaved) {
-
     LOGGER.info("Intercepted save action on entity {} from {}", entityToBeSaved,
         thisJoinPoint.getSignature().getDeclaringTypeName());
     if (entityToBeSaved instanceof TaskRunEntity) {

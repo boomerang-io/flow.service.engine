@@ -4,9 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import io.boomerang.model.ResultSpec;
-import io.boomerang.model.RunParam;
-import io.boomerang.model.RunResult;
+import io.boomerang.engine.model.ResultSpec;
+import io.boomerang.engine.model.RunResult;
 
 public class ResultUtil {
   
