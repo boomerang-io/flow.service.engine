@@ -7,11 +7,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import io.boomerang.error.BoomerangError;
-import io.boomerang.error.BoomerangException;
-import io.boomerang.model.ParamSpec;
-import io.boomerang.model.RunParam;
-import io.boomerang.model.enums.ParamType;
+
+import io.boomerang.engine.model.ParamSpec;
+import io.boomerang.engine.model.RunParam;
+import io.boomerang.engine.model.enums.ParamType;
 
 public class ParameterUtil {
   

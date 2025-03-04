@@ -19,9 +19,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort.Direction;
 
-import io.boomerang.data.repository.TaskRunRepository;
-import io.boomerang.model.TaskRun;
-import io.boomerang.service.TaskRunService;
+import io.boomerang.engine.repository.TaskRunRepository;
+import io.boomerang.engine.model.TaskRun;
 
 class TaskRunServiceTest {
 

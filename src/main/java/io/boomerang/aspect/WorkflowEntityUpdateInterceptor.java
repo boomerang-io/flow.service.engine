@@ -1,17 +1,16 @@
 package io.boomerang.aspect;
 
+import io.boomerang.engine.EventSinkService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-import io.boomerang.data.entity.WorkflowEntity;
-import io.boomerang.data.repository.WorkflowRepository;
-import io.boomerang.service.EventSinkService;
+import io.boomerang.engine.entity.WorkflowEntity;
+import io.boomerang.engine.repository.WorkflowRepository;
 
 @Aspect
 @Component
@@ -19,11 +18,13 @@ import io.boomerang.service.EventSinkService;
 public class WorkflowEntityUpdateInterceptor {
   private static final Logger LOGGER = LogManager.getLogger();
 
-  @Autowired
-  WorkflowRepository workflowRepository;
-  
-  @Autowired
-  EventSinkService eventSinkService;
+  private final WorkflowRepository workflowRepository;
+  private final EventSinkService eventSinkService;
+
+  public WorkflowEntityUpdateInterceptor(WorkflowRepository workflowRepository, EventSinkService eventSinkService) {
+    this.workflowRepository = workflowRepository;
+    this.eventSinkService = eventSinkService;
+  }
 
   @Before("execution(* io.boomerang.data.repository.WorkflowRepository.save(..))"
       + " && args(entityToBeSaved)")
@@ -38,7 +39,6 @@ public class WorkflowEntityUpdateInterceptor {
   }
 
   private void workflowEntityToBeUpdated(WorkflowEntity newEntity) {
-
     // Check if activity and workflow IDs are not empty
     if (StringUtils.isNotBlank(newEntity.getId())) {
 
