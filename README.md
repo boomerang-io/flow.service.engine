@@ -1,6 +1,10 @@
+⚠️ this project has been deprecated and the functionality migrated to the [Flow Services monorepo](https://github.com/boomerang-io/flow.services)
+
 # Flow Engine Service
 
 _based on Flow's Workflow Service and TektonCD_
+
+This service focuses on executing the Tasks as part of the Workflow's DAG
 
 ## v3 to v4 Change Log
 
